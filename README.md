@@ -1,5 +1,7 @@
 # datavolley
-R package for reading datavolley scouting files
+An R package for reading datavolley scouting files
+
+Beware, this is in an early stage of development and may do strange things. In particular, character encoding may not be well handled.
 
 ## Installation
 
@@ -24,6 +26,19 @@ summary(x)
            Br.Maribor (ŠKORC Sebastijan/)
     Result: 2-3 (25-21, 15-25, 25-19, 23-25, 6-15)
     Duration: 113 minutes
+
+
+Extract the data corresponding to serves:
+
+```R
+xs <- subset(x$plays,skill=="Serve")
+nrow(xs)
+```
+
+    [1] 198
+
+
+If you see unexpected behaviour, try `read_dv(...,dowarn=TRUE)` to obtain more diagnostic information during the process of reading and parsing the DataVolley file.
 
 
 ## More
