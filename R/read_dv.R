@@ -154,7 +154,9 @@ summary.datavolley <- function(object,...) {
     out <- list(date=object$meta$match$date,league=object$meta$match$league)
     out$teams <- data.frame(team=object$meta$teams$team_name,coach=object$meta$teams$coach,assistant=object$meta$teams$assistant,sets_won=object$meta$teams$sets_won,stringsAsFactors=FALSE)
     temp <- object$meta$result$score_home_team>object$meta$result$score_visiting_team
-    out$set_scores <- object$meta$result$score
+    out$set_scores <- object$meta$result[,c("score_home_team","score_visiting_team")]
+    ## make extra sure that set_scores has home team assigned correctly
+    if (object$meta$teams$team[1]!="*") out$set_scores <- out$set_scores[,2:1]
     out$duration <- sum(object$meta$result$duration)
     class(out) <- "summary.datavolley"
     out
@@ -166,7 +168,7 @@ summary.datavolley <- function(object,...) {
 print.summary.datavolley <- function(x,...) {
     out <- sprintf("Match summary:\nDate: %s\nLeague: %s\n",x$date,x$league)
     out <- sprintf("%sTeams: %s (%s/%s)\n       vs\n       %s (%s/%s)\n",out,x$teams$team[1],x$teams$coach[1],x$teams$assistant[1],x$teams$team[2],x$teams$coach[2],x$teams$assistant[2])
-    out <- sprintf("%sResult: %d-%d (%s)\n",out,x$teams$sets_won[1],x$teams$sets_won[2],paste(x$set_scores,collapse=", "))
+    out <- sprintf("%sResult: %d-%d (%s)\n",out,x$teams$sets_won[1],x$teams$sets_won[2],paste(x$set_scores[,1],x$set_scores[,2],sep="-",collapse=", "))
     out <- sprintf("%sDuration: %d minutes\n",out,x$duration)
     cat(out)
     invisible(out)
