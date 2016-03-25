@@ -1,7 +1,9 @@
 ## functions for dealing with the main data part of the datavolley file
 
-skill_decode=function(skill) {
-    assert_that(skill %in% c("S","R","A","B","D","E","F"))
+skill_decode=function(skill,code) {
+    if (!skill %in% c("S","R","A","B","D","E","F")) {
+        stop("code: ",code," --- unexpected skill: ",skill)
+    }
     switch(skill,
            S="Serve",
            R="Reception",
@@ -34,7 +36,9 @@ serve_map=function(type,skill) {
     }
    
 skill_type_decode=function(skill,type) {
-    assert_that(skill %in% c("S","R","A","B","D","E","F"))
+    if (!skill %in% c("S","R","A","B","D","E","F")) {
+        stop("unexpected skill: ",skill)
+    }
     if (!type %in% c("H","M","Q","T","U","F","O")) {
         warning("skill ",skill," type: ",type," not recognized")
     }
@@ -195,7 +199,7 @@ parse_code=function(code,meta) {
                 fullcode=code
                 code=sub(".\\d+","",code)
                 skill=substr(code,1,1)
-                out$skill[ci]=skill_decode(skill)
+                out$skill[ci]=skill_decode(skill,fullcode)
                 hit_type=substr(code,2,2)
                 out$skill_type[ci]=skill_type_decode(skill,hit_type)
                 skill_eval=substr(code,3,3)
