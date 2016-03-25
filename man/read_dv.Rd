@@ -4,7 +4,7 @@
 \alias{read_dv}
 \title{Read a datavolley file}
 \usage{
-read_dv(filename, dowarn = TRUE, encodings = c("latin2", "windows-1252",
+read_dv(filename, dowarn = FALSE, encodings = c("latin2", "windows-1252",
   "iso885913"))
 }
 \arguments{

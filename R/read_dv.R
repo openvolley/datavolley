@@ -14,7 +14,7 @@
 #' 
 #' }
 #' @export
-read_dv <- function(filename,dowarn=TRUE,encodings=c("latin2","windows-1252","iso885913")) {    
+read_dv <- function(filename,dowarn=FALSE,encodings=c("latin2","windows-1252","iso885913")) {    
     out <- list()
     ## read raw lines in
     dv <- readLines(filename,warn=dowarn)
