@@ -158,7 +158,8 @@ summary.datavolley <- function(object,...) {
     out$set_scores <- object$meta$result[,c("score_home_team","score_visiting_team")]
     ## make extra sure that set_scores has home team assigned correctly
     if (object$meta$teams$team[1]!="*") out$set_scores <- out$set_scores[,2:1]
-    out$duration <- sum(object$meta$result$duration)
+    out$set_scores <- na.omit(out$set_scores)
+    out$duration <- sum(object$meta$result$duration,na.rm=TRUE)
     class(out) <- "summary.datavolley"
     out
 }
