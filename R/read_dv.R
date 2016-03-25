@@ -136,7 +136,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,dowarn=FALSE,encodin
 
 #' A simple summary of a volleyball match
 #'
-#' @param object datavolley: datavolley object as returned by read_dv()
+#' @param object datavolley: datavolley object as returned by \code{read_dv}
 #' @param ... : additional arguments (currently these have no effect)
 #'
 #' @return list of summary items
@@ -162,7 +162,11 @@ summary.datavolley <- function(object,...) {
     out
 }
 
-#' @rdname summary.datavolley
+#' Print method for summary.datavolley
+#'
+#' @param x summary.datavolley: a summary.datavolley object as returned by \code{summary.datavolley}
+#' @param ... : additional arguments (currently these have no effect)
+#' @seealso \code{\link{summary.datavolley}}
 #' @method print summary.datavolley
 #' @export
 print.summary.datavolley <- function(x,...) {
@@ -179,7 +183,7 @@ print.summary.datavolley <- function(x,...) {
 
 #' Summarize a list of volleyball matches
 #'
-#' @param z list: list of datavolley objects as returned by read_dv()
+#' @param z list: list of datavolley objects as returned by \code{read_dv}
 #'
 #' @return named list with various summary indicators, including a competition ladder
 #'
@@ -201,6 +205,8 @@ dvlist_summary=function(z) {
     temp <- ldply(z,function(q)q$meta$teams[,c("team_name","won_match")])
     teams <- suppressMessages(join(teams,ddply(temp,.(team_name),function(q)data.frame(won=sum(q$won_match)))))
     teams$win_rate <- teams$won/teams$played
+    temp <- ldply(z,function(q){ s <- summary(q); s$sc <- colSums(s$set_scores); data.frame(team_name=s$teams$team,points_for=s$sc,points_against=s$sc[2:1])})
+    teams <- suppressMessages(join(teams,ddply(temp,.(team_name),function(q)data.frame(points_for=sum(q$points_for),points_against=sum(q$points_against)))))    
     names(teams)[1] <- "team"
     teams <- arrange(teams,team)
     out$ladder <- teams
@@ -209,7 +215,11 @@ dvlist_summary=function(z) {
 }
 
 
-#' @rdname dvlist_summary
+#' Print method for summary.datavolleylist
+#'
+#' @param x summary.datavolleylist: a summary.datavolleylist object, as returned by \code{dvlist_summary}
+#' @param ... : additional arguments (currently these have no effect)
+#' @seealso \code{\link{dvlist_summary}}
 #' @method print summary.datavolleylist
 #' @export
 print.summary.datavolleylist <- function(x,...) {

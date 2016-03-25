@@ -2,15 +2,12 @@
 % Please edit documentation in R/read_dv.R
 \name{dvlist_summary}
 \alias{dvlist_summary}
-\alias{print.summary.datavolleylist}
 \title{Summarize a list of volleyball matches}
 \usage{
 dvlist_summary(z)
-
-\method{print}{summary.datavolleylist}(x, ...)
 }
 \arguments{
-\item{z}{list: list of datavolley objects as returned by read_dv()}
+\item{z}{list: list of datavolley objects as returned by \code{read_dv}}
 }
 \value{
 named list with various summary indicators, including a competition ladder
