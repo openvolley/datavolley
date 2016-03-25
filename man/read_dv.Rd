@@ -24,7 +24,8 @@ Read a datavolley file
 }
 \examples{
 \dontrun{
-
+  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+  summary(x)
 }
 }
 \references{

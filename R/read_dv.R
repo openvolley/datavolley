@@ -12,7 +12,8 @@
 #'
 #' @examples
 #' \dontrun{
-#' 
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   summary(x)
 #' }
 #' @export
 read_dv <- function(filename,insert_technical_timeouts=TRUE,dowarn=FALSE,encodings=c("latin2","windows-1252","iso885913")) {    
