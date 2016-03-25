@@ -12,7 +12,6 @@ Imports:
 	lubridate,
 	stringr,
 	plyr,
-	assertthat,
 	digest
 License: MIT
 LazyData: true

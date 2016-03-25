@@ -6,7 +6,6 @@
 #' @import plyr
 #' @importFrom lubridate dmy_hms mdy_hms hms
 #' @importFrom digest digest
-#' @importFrom assertthat assert_that
 #' @importFrom stringr str_match str_trim regex
 #' @importFrom data.table fread
 NULL
