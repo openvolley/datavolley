@@ -3,7 +3,7 @@
 #' @name datavolley
 #' @author Ben Raymond \email{ben@@untan.gl}
 #' @docType package
-#' @import lubridate plyr
+#' @import plyr
 #' @importFrom lubridate dmy_hms mdy_hms hms
 #' @importFrom digest digest
 #' @importFrom assertthat assert_that

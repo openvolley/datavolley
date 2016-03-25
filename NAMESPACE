@@ -2,7 +2,6 @@
 
 S3method(summary,datavolley)
 export(read_dv)
-import(lubridate)
 import(plyr)
 importFrom(assertthat,assert_that)
 importFrom(data.table,fread)
