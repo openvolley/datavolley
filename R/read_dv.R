@@ -4,6 +4,7 @@
 #'
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
+#' @param insert_technical_timeouts logical: should we insert technical timeouts at points 8 and 16 of sets 1--4?
 #' @param dowarn logical: should we issue warnings about the contents of the file as we read it?
 #' @param encodings character: vector of text encodings to try
 #'
@@ -14,7 +15,7 @@
 #' 
 #' }
 #' @export
-read_dv <- function(filename,dowarn=FALSE,encodings=c("latin2","windows-1252","iso885913")) {    
+read_dv <- function(filename,insert_technical_timeouts=TRUE,dowarn=FALSE,encodings=c("latin2","windows-1252","iso885913")) {    
     out <- list()
     ## read raw lines in
     dv <- readLines(filename,warn=dowarn)
@@ -58,14 +59,16 @@ read_dv <- function(filename,dowarn=FALSE,encodings=c("latin2","windows-1252","i
     for (si in 2:length(temp)) {
         out$plays$set_number[(temp[si-1]+1):(temp[si]-1)] <- (si-1)
     }
-    ## find technical timeouts at points 8 and 16 in sets 1-4
-    for (this_set in 1:4) {
-        for (thisp in c(8,16)) {
-            idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
-            if (length(idx)>0) {
-                idx <- idx[1]
-                ##cat(sprintf("Inserting technical timeout at row %d\n",idx))
-                out$plays <- rbind.fill(out$plays[1:idx,],data.frame(skill="Technical timeout",timeout=TRUE,set_number=this_set,point=FALSE,end_of_set=FALSE,substitution=FALSE),out$plays[(idx+1):nrow(out$plays),])
+    if (insert_technical_timeouts) {
+        ## find technical timeouts at points 8 and 16 in sets 1-4
+        for (this_set in 1:4) {
+            for (thisp in c(8,16)) {
+                idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
+                if (length(idx)>0) {
+                    idx <- idx[1]
+                    ##cat(sprintf("Inserting technical timeout at row %d\n",idx))
+                    out$plays <- rbind.fill(out$plays[1:idx,],data.frame(skill="Technical timeout",timeout=TRUE,set_number=this_set,point=FALSE,end_of_set=FALSE,substitution=FALSE),out$plays[(idx+1):nrow(out$plays),])
+                }
             }
         }
     }
