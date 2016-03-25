@@ -133,6 +133,7 @@ read_dv <- function(filename,dowarn=TRUE,encodings=c("latin2","windows-1252","is
 #' Print a simple summary of a datavolley object
 #'
 #' @param object datavolley: datavolley object as returned by read_dv()
+#' @param ... : additional arguments (currently these have no effect)
 #'
 #' @return print summary to console, and return the summary object invisibly
 #'

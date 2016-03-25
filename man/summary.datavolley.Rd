@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{object}{datavolley: datavolley object as returned by read_dv()}
+
+\item{...}{: additional arguments (currently these have no effect)}
 }
 \value{
 print summary to console, and return the summary object invisibly
