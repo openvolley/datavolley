@@ -20,7 +20,8 @@ read_dv <- function(filename,dowarn=FALSE,encodings=c("latin2","windows-1252","i
     dv <- readLines(filename,warn=dowarn)
     ## try to guess encoding based on the first few lines of the file
     ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
-    badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso885913")))
+    ## surely there is a better way to do this ...
+    badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso885913"),"\u008a","\u008e","\u009a"))
     enctest <- sapply(encodings,function(tryenc)sum(sapply(sapply(iconv(dv[1:100],from=tryenc),utf8ToInt),function(z)any(z %in% badchars))))
     #if (abs(diff(enctest))<1 & any(enctest>0)) {
     #    cat(str(enctest))
