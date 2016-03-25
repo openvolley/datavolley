@@ -19,9 +19,9 @@ summary(x)
     Match summary:
     Date: 2015-12-28 18:00:00
     League: Middle European Cup Women 2015/16 - WIL
-    Teams: Kamnik (RIBIC Gaper/JEMEC Aljoa)
+    Teams: Kamnik (RIBIC Gašper/JEMEC Aljoša)
            vs
-           Br.Maribor (KORC Sebastijan/)
+           Br.Maribor (ŠKORC Sebastijan/)
     Result: 2-3 (25-21, 15-25, 25-19, 23-25, 6-15)
     Duration: 113 minutes
 
