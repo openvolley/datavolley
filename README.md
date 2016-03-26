@@ -38,7 +38,7 @@ nrow(xs)
     [1] 198
 
 
-If you see unexpected behaviour, try `read_dv(...,dowarn=TRUE)` to obtain more diagnostic information during the process of reading and parsing the DataVolley file.
+If you see unexpected behaviour, try `read_dv(...,do_warn=TRUE)` to obtain more diagnostic information during the process of reading and parsing the DataVolley file.
 
 
 ## More
