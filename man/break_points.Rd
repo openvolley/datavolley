@@ -4,13 +4,15 @@
 \alias{break_points}
 \title{Calculate break points}
 \usage{
-break_points(x)
+break_points(x, return_id = FALSE)
 }
 \arguments{
 \item{x}{data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}}
+
+\item{return_id}{logical: include the match_id and play_id of all break points in the returned object?}
 }
 \value{
-named list with components "ix" (logical indices of break points in the x object), "n" (number of break points in x), "rate" (break point rate from x)
+named list with components "ix" (logical indices of serves corresponding to break points in the x object), "n" (number of break points in x), "rate" (break point rate from x). If \code{return_id} is TRUE, also return a component "id" (a data.frame containing the match_id and play_id of all break points)
 }
 \description{
 A break point in one in which the serving team wins the point. Break point rate is the fraction of points won by the serving team.
