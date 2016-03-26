@@ -93,7 +93,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$plays$play_id <- NA
     out$plays$play_id[1] <- 0    
     for (k in 2:nrow(out$plays)) {
-        ##if ((!is.na(out$plays$skill[k]) && out$plays$skill[k]=="Serve") | out$plays$timeout[k]) { ## does not handle sanctions
+        ##if ((!is.na(out$plays$skill[k]) && out$plays$skill[k]=="Serve") | out$plays$timeout[k]) { ## does not cope with sanctions
         if (out$plays$point[k-1] | out$plays$timeout[k] | out$plays$timeout[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new play_id
             pid <- pid+1
         }
@@ -114,8 +114,12 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     temp <- ddply(out$plays,.(play_id),function(z)data.frame(point_won_by=if (any(z$point)) { z$team[z$point] } else { as.character(NA) } ))
     suppressMessages(out$plays <- join(out$plays,temp))
     ## catch any that we missed
-    ##dudidx <- is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")
-    ## not sure how to deal with these!
+    ##dud_play_id <- unique(out$plays$play_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
+    ##for (dpi in dud_play_id) {
+    ##    tail(na.omit(out$plays[out$plays$play_id<dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
+    ##    head(na.omit(out$plays[out$plays$play_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
+    ##}
+    #### not sure how to deal with these!
     
     ## winning attacks
     ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
