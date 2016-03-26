@@ -4,26 +4,24 @@
 \alias{remap_team_names}
 \title{Change team names}
 \usage{
-remap_team_names(x, from, to)
+remap_team_names(x, remap)
 }
 \arguments{
 \item{x}{datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects}
 
-\item{from}{string: vector of team names to change from}
-
-\item{to}{string: vector of team names to change to}
+\item{remap}{data.frame: data.frame of strings with columns from and to}
 }
 \value{
-datavolley object with corresponding team names changed
+datavolley object or list with corresponding team names changed
 }
 \description{
-A team name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. Any team name in \code{to} is replaced with the corresponding entry in \code{from}.
+A team name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A team name matching the \code{from} entry in a row in \code{remap} is renamed to the corresponding \code{to} value.
 }
 \examples{
 \dontrun{
   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
   summary(x)
-  x <- remap_team_names(x,from="Kamnik",to="OK Kamnik")
+  x <- remap_team_names(x,data.frame(from="Kamnik",to="OK Kamnik"))
   summary(x)
 }
 }
