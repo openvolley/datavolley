@@ -136,11 +136,6 @@ parse_code=function(code,meta) {
             out$end_of_set[ci]=TRUE
         } else {
             team=substr(code,1,1)
-                                        #if (team=="a") {
-                                        #    team="home"
-                                        #} else if (team=="*") {
-                                        #    team="visitors"
-                                        #} else {
             if (!team %in% c("a","*")) {
                 stop("code does not start with * or a")
                 team="unknown"

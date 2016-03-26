@@ -102,8 +102,8 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ## touch_id (row number)
     out$plays$touch_id <- 1:nrow(out$plays)
     ## team name
-    home_team <- out$meta$teams$team_name[out$meta$teams$team=="*"]
-    visiting_team <- out$meta$teams$team_name[out$meta$teams$team=="a"]
+    home_team <- out$meta$teams$team[out$meta$teams$home_away_team=="*"]
+    visiting_team <- out$meta$teams$team[out$meta$teams$home_away_team=="a"]
     temp <- rep(as.character(NA),nrow(out$plays))
     temp[out$plays$team=="*"] <- home_team
     temp[out$plays$team=="a"] <- visiting_team
@@ -111,7 +111,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$plays$home_team <- home_team
     out$plays$visiting_team <- visiting_team
     ## keep track of who won each point
-    temp <- ddply(out$plays,.(play_id),function(z)data.frame(point_won_by <- if (any(z$point)) { z$team[z$point] } else { as.character(NA) } ))
+    temp <- ddply(out$plays,.(play_id),function(z)data.frame(point_won_by=if (any(z$point)) { z$team[z$point] } else { as.character(NA) } ))
     suppressMessages(out$plays <- join(out$plays,temp))
     ## catch any that we missed
     ##dudidx <- is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")
@@ -164,11 +164,11 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
 #' @export
 summary.datavolley <- function(object,...) {
     out <- list(date=object$meta$match$date,league=object$meta$match$league)
-    out$teams <- data.frame(team=object$meta$teams$team_name,coach=object$meta$teams$coach,assistant=object$meta$teams$assistant,sets_won=object$meta$teams$sets_won,stringsAsFactors=FALSE)
+    out$teams <- object$meta$teams[,c("team","coach","assistant","sets_won")] ## data.frame(team=object$meta$teams$team,coach=object$meta$teams$coach,assistant=object$meta$teams$assistant,sets_won=object$meta$teams$sets_won,stringsAsFactors=FALSE)
     temp <- object$meta$result$score_home_team>object$meta$result$score_visiting_team
     out$set_scores <- object$meta$result[,c("score_home_team","score_visiting_team")]
     ## make extra sure that set_scores has home team assigned correctly
-    if (object$meta$teams$team[1]!="*") out$set_scores <- out$set_scores[,2:1]
+    if (object$meta$teams$home_away_team[1]!="*") { out$set_scores <- out$set_scores[,2:1] }
     out$set_scores <- na.omit(out$set_scores)
     out$duration <- sum(object$meta$result$duration,na.rm=TRUE)
     class(out) <- "summary.datavolley"
@@ -212,16 +212,16 @@ print.summary.datavolley <- function(x,...) {
 dvlist_summary=function(z) {
     out <- list(number_of_matches=length(z))
     out$date_range <- range(ldply(z,function(q)as.Date(q$meta$match$date))$V1)
-    temp <- as.character(sapply(z,function(q) q$meta$teams$team_name))
+    temp <- as.character(sapply(z,function(q) q$meta$teams$team))
     teams <- as.data.frame(table(temp))
-    names(teams) <- c("team_name","played")
-    temp <- ldply(z,function(q)q$meta$teams[,c("team_name","won_match")])
-    teams <- suppressMessages(join(teams,ddply(temp,.(team_name),function(q)data.frame(won=sum(q$won_match)))))
+    names(teams) <- c("team","played")
+    temp <- ldply(z,function(q)q$meta$teams[,c("team","won_match")])
+    teams <- suppressMessages(join(teams,ddply(temp,.(team),function(q)data.frame(won=sum(q$won_match)))))
     teams$win_rate <- teams$won/teams$played
-    temp <- ldply(z,function(q){ s <- summary(q); s$sc <- colSums(s$set_scores); data.frame(team_name=s$teams$team,points_for=s$sc,points_against=s$sc[2:1])})
-    teams <- suppressMessages(join(teams,ddply(temp,.(team_name),function(q)data.frame(points_for=sum(q$points_for),points_against=sum(q$points_against)))))
+    temp <- ldply(z,function(q){ s <- summary(q); s$sc <- colSums(s$set_scores); data.frame(team=s$teams$team,points_for=s$sc,points_against=s$sc[2:1])})
+    teams <- suppressMessages(join(teams,ddply(temp,.(team),function(q)data.frame(points_for=sum(q$points_for),points_against=sum(q$points_against)))))
     teams$points_ratio <- teams$points_for/teams$points_against
-    names(teams)[1] <- "team"
+    ##names(teams)[1] <- "team"
     teams <- arrange(teams,team)
     out$ladder <- teams
     class(out) <- "summary.datavolleylist"

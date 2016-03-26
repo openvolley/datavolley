@@ -39,11 +39,11 @@ read_result <- function(txt) {
 read_teams <- function(txt) {
     txt <- text_chunk(txt,"[3TEAMS]")
     p <- data.table::fread(txt,data.table=FALSE,sep=";")
-    names(p)[2] <- "team_name"
+    names(p)[2] <- "team"
     names(p)[3] <- "sets_won"
     names(p)[4] <- "coach"
     names(p)[5] <- "assistant"
-    p$team <- c("*","a")
+    p$home_away_team <- c("*","a")
     p
 }
 
@@ -112,8 +112,8 @@ read_meta <- function(txt) {
     out$attacks <- read_attacks(txt)
     out$sets <- read_setter_calls(txt)
     temp <- out$match
-    temp$home_team <- out$teams$team_name[out$teams$team=="*"]
-    temp$visiting_team <- out$teams$team_name[out$teams$team=="a"]
+    temp$home_team <- out$teams$team[out$teams$home_away_team=="*"]
+    temp$visiting_team <- out$teams$team[out$teams$home_away_team=="a"]
     out$match_id <- digest(temp)
     out
 }
@@ -127,5 +127,3 @@ get_player_name <- function(team,number,meta) {
         meta$players_v$name[meta$players_v$number==number]
     }        
 }
-
-
