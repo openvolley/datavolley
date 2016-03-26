@@ -208,7 +208,8 @@ dvlist_summary=function(z) {
     teams <- suppressMessages(join(teams,ddply(temp,.(team_name),function(q)data.frame(won=sum(q$won_match)))))
     teams$win_rate <- teams$won/teams$played
     temp <- ldply(z,function(q){ s <- summary(q); s$sc <- colSums(s$set_scores); data.frame(team_name=s$teams$team,points_for=s$sc,points_against=s$sc[2:1])})
-    teams <- suppressMessages(join(teams,ddply(temp,.(team_name),function(q)data.frame(points_for=sum(q$points_for),points_against=sum(q$points_against)))))    
+    teams <- suppressMessages(join(teams,ddply(temp,.(team_name),function(q)data.frame(points_for=sum(q$points_for),points_against=sum(q$points_against)))))
+    teams$points_ratio <- teams$points_for/teams$points_against
     names(teams)[1] <- "team"
     teams <- arrange(teams,team)
     out$ladder <- teams
