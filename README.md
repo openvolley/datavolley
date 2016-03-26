@@ -1,7 +1,7 @@
 # datavolley
-An R package for reading datavolley scouting files
+An R package for reading DataVolley scouting files.
 
-Beware, this is in an early stage of development and may do strange things. In particular, character encoding may not be well handled.
+Beware, this is in an early stage of development and may do strange things. In particular, character encoding may not be well handled. Functionality is liable to change without warning.
 
 ## Installation
 
