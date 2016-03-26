@@ -2,11 +2,14 @@
 
 #' Read a datavolley file
 #'
+#' The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the guessed/specified text encoding to UTF-8.
+#' 
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
 #' @param insert_technical_timeouts logical: should we insert technical timeouts at points 8 and 16 of sets 1--4?
-#' @param dowarn logical: should we issue warnings about the contents of the file as we read it?
-#' @param encodings character: vector of text encodings to try
+#' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
+#' @param do_transliterate logical: should we transliterate all text to ASCII? See details
+#' @param encodings character: vector of text encodings to try. Text encoding is converted to UTF-8 internally
 #'
 #' @return named list with meta and plays components. meta provides match metadata, plays is the main point-by-point data in the form of a data.frame
 #'
@@ -16,37 +19,45 @@
 #'   summary(x)
 #' }
 #' @export
-read_dv <- function(filename,insert_technical_timeouts=TRUE,dowarn=FALSE,encodings=c("latin2","windows-1252","iso885913")) {    
+read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encodings=c("latin2","windows-1252","iso885913")) {
+    assert_that(is.flag(insert_technical_timeouts))
+    assert_that(is.flag(do_warn))
+    assert_that(is.flag(do_transliterate))
+    if (is.null(encodings)) encodings <- "utf-8"
+    
     out <- list()
     ## read raw lines in
-    dv <- readLines(filename,warn=dowarn)
+    dv <- readLines(filename,warn=do_warn)
     ## try to guess encoding based on the first few lines of the file
     ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
     ## surely there is a better way to do this ...
     badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso885913"),"\u008a","\u008e","\u009a"))
     enctest <- sapply(encodings,function(tryenc)sum(sapply(sapply(iconv(dv[1:100],from=tryenc),utf8ToInt),function(z)any(z %in% badchars))))
-    #if (abs(diff(enctest))<1 & any(enctest>0)) {
-    #    cat(str(enctest))
-    #    temp=iconv(dv[1:60],from="latin2",to="utf-8")
-    #    print(temp[grepl(badchars,temp)])
-    #    temp=iconv(dv[1:60],from="iso885913",to="utf-8")
-    #    print(temp[grepl(badchars,temp)])
-    #    stop("ambiguous encoding in ",filename)
-    #}
+                                        #if (abs(diff(enctest))<1 & any(enctest>0)) {
+                                        #    cat(str(enctest))
+                                        #    temp=iconv(dv[1:60],from="latin2",to="utf-8")
+                                        #    print(temp[grepl(badchars,temp)])
+                                        #    temp=iconv(dv[1:60],from="iso885913",to="utf-8")
+                                        #    print(temp[grepl(badchars,temp)])
+                                        #    stop("ambiguous encoding in ",filename)
+                                        #}
     encfrom <- encodings[which.min(enctest)]
     dv <- iconv(dv,from=encfrom,to="utf-8") ## convert encoding to utf-8
-    if (!dowarn) {
+    if (do_transliterate) {
+        dv <- iconv(dv,from="utf-8",to="ascii//TRANSLIT")
+    }
+    if (!do_warn) {
         suppressWarnings(out$meta <- read_meta(dv))
     } else {
         out$meta <- read_meta(dv)
     }
     out$meta$filename <- filename
-    if (!dowarn) {
+    if (!do_warn) {
         suppressWarnings(this_main <- read_main(filename))
     } else {
         this_main <- read_main(filename)
     }
-    if (dowarn) {
+    if (do_warn) {
         out$plays <- parse_code(this_main$code,out$meta)
     } else {
         suppressWarnings(out$plays <- parse_code(this_main$code,out$meta))
