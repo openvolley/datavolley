@@ -2,7 +2,7 @@
 % Please edit documentation in R/indicators.R
 \name{break_points}
 \alias{break_points}
-\title{Calculate break points}
+\title{Find break points}
 \usage{
 break_points(x, return_id = FALSE)
 }
@@ -15,7 +15,7 @@ break_points(x, return_id = FALSE)
 named list with components "ix" (logical indices of serves corresponding to break points in the x object), "n" (number of break points in x), "rate" (break point rate from x). If \code{return_id} is TRUE, also return a component "id" (a data.frame containing the match_id and play_id of all break points)
 }
 \description{
-A break point in one in which the serving team wins the point. Break point rate is the fraction of points won by the serving team.
+A break point in one in which the serving team wins the point. Break point rate is the fraction of serves won by the serving team.
 }
 \examples{
 \dontrun{

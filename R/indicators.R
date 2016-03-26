@@ -1,6 +1,6 @@
-#' Calculate break points
+#' Find break points
 #'
-#' A break point in one in which the serving team wins the point. Break point rate is the fraction of points won by the serving team.
+#' A break point in one in which the serving team wins the point. Break point rate is the fraction of serves won by the serving team.
 #' 
 #' @param x data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}
 #' @param return_id logical: include the match_id and play_id of all break points in the returned object?
