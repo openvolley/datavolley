@@ -26,6 +26,6 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 }
 }
 \seealso{
-\code{\link{read_dv}}, \code{\link{check_player_names}}
+\code{\link{read_dv}}, \code{\link{check_player_names}}, \code{\link{find_player_name_remapping}}
 }
 

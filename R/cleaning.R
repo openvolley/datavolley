@@ -97,7 +97,7 @@ check_player_names=function(x,distance_threshold=4) {
 #'
 #' @return datavolley object or list with corresponding player names changed
 #'
-#' @seealso \code{\link{read_dv}}, \code{\link{check_player_names}}
+#' @seealso \code{\link{read_dv}}, \code{\link{check_player_names}}, \code{\link{find_player_name_remapping}}
 #'
 #' @examples
 #' \dontrun{
@@ -140,4 +140,78 @@ remap_player_names=function(x,remap) {
     } else {
         x
     }
+}
+
+
+
+#' Attempt to build a player name remapping table
+#'
+#' A player name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. This function will attempt to find names that have been misspelled and create a remapping table suitable to pass to \code{\link{remap_player_names}}. Player names will only be compared within the same team. Note that this function is unlikely to get perfect results: use its output with care.
+#'
+#' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
+#' @param distance_threshold numeric: if two names differ by an amount less than this threshold, they will be treated as the same name
+#' @param verbose logical: print progress to console as we go? Note that warnings will also be issued regardless of this setting
+#'
+#' @return data.frame with columns team, from, to
+#'
+#' @seealso \code{\link{remap_player_names}}, \code{\link{check_player_names}}
+#'
+#' @examples
+#' \dontrun{
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   ## artifically change one player name to be a mis-spelled version of another, just for demo purposes
+#'   x <- remap_player_names(x,data.frame(team="Br.Maribor",from="Iza MLAKAR",
+#'                             to="Marina KASCIC"))
+#'   remap <- find_player_name_remapping(x)
+#' }
+#' @export
+find_player_name_remapping=function(x,distance_threshold=3,verbose=TRUE) {
+    assert_that(is.flag(verbose))
+    if (!(inherits(x,"datavolley") | (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
+        stop("x must be a datavolley object or list of such objects")
+    if (inherits(x,"datavolley")) x <- list(x)
+
+    all_names <- ldply(x,function(z)rbind(data.frame(team=z$meta$teams$team[z$meta$teams$home_away_team=="*"],player_name=z$meta$players_h$name,stringsAsFactors=FALSE),data.frame(team=z$meta$teams$team[z$meta$teams$home_away_team=="a"],player_name=z$meta$players_v$name,stringsAsFactors=FALSE)))
+    all_teams <- unique(unlist(lapply(x,function(z)z$meta$teams$team)))
+
+    names_to_change <- data.frame()
+    for (t in all_teams) {
+        this_names <- subset(all_names,team==t)$player_name ##sort(unique(
+        this_names_count <- as.data.frame(table(subset(all_names,team==t)$player_name))
+        names(this_names_count) <- c("name","count")
+        ##this_names_count <- arrange(this_names_count,name)
+        ## check for suspect names by transliteration (removing diacriticals) and by text distance
+        names_translit <- iconv(this_names,from="utf-8",to="ascii//TRANSLIT")
+        names_map <- rep(0,length(this_names))
+        for (n in 1:length(this_names)) {
+            p <- this_names[n]
+            this_is_translit <- p==names_translit[n] ## this name does not have diacriticals
+            if (this_is_translit) {
+                ## does the non-transliterated form exist? allow for fuzzy matches
+                nmdist <- adist(names_translit[n],names_translit)
+                this_exists_not_translit <- sum(nmdist<distance_threshold)>1
+                if (this_exists_not_translit) {
+                    name_should_be <- setdiff(which(nmdist<distance_threshold),n)
+                    if (length(name_should_be)<1) {
+                        warning("problem remapping player name ",p,", skipping")
+                        break
+                    }
+                    if (length(name_should_be)>1) {
+                        warning("ambiguous name: ",p," could be ",paste(this_names[name_should_be],collapse=" or "),". Choosing first")
+                        name_should_be <- name_should_be[1]
+                    }
+                    if (names_map[name_should_be]==n) {
+                        ## have already mapped the reverse, so don't make circular ...
+                        ##cat(sprintf(" (name %s already mapped to %s, so not mapping the reverse)\n",this_names[name_should_be],p))
+                    } else {
+                        names_map[n] <- name_should_be
+                        name_should_be <- this_names[name_should_be]
+                        if (verbose) cat(sprintf("Team %s: mapping player name %s to %s\n",t,p,name_should_be))
+                        names_to_change <- rbind(names_to_change,data.frame(team=t,from=p,to=name_should_be,stringsAsFactors=FALSE))
+                    }
+                }
+            }
+        }
+    }
+    names_to_change
 }
