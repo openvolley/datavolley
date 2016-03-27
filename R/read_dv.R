@@ -88,10 +88,10 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$plays$match_id <- out$meta$match_id    
     ##out$plays$time=hms(out$plays$time)
     
-    ## add point_id
+    ## add point_id - an identifier of each point. One point may consist of multiple attacks or other actions. Timeouts get assigned to their own "point", but other non-play rows may get assigned as part of a point.
     pid <- 0
     out$plays$point_id <- NA
-    out$plays$point_id[1] <- 0    
+    out$plays$point_id[1] <- pid
     for (k in 2:nrow(out$plays)) {
         ##if ((!is.na(out$plays$skill[k]) && out$plays$skill[k]=="Serve") | out$plays$timeout[k]) { ## does not cope with sanctions
         if (out$plays$point[k-1] | out$plays$timeout[k] | out$plays$timeout[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new point_id
@@ -99,6 +99,18 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         }
         out$plays$point_id[k] <- pid
     }
+
+    ## add team_touch_id - an identifier of consecutive touches by same team in same point - e.g. a dig-set-attack sequence by one team is a "team touch"
+    tid <- 0
+    out$plays$team_touch_id <- NA
+    out$plays$team_touch_id[1] <- tid
+    for (k in 2:nrow(out$plays)) {
+        if (!identical(out$plays$team[k],out$plays$team[k-1]) | !identical(out$plays$point_id[k],out$plays$point_id[k-1])) {
+            tid <- tid+1
+        }
+        team_touch_id[k] <- tid
+    }
+    
     ## team name
     home_team <- out$meta$teams$team[out$meta$teams$home_away_team=="*"]
     visiting_team <- out$meta$teams$team[out$meta$teams$home_away_team=="a"]
