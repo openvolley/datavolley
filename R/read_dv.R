@@ -108,7 +108,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         if (!identical(out$plays$team[k],out$plays$team[k-1]) | !identical(out$plays$point_id[k],out$plays$point_id[k-1])) {
             tid <- tid+1
         }
-        team_touch_id[k] <- tid
+        out$plays$team_touch_id[k] <- tid
     }
     
     ## team name
