@@ -88,19 +88,17 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$plays$match_id <- out$meta$match_id    
     ##out$plays$time=hms(out$plays$time)
     
-    ## add play_id
+    ## add point_id
     pid <- 0
-    out$plays$play_id <- NA
-    out$plays$play_id[1] <- 0    
+    out$plays$point_id <- NA
+    out$plays$point_id[1] <- 0    
     for (k in 2:nrow(out$plays)) {
         ##if ((!is.na(out$plays$skill[k]) && out$plays$skill[k]=="Serve") | out$plays$timeout[k]) { ## does not cope with sanctions
-        if (out$plays$point[k-1] | out$plays$timeout[k] | out$plays$timeout[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new play_id
+        if (out$plays$point[k-1] | out$plays$timeout[k] | out$plays$timeout[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new point_id
             pid <- pid+1
         }
-        out$plays$play_id[k] <- pid
+        out$plays$point_id[k] <- pid
     }
-    ## touch_id (row number)
-    out$plays$touch_id <- 1:nrow(out$plays)
     ## team name
     home_team <- out$meta$teams$team[out$meta$teams$home_away_team=="*"]
     visiting_team <- out$meta$teams$team[out$meta$teams$home_away_team=="a"]
@@ -111,13 +109,13 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$plays$home_team <- home_team
     out$plays$visiting_team <- visiting_team
     ## keep track of who won each point
-    temp <- ddply(out$plays,.(play_id),function(z)data.frame(point_won_by=if (any(z$point)) { z$team[z$point] } else { as.character(NA) } ))
+    temp <- ddply(out$plays,.(point_id),function(z)data.frame(point_won_by=if (any(z$point)) { z$team[z$point] } else { as.character(NA) } ))
     suppressMessages(out$plays <- join(out$plays,temp))
     ## catch any that we missed
-    ##dud_play_id <- unique(out$plays$play_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
-    ##for (dpi in dud_play_id) {
-    ##    tail(na.omit(out$plays[out$plays$play_id<dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
-    ##    head(na.omit(out$plays[out$plays$play_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
+    ##dud_point_id <- unique(out$plays$point_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
+    ##for (dpi in dud_point_id) {
+    ##    tail(na.omit(out$plays[out$plays$point_id<dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
+    ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
     ##}
     #### not sure how to deal with these!
     
@@ -130,8 +128,8 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ## note the block error is not actually needed there, since such attacks are recorded as winning ones anyway
     out$plays$winning_attack[is.na(out$plays$winning_attack)] <- FALSE
     ## fill in scores
-    scores <- ddply(out$plays,.(play_id),function(z)na.omit(z[,c("play_id","home_team_score","visiting_team_score")]))
-    scores <- suppressMessages(join(out$plays[,"play_id",drop=FALSE],scores))
+    scores <- ddply(out$plays,.(point_id),function(z)na.omit(z[,c("point_id","home_team_score","visiting_team_score")]))
+    scores <- suppressMessages(join(out$plays[,"point_id",drop=FALSE],scores))
     ## double-check
     if (any(na.omit(out$plays$home_team_score-scores$home_team_score) != 0) | any(na.omit(out$plays$visiting_team_score-scores$visiting_team_score) != 0)) stop("error in scores")
     out$plays$home_team_score <- scores$home_team_score

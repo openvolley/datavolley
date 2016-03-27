@@ -166,8 +166,10 @@ parse_code=function(code,meta) {
                 ## but doesn't say which team won the point
                 ## so don't set out$point here
             } else if (substr(code,2,4)=="$$R") {
-                ## serve reception error, often seems to be a rotation error
+                ## rotation error? not entirely sure, not many of these 
                 ## these lines are followed by a $$& line, so don't do anything here for the time being
+                ##out$skill[ci]="Rotation error"
+                ##out$evaluation[ci]="Error"
             } else if (substr(code,2,4) %in% c("$$S","$$E")) {
                 ## sanction
                 ## not handled yet
