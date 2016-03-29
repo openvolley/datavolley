@@ -224,6 +224,7 @@ find_player_name_remapping=function(x,distance_threshold=3,verbose=TRUE) {
 #' Some DataVolley files do not indicate serve aces with the skill evaluation "Ace". This function will search for winning serves, either with no reception or a reception error, and change their evaluation value to "Ace"
 #'
 #' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
+#' @param rotation_error_is_ace logical: should a rotation error on reception by the receiving team be counted as an ace?
 #' @param verbose logical: print progress to console?
 #'
 #' @return datavolley object or list of such with updated evaluation values
@@ -231,7 +232,7 @@ find_player_name_remapping=function(x,distance_threshold=3,verbose=TRUE) {
 #' @seealso \code{\link{read_dv}}
 #'
 #' @export
-fix_ace_evaluations=function(x,verbose=TRUE) {
+fix_ace_evaluations=function(x,rotation_error_is_ace=FALSE,verbose=TRUE) {
     if (!(inherits(x,"datavolley") | (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
         stop("x must be a datavolley object or list of such objects")
     was_list <- TRUE
@@ -243,7 +244,8 @@ fix_ace_evaluations=function(x,verbose=TRUE) {
         sv <- which(rally$skill=="Serve")
         if (length(sv)==1) {
             ## there was one serve
-            if ((rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & !identical(rally$evaluation[sv],"Ace"))
+            ## change it to ace if the serving team won AND (there was no reception or there was a reception error) AND there was not a rotation error on reception AND it's not already marked as an ace
+            if ((rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv+1] %eq% "Rotation error") & !identical(rally$evaluation[sv],"Ace"))
                 data.frame(evaluation=rally$evaluation[sv])
         } else if (length(sv)>1) {
             stop("multiple serves in single rally (point_id: ",rally$point_id[1],")")

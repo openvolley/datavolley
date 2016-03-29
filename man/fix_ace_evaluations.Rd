@@ -4,10 +4,12 @@
 \alias{fix_ace_evaluations}
 \title{Find aces that might not be marked as such}
 \usage{
-fix_ace_evaluations(x, verbose = TRUE)
+fix_ace_evaluations(x, rotation_error_is_ace = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{x}{datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects}
+
+\item{rotation_error_is_ace}{logical: should a rotation error on reception by the receiving team be counted as an ace?}
 
 \item{verbose}{logical: print progress to console?}
 }
