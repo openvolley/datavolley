@@ -33,3 +33,7 @@ findnext <- function(these,after) {
             min(temp)+z
     })
 }
+
+
+## equality with NAs considered false
+`%eq%` <- function(x,y) x==y & !is.na(x) & !is.na(y)
