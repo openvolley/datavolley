@@ -1,3 +1,22 @@
+## #' Find gaps in timing that might indicate missing data
+## #'
+## #' @param x data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}
+## #'
+## #' @return logical vector indicating entries where the timing looks suspicious
+## #'
+## #' @seealso \code{\link{read_dv}}
+## #'
+## #' @examples
+## #'
+## #' @export
+## find_timing_errors=function(x) {
+##     if (inherits(x$time,"character")) {
+##         x$time <- strptime(x$time,format=c(time="%H.%M.%S"))
+##     }
+## }
+
+
+
 #' Find aces that might not be marked as such
 #'
 #' Some DataVolley files do not indicate serve aces with the skill evaluation "Ace". This function will search for winning serves, either with no reception or a reception error, and change their evaluation value to "Ace"
