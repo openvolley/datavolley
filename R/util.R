@@ -37,3 +37,6 @@ findnext <- function(these,after) {
 
 ## equality with NAs considered false
 `%eq%` <- function(x,y) x==y & !is.na(x) & !is.na(y)
+
+## convenience function to replace NAs
+na.replace <- function(x,replace_with) {x[is.na(x)] <- replace_with; x}
