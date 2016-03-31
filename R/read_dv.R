@@ -85,8 +85,12 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         }
     }
     ## add match_id
-    out$plays$match_id <- out$meta$match_id    
-    ##out$plays$time=hms(out$plays$time)
+    out$plays$match_id <- out$meta$match_id
+    
+    ## turn plays times (character) into POSIXct
+    temp <- paste(format(as.Date(out$meta$match$date)),out$plays$time,sep=" ")
+    temp[out$plays$time=="" | is.na(out$plays$time)] <- NA
+    out$plays$time <- ymd_hms(temp)
     
     ## add point_id - an identifier of each point. One point may consist of multiple attacks or other actions. Timeouts get assigned to their own "point", but other non-play rows may get assigned as part of a point.
     pid <- 0
