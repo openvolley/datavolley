@@ -19,8 +19,13 @@ Find points in which the serving team wins the point. Serve win rate is the frac
 }
 \examples{
 \dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-  serve_win_points(subset(x$plays,team=="Kamnik"))
+x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+serve_idx <- find_serves(x$plays)
+swp <- serve_win_points(x$plays)
+## number of serves by team
+table(x$plays$team[serve_idx])
+## number of points won on serve by team
+table(x$plays$team[serve_idx & swp$ix])
 }
 
 }
