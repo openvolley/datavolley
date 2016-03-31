@@ -461,7 +461,6 @@ read_main=function(filename) {
     x=data.table::fread(filename,skip="[3SCOUT]",data.table=FALSE)
     names(x)[1]="code"
     names(x)[8]="time"
-    ##x$time=hms(x$time)
     names(x)[13]="video_time"
     names(x)[15:20]=paste("home_p",1:6,sep="") ## home team, court positons 1-6, entries are player numbers
     names(x)[21:26]=paste("visiting_p",1:6,sep="") ## visiting team
