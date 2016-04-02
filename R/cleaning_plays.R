@@ -4,7 +4,7 @@
 ## #'
 ## #' @return logical vector indicating entries where the timing looks suspicious
 ## #'
-## #' @seealso \code{\link{read_dv}}
+## #' @seealso \code{\link{read_dv}} \code{\link{plays}}
 ## #'
 ## #' @examples
 ## #'
