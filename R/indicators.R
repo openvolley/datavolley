@@ -95,3 +95,64 @@ find_first_attack=function(x) {
     out
 }
 
+
+#' Generate information about runs of events
+#'
+#' Find runs of events within a match. Typically, this function would be passed a subset of \code{x$plays}, such as rows
+#' corresponding to serves. Runs that are terminated by the end of a set are not assigned a \code{run_length}.
+#'
+#' @param x data.frame: a subset of the plays component of a datavolley object, as returned by \code{read_dv()}
+#' @param idvars character: string or character vector of variabe names to use to identify the entity doing the events
+#' @param within_set logical: only consider runs within a single set? If FALSE, runs that span sets will be treated as a single run
+#'
+#' @return A data.frame the same number of rows as \code{x}, and with columns \code{run_id} (the identifier of the run to which each row belongs), \code{run_length} (the length of the run), and \code{run_position} (the position of this row in its associated run).
+#'
+#' @seealso \code{\link{read_dv}}
+#'
+#' @examples
+#' \dontrun{
+#' ## find runs of serves
+#' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#' serve_idx <- find_serves(x$plays)
+#' serve_run_info <- find_runs(x$plays[serve_idx,])
+#' ## distribution of serve run lengths
+#' table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
+#' }
+#'
+#' @export
+find_runs=function(x,idvars="team",within_set=TRUE) {
+    nna <- rep(NA,nrow(x))
+    out <- data.frame(run_length=nna,run_position=nna,run_id=nna)
+    trsi <- 1 ## this run start index
+    run_id <- 1
+    for (k in 2:nrow(x)) {
+        if (identical(x$match_id[k],x$match_id[k-1]) & (!within_set || identical(x$set_number[k],x$set_number[k-1]))) {
+            ## same set and match as previous row
+            ##            if (!identical(x$team[k],x$team[k-1])) {
+            if (!isTRUE(all.equal(x[k,idvars],x[k-1,idvars],check.attributes=FALSE))) {
+                ## same set and match, but team has changed, so run has ended
+                out$run_length[trsi:(k-1)] <- k-trsi
+                out$run_position[trsi:(k-1)] <- 1:(k-trsi)
+                out$run_id[trsi:(k-1)] <- run_id
+                ## new run starts at k
+                trsi <- k; run_id <- run_id + 1
+                if (k==nrow(x)) {
+                    out$run_position[nrow(out)] <- 1
+                    out$run_id[nrow(out)] <- run_id
+                }
+            } else {
+                ## team is the same, run continues
+            }
+        } else {
+            ## run has ended but because of the end of the set, so record the run_position but not the run_length
+            out$run_position[trsi:(k-1)] <- 1:(k-trsi)
+            out$run_id[trsi:(k-1)] <- run_id            
+            trsi <- k; run_id <- run_id + 1
+            if (k==nrow(x)) {
+                out$run_position[nrow(out)] <- out$run_position[nrow(out)-1]+1
+                out$run_id[nrow(out)] <- out$run_id[nrow(out)-1]
+            }
+        }
+    }
+    out
+}
