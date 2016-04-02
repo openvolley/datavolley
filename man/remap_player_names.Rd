@@ -19,7 +19,7 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 }
 \examples{
 \dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
   x <- remap_player_names(x,data.frame(team=c("Kamnik","Br.Maribor"),
                             from=c("Ana Katarina HRIBAR","Marina CVETANOVIC"),
                             to=c("Ana-Katarina HRIBAR","Marina CVETANOVIĆ")))

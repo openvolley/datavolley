@@ -17,7 +17,7 @@ Find serves
 }
 \examples{
 \dontrun{
-x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 serve_idx <- find_serves(plays(x))
 ## number of serves by team
 table(plays(x)$team[serve_idx])

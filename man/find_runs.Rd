@@ -23,7 +23,7 @@ corresponding to serves. Runs that are terminated by the end of a set are not as
 \examples{
 \dontrun{
 ## find runs of serves
-x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 serve_idx <- find_serves(plays(x))
 serve_run_info <- find_runs(plays(x)[serve_idx,])
 ## distribution of serve run lengths

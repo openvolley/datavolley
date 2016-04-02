@@ -15,7 +15,7 @@
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 #'   summary(x)
 #' }
 #' @export
@@ -179,7 +179,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
 #' @seealso \code{\link{read_dv}}
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 #'   summary(x)
 #' }
 #'
@@ -227,7 +227,7 @@ print.summary.datavolley <- function(x,...) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 #'   dvlist_summary(list(x,x)) ## same match duplicated twice, just for illustration purposes
 #' }
 #'
@@ -275,7 +275,7 @@ print.summary.datavolleylist <- function(x,...) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 #'   inspect(plays(x))
 #' }
 #' @export
@@ -295,7 +295,7 @@ plays=function(x) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 #'   inspect(plays(x))
 #' }
 #'

@@ -18,7 +18,7 @@ Convenience function for inspecting the plays component of a datavolley object
 }
 \examples{
 \dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
   inspect(plays(x))
 }
 
