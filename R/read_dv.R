@@ -125,7 +125,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$plays$home_team <- home_team
     out$plays$visiting_team <- visiting_team
     ## keep track of who won each point
-    temp <- ddply(out$plays,.(point_id),function(z)data.frame(point_won_by=if (any(z$point)) { z$team[z$point] } else { as.character(NA) } ))
+    temp <- ddply(out$plays,c("point_id"),function(z)data.frame(point_won_by=if (any(z$point)) { z$team[z$point] } else { as.character(NA) } ))
     suppressMessages(out$plays <- join(out$plays,temp))
     ## catch any that we missed
     ##dud_point_id <- unique(out$plays$point_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
@@ -144,7 +144,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ## note the block error is not actually needed there, since such attacks are recorded as winning ones anyway
     out$plays$winning_attack[is.na(out$plays$winning_attack)] <- FALSE
     ## fill in scores
-    scores <- ddply(out$plays,.(point_id),function(z)na.omit(z[,c("point_id","home_team_score","visiting_team_score")]))
+    scores <- ddply(out$plays,c("point_id"),function(z)na.omit(z[,c("point_id","home_team_score","visiting_team_score")]))
     scores <- suppressMessages(join(out$plays[,"point_id",drop=FALSE],scores))
     ## double-check
     if (any(na.omit(out$plays$home_team_score-scores$home_team_score) != 0) | any(na.omit(out$plays$visiting_team_score-scores$visiting_team_score) != 0)) stop("error in scores")
@@ -235,10 +235,10 @@ dvlist_summary=function(z) {
     teams <- as.data.frame(table(temp))
     names(teams) <- c("team","played")
     temp <- ldply(z,function(q)q$meta$teams[,c("team","won_match")])
-    teams <- suppressMessages(join(teams,ddply(temp,.(team),function(q)data.frame(won=sum(q$won_match)))))
+    teams <- suppressMessages(join(teams,ddply(temp,c("team"),function(q)data.frame(won=sum(q$won_match)))))
     teams$win_rate <- teams$won/teams$played
     temp <- ldply(z,function(q){ s <- summary(q); s$sc <- colSums(s$set_scores); data.frame(team=s$teams$team,points_for=s$sc,points_against=s$sc[2:1])})
-    teams <- suppressMessages(join(teams,ddply(temp,.(team),function(q)data.frame(points_for=as.integer(sum(q$points_for)),points_against=as.integer(sum(q$points_against))))))
+    teams <- suppressMessages(join(teams,ddply(temp,c("team"),function(q)data.frame(points_for=as.integer(sum(q$points_for)),points_against=as.integer(sum(q$points_against))))))
     teams$points_ratio <- teams$points_for/teams$points_against
     teams <- arrange(teams,team)
     out$ladder <- teams
