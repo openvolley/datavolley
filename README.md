@@ -14,31 +14,45 @@ install_github("raymondben/datavolley")
 
 Read the example data file bundled with the package:
 ```R
-x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 summary(x)
 ```
 
     Match summary:
-    Date: 2015-12-28 18:00:00
-    League: Middle European Cup Women 2015/16 - WIL
-    Teams: Kamnik (RIBIC Gašper/JEMEC Aljoša)
+    Date: 2015-01-25
+    League: Finale mladinke
+    Teams: Braslovče (JERONČIČ ZORAN/MIHALINEC DAMIJANA)
            vs
-           Br.Maribor (ŠKORC Sebastijan/)
-    Result: 2-3 (25-21, 15-25, 25-19, 23-25, 6-15)
-    Duration: 113 minutes
+           Nova KBM Branik (HAFNER MATJAŽ/)
+    Result: 3-0 (25-16, 25-14, 25-22)
+    Duration: 67 minutes
 
 
-Extract the data corresponding to serves:
+Number of serves by team:
 
 ```R
-xs <- subset(x$plays,skill=="Serve")
-nrow(xs)
+serve_idx <- find_serves(plays(x))
+table(plays(x)$team[serve_idx])
 ```
 
-    [1] 198
+      Braslovče Nova KBM Branik 
+             74              54 
 
 
-If you see unexpected behaviour, try `read_dv(...,do_warn=TRUE)` to obtain more diagnostic information during the process of reading and parsing the DataVolley file.
+Distribution of serve run lengths:
+
+```R
+serve_run_info <- find_runs(plays(x)[serve_idx,])
+table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
+```
+
+     1  2  3  4  5  7  8 
+    34 16  7  4  1  1  1 
+
+
+## Troubleshooting
+
+If you see unexpected behaviour, try `read_dv(...,do_warn=TRUE)` to obtain more diagnostic information during the process of reading and parsing the DataVolley file. Also check the text encoding specified to `read_dv` (did you specify one??)
 
 
 ## More
