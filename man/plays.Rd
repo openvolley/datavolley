@@ -18,7 +18,7 @@ Extract the plays component from a datavolley object
 \examples{
 \dontrun{
   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-  head(plays(x))
+  inspect(plays(x))
 }
 }
 \seealso{

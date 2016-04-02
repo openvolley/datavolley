@@ -272,10 +272,33 @@ print.summary.datavolleylist <- function(x,...) {
 #' @examples
 #' \dontrun{
 #'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-#'   head(plays(x))
+#'   inspect(plays(x))
 #' }
 #' @export
 plays=function(x) {
     if (!(inherits(x,"datavolley"))) stop("x must be a datavolley object")
     x$plays
+}
+
+
+#' Convenience function for inspecting the plays component of a datavolley object
+#'
+#' @param x datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}
+#' @param vars: which variables to print? "minimal" set or "all"
+#' @param maxrows: maximum number of rows to print
+#'
+#' @seealso \code{\link{read_dv}} \code{\link{plays}}
+#'
+#' @examples
+#' \dontrun{
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   inspect(plays(x))
+#' }
+#'
+#' @export
+inspect <- function(x,vars="minimal",maxrows=100) {
+    if (!(inherits(x,"datavolleyplays"))) stop("x must be a datavolleyplays object")
+    vars <- match.arg(vars,c("minimal","all"))
+    cols_to_show <- if (vars=="all") names(x) else c("time","code","team","player_number","player_name","skill","skill_type","evaluation")##,"match_id","set_number")
+    print(x[1:min(nrow(x),maxrows),cols_to_show])
 }
