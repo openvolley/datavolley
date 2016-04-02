@@ -13,7 +13,7 @@
 #' \dontrun{
 #'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
 #'   summary(x)
-#'   x <- remap_team_names(x,data.frame(from="Kamnik",to="OK Kamnik"))
+#'   x <- remap_team_names(x,data.frame(from="Nova KBM Branik",to="NKBM Branik"))
 #'   summary(x)
 #' }
 #' @export
@@ -159,10 +159,6 @@ remap_player_names=function(x,remap) {
 #' @examples
 #' \dontrun{
 #'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-#'   ## artifically change one player name to be a mis-spelled version of
-#'   ##  another player's name, just for demo purposes
-#'   x <- remap_player_names(x,data.frame(team="Br.Maribor",from="Iza MLAKAR",
-#'                             to="Marina KASCIC"))
 #'   remap <- find_player_name_remapping(x)
 #' }
 #' @export

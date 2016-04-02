@@ -6,7 +6,7 @@
 \alias{datavolley-package}
 \title{\pkg{datavolley}}
 \description{
-\pkg{datavolley}
+The example data provided with the datavolley package came from \url{http://www.odbojka.si/}, and is the January 2015 junior women's final between Braslovče and Nova KBM Branik.
 }
 \author{
 Ben Raymond \email{ben@untan.gl}

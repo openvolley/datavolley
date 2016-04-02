@@ -22,10 +22,6 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 \examples{
 \dontrun{
   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-  ## artifically change one player name to be a mis-spelled version of
-  ##  another player's name, just for demo purposes
-  x <- remap_player_names(x,data.frame(team="Br.Maribor",from="Iza MLAKAR",
-                            to="Marina KASCIC"))
   remap <- find_player_name_remapping(x)
 }
 }
