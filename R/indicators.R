@@ -4,18 +4,19 @@
 #'
 #' @return a logical vector, giving the indices of the rows of x that correspond to serves
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{read_dv}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
 #' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-#' serve_idx <- find_serves(x$plays)
+#' serve_idx <- find_serves(plays(x))
 #' ## number of serves by team
-#' table(x$plays$team[serve_idx])
+#' table(plays(x)$team[serve_idx])
 #' }
 #'
 #' @export
 find_serves=function(x) {
+    if (!inherits(x,"datavolleyplays")) stop("x must be a datavolleyplays object")
     x$skill %eq% "Serve"
 }
 
@@ -28,21 +29,22 @@ find_serves=function(x) {
 #'
 #' @return named list with components "ix" (logical indices of serves corresponding to serve win points in the x object), "n" (number of serve win points in x), "rate" (serve win rate from x). If \code{return_id} is TRUE, also return a component "id" (a data.frame containing the match_id and point_id of all serve win points)
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{read_dv}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
 #' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-#' serve_idx <- find_serves(x$plays)
-#' swp <- serve_win_points(x$plays)
+#' serve_idx <- find_serves(plays(x))
+#' swp <- serve_win_points(plays(x))
 #' ## number of serves by team
-#' table(x$plays$team[serve_idx])
+#' table(plays(x)$team[serve_idx])
 #' ## number of points won on serve by team
-#' table(x$plays$team[serve_idx & swp$ix])
+#' table(plays(x)$team[serve_idx & swp$ix])
 #' }
 #'
 #' @export
 serve_win_points=function(x,return_id=FALSE) {
+    if (!inherits(x,"datavolleyplays")) stop("x must be a datavolleyplays object")
     assert_that(is.flag(return_id))
     out <- list(ix=x$skill=="Serve" & x$point_won_by==x$team)
     out$ix[is.na(out$ix)] <- FALSE
@@ -64,13 +66,13 @@ serve_win_points=function(x,return_id=FALSE) {
 #' @return named list with components "ix" (logical indices into the x object where the row corresponds to a first attack in a rally), "n" (number of receptions for which there was a first attack by the receiving team), "n_win" (the number of winning first attacks), "win_rate" (number of winning first attacks as a proportion of the total number of first attacks).
 # #' If \code{return_id} is TRUE, also return a component "id" (a data.frame containing the match_id and point_id of all first attacks)
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{read_dv}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
 #' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
 #' ## first attack win rate, by team
-#' by(x$plays,x$plays$team,function(z)find_first_attack(z)$win_rate)
+#' by(plays(x),plays(x)$team,function(z)find_first_attack(z)$win_rate)
 #' }
 #' @export
 find_first_attack=function(x) {
@@ -87,7 +89,7 @@ find_first_attack=function(x) {
         }
         data.frame(row_id=out[1],won=out[2])
     }
-    this <- na.omit(ddply(x,.(match_id,point_id),faw_idx))
+    this <- na.omit(ddply(x,c("match_id","point_id"),faw_idx))
     ix <- rep(FALSE,nrow(x))
     ix[x$my_row_id %in% this$row_id] <- TRUE
     out <- list(ix=ix,n=nrow(this),n_win=sum(this$won),win_rate=mean(this$won))
@@ -98,7 +100,7 @@ find_first_attack=function(x) {
 
 #' Generate information about runs of events
 #'
-#' Find runs of events within a match. Typically, this function would be passed a subset of \code{x$plays}, such as rows
+#' Find runs of events within a match. Typically, this function would be passed a subset of \code{plays(x)}, such as rows
 #' corresponding to serves. Runs that are terminated by the end of a set are not assigned a \code{run_length}.
 #'
 #' @param x data.frame: a subset of the plays component of a datavolley object, as returned by \code{read_dv()}
@@ -107,14 +109,14 @@ find_first_attack=function(x) {
 #'
 #' @return A data.frame the same number of rows as \code{x}, and with columns \code{run_id} (the identifier of the run to which each row belongs), \code{run_length} (the length of the run), and \code{run_position} (the position of this row in its associated run).
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{read_dv}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
 #' ## find runs of serves
 #' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-#' serve_idx <- find_serves(x$plays)
-#' serve_run_info <- find_runs(x$plays[serve_idx,])
+#' serve_idx <- find_serves(plays(x))
+#' serve_run_info <- find_runs(plays(x)[serve_idx,])
 #' ## distribution of serve run lengths
 #' table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
 #' }

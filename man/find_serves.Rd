@@ -18,13 +18,13 @@ Find serves
 \examples{
 \dontrun{
 x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-serve_idx <- find_serves(x$plays)
+serve_idx <- find_serves(plays(x))
 ## number of serves by team
-table(x$plays$team[serve_idx])
+table(plays(x)$team[serve_idx])
 }
 
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{read_dv}} \code{\link{plays}}
 }
 

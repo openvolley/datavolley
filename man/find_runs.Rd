@@ -17,21 +17,21 @@ find_runs(x, idvars = "team", within_set = TRUE)
 A data.frame the same number of rows as \code{x}, and with columns \code{run_id} (the identifier of the run to which each row belongs), \code{run_length} (the length of the run), and \code{run_position} (the position of this row in its associated run).
 }
 \description{
-Find runs of events within a match. Typically, this function would be passed a subset of \code{x$plays}, such as rows
+Find runs of events within a match. Typically, this function would be passed a subset of \code{plays(x)}, such as rows
 corresponding to serves. Runs that are terminated by the end of a set are not assigned a \code{run_length}.
 }
 \examples{
 \dontrun{
 ## find runs of serves
 x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
-serve_idx <- find_serves(x$plays)
-serve_run_info <- find_runs(x$plays[serve_idx,])
+serve_idx <- find_serves(plays(x))
+serve_run_info <- find_runs(plays(x)[serve_idx,])
 ## distribution of serve run lengths
 table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
 }
 
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{read_dv}} \code{\link{plays}}
 }
 

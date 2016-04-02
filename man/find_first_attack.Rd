@@ -19,10 +19,10 @@ Find first attacks by the receiving team (i.e. attacks associated with a serve r
 \dontrun{
 x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
 ## first attack win rate, by team
-by(x$plays,x$plays$team,function(z)find_first_attack(z)$win_rate)
+by(plays(x),plays(x)$team,function(z)find_first_attack(z)$win_rate)
 }
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{read_dv}} \code{\link{plays}}
 }
 
