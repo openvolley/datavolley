@@ -20,7 +20,7 @@ read_match <- function(txt) {
 
 read_result <- function(txt) {
     txt <- text_chunk(txt,"[3SET]")
-    p <- data.table::fread(txt,data.table=FALSE,sep=";")
+    tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
     names(p)[1] <- "played"
     names(p)[2] <- "score_intermediate1"
     names(p)[3] <- "score_intermediate2"
@@ -38,7 +38,7 @@ read_result <- function(txt) {
 ## teams
 read_teams <- function(txt) {
     txt <- text_chunk(txt,"[3TEAMS]")
-    p <- data.table::fread(txt,data.table=FALSE,sep=";")
+    tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
     names(p)[2] <- "team"
     names(p)[3] <- "sets_won"
     names(p)[4] <- "coach"
@@ -54,7 +54,7 @@ read_players <- function(txt,team) {
         home=text_chunk(txt,"[3PLAYERS-H]"),
         text_chunk(txt,"[3PLAYERS-V]")
         )
-    p <- data.table::fread(txt,data.table=FALSE)
+    tryCatch({ p <- data.table::fread(txt,data.table=FALSE) },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
     names(p)[2] <- "number"
     names(p)[4] <- "starting_position_set1"
     names(p)[5] <- "starting_position_set1"
@@ -74,7 +74,7 @@ read_attacks <- function(txt) {
     if (str_trim(txt)=="") {
         NULL
     } else {
-        p <- data.table::fread(txt,data.table=FALSE,sep=";")
+        tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         names(p)[1] <- "code"
         names(p)[3] <- "side"
@@ -90,7 +90,7 @@ read_setter_calls <- function(txt) {
     if (str_trim(txt)=="") {
         NULL
     } else {
-        p <- data.table::fread(txt,data.table=FALSE,sep=";")
+        tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
         names(p)[1] <- "code"
         names(p)[3] <- "description"
         p
