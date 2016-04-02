@@ -11,7 +11,7 @@
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
 #' @param encodings character: vector of text encodings to try. Text encoding is converted to UTF-8 internally
 #'
-#' @return named list with meta and plays components. meta provides match metadata, plays is the main point-by-point data in the form of a data.frame
+#' @return named list with \code{meta} and \code{plays} components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame
 #'
 #' @examples
 #' \dontrun{
