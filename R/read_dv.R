@@ -160,6 +160,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         }
     }
     class(out) <- c("datavolley",class(out))
+    class(out$plays) <- c("datavolleyplays",class(out$plays))
     out
 }
 
@@ -259,3 +260,22 @@ print.summary.datavolleylist <- function(x,...) {
     print(x$ladder)
 }
 
+
+#' Extract the plays component from a datavolley object
+#'
+#' @param x datavolley: a datavolley object as returned by \code{read_dv}
+#'
+#' @return The plays component of x (a data.frame)
+#'
+#' @seealso \code{\link{read_dv}}
+#'
+#' @examples
+#' \dontrun{
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"))
+#'   head(plays(x))
+#' }
+#' @export
+plays=function(x) {
+    if (!(inherits(x,"datavolley"))) stop("x must be a datavolley object")
+    x$plays
+}
