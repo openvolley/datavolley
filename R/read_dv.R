@@ -288,8 +288,8 @@ plays=function(x) {
 #' Convenience function for inspecting the plays component of a datavolley object
 #'
 #' @param x datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}
-#' @param vars: which variables to print? "minimal" set or "all"
-#' @param maxrows: maximum number of rows to print
+#' @param vars string: which variables to print? "minimal" set or "all"
+#' @param maxrows numeric: maximum number of rows to print
 #'
 #' @seealso \code{\link{read_dv}} \code{\link{plays}}
 #'

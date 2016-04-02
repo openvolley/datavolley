@@ -9,9 +9,9 @@ inspect(x, vars = "minimal", maxrows = 100)
 \arguments{
 \item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}}
 
-\item{vars:}{which variables to print? "minimal" set or "all"}
+\item{vars}{string: which variables to print? "minimal" set or "all"}
 
-\item{maxrows:}{maximum number of rows to print}
+\item{maxrows}{numeric: maximum number of rows to print}
 }
 \description{
 Convenience function for inspecting the plays component of a datavolley object
