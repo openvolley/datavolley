@@ -40,3 +40,19 @@ findnext <- function(these,after) {
 
 ## convenience function to replace NAs
 na.replace <- function(x,replace_with) {x[is.na(x)] <- replace_with; x}
+
+
+#' Find a particular match in a list of datavolley objects
+#'
+#' @param match_id string: match_id to find
+#' @param x list: list of datavolley objects as returned by \code{read_dv} 
+#'
+#' @return numeric index of the match in the list
+#'
+#' @seealso \code{\link{read_dv}}
+#'
+#' @export
+find_match <- function(match_id,x) {
+    which(sapply(x,function(z)z$meta$match_id==match_id))
+}
+
