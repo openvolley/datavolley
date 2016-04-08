@@ -301,7 +301,7 @@ plays=function(x) {
 #'
 #' @export
 inspect <- function(x,vars="minimal",maxrows=100) {
-    if (!(inherits(x,"datavolleyplays"))) stop("x must be a datavolleyplays object")
+    ##if (!(inherits(x,"datavolleyplays"))) stop("x must be a datavolleyplays object")
     vars <- match.arg(vars,c("minimal","all"))
     cols_to_show <- if (vars=="all") names(x) else c("time","code","team","player_number","player_name","skill","skill_type","evaluation")##,"match_id","set_number")
     print(x[1:min(nrow(x),maxrows),cols_to_show])
