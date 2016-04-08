@@ -26,7 +26,8 @@ The \code{do_transliterate} option may be helpful when trying to work with multi
 }
 \examples{
 \dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
+  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
+    insert_technical_timeouts=FALSE)
   summary(x)
 }
 }

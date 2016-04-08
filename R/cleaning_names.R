@@ -11,7 +11,8 @@
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
+#'     insert_technical_timeouts=FALSE)
 #'   summary(x)
 #'   x <- remap_team_names(x,data.frame(from="Nova KBM Branik",to="NKBM Branik"))
 #'   summary(x)
@@ -101,7 +102,8 @@ check_player_names=function(x,distance_threshold=4) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
+#'     insert_technical_timeouts=FALSE)
 #'   x <- remap_player_names(x,data.frame(team=c("Kamnik","Br.Maribor"),
 #'                             from=c("Ana Katarina HRIBAR","Marina CVETANOVIC"),
 #'                             to=c("Ana-Katarina HRIBAR","Marina CVETANOVIĆ")))
@@ -158,7 +160,8 @@ remap_player_names=function(x,remap) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
+#'     insert_technical_timeouts=FALSE)
 #'   remap <- find_player_name_remapping(x)
 #' }
 #' @export
