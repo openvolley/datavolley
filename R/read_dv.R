@@ -109,6 +109,18 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         out$plays$point_id[k] <- pid
     }
 
+    ## fill in setter position
+    hsp <- out$plays$home_setter_position[1]
+    vsp <- out$plays$visiting_setter_position[1]
+    for (k in 2:nrow(out$plays)) {
+        if (!is.na(out$plays$home_setter_position[k]))
+            hsp <- out$plays$home_setter_position[k]
+        out$plays$home_setter_position[k] <- hsp
+        if (!is.na(out$plays$visiting_setter_position[k]))
+            vsp <- out$plays$visiting_setter_position[k]
+        out$plays$visiting_setter_position[k] <- vsp
+    }
+
     ## add team_touch_id - an identifier of consecutive touches by same team in same point - e.g. a dig-set-attack sequence by one team is a "team touch"
     tid <- 0
     out$plays$team_touch_id <- NA

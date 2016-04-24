@@ -128,7 +128,7 @@ parse_code=function(code,meta) {
         set_code=NA, set_description=NA, set_type=NA,
         start_zone=NA,end_zone=NA,end_subzone=NA,
         skill_subtype=NA,num_players=NA,special_code=NA,
-        timeout=FALSE,end_of_set=FALSE,substitution=FALSE,point=FALSE,home_team_score=NA,visiting_team_score=NA,stringsAsFactors=FALSE)
+        timeout=FALSE,end_of_set=FALSE,substitution=FALSE,point=FALSE,home_team_score=NA,visiting_team_score=NA,home_setter_position=NA,visiting_setter_position=NA,stringsAsFactors=FALSE)
     for (ci in 1:nrow(out)) {
         code=out$code[ci]
         if (grepl("\\*\\*\\dset",code)) {
@@ -153,6 +153,11 @@ parse_code=function(code,meta) {
                     out$visiting_team_score[ci]=as.numeric(temp[3])
                 } else if (thischar=="z") {
                     ## identifying the position of the setter
+                    temp=str_match(code,".z(\\d+)")
+                    if (team=="*")
+                        out$home_setter_position[ci] <- as.numeric(temp[2])
+                    else
+                        out$visiting_setter_position[ci] <- as.numeric(temp[2])
                 } else if (thischar=="P") {
                     ## substitution of setter
                     out$substitution[ci]=TRUE
