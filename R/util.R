@@ -34,6 +34,18 @@ findnext <- function(these,after) {
     })
 }
 
+findprev <- function(these,prev) {
+    ## return the number in prev that comes before each of these
+    sapply(these,function(z){
+        temp <- z-prev
+        temp <- temp[temp>0]
+        if (length(temp)<1)
+            NA
+        else
+            z-min(temp)
+    })
+}
+
 
 ## equality with NAs considered false
 `%eq%` <- function(x,y) x==y & !is.na(x) & !is.na(y)
