@@ -1,6 +1,6 @@
 Package: datavolley
 Title: Reading and Analyzing DataVolley Scouting Files
-Version: 0.1.03
+Version: 0.1.04
 Authors@R: person("Ben", "Raymond", , "ben@untan.gl", role = c("aut", "cre"))
 Description: Provides basic functions for parsing datavolley scouting files.
     Datavolley is a software package used for scouting and summarizing volleyball
@@ -8,13 +8,13 @@ Description: Provides basic functions for parsing datavolley scouting files.
 Depends:
     R (>= 3.2.4)
 Imports:
-	data.table,
-	assertthat,
-	lubridate,
-	stringr,
-	plyr,
-	digest
+    data.table,
+    assertthat,
+    lubridate,
+    stringr,
+    plyr,
+    digest
 Encoding: UTF-8
 License: MIT + file LICENSE
 LazyData: true
-RoxygenNote: 5.0.1
+RoxygenNote: 5.0.1.9000
