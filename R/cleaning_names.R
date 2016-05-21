@@ -73,6 +73,7 @@ check_player_names=function(x,distance_threshold=4) {
     names_ok <- ldply(x,function(z)rbind(data.frame(team=z$meta$teams$team[z$meta$teams$home_away_team=="*"],player_name=z$meta$players_h$name,stringsAsFactors=FALSE),data.frame(team=z$meta$teams$team[z$meta$teams$home_away_team=="a"],player_name=z$meta$players_v$name,stringsAsFactors=FALSE)))
     blah <- ddply(names_ok,c("team","player_name"),summarise,table(player_name))
     names(blah)[3] <- "count"
+    blah$count <- as.integer(blah$count) ## else it inherits class 'table'
     ## similarity of adjacent names
     ndist <- adist(blah$player_name)
     mask <- lower.tri(ndist)
@@ -80,7 +81,7 @@ check_player_names=function(x,distance_threshold=4) {
     ndist <- ndist*mask
     susidx <- which(!is.na(ndist) & ndist<distance_threshold,arr.ind=TRUE)
     susout <- data.frame()
-    if (length(susidx)>0) {
+    if (nrow(susidx)>0) {
         for (k in 1:nrow(susidx)) {
             susout <- rbind(susout,data.frame(team1=blah$team[susidx[k,1]],player1=blah$player_name[susidx[k,1]],count1=blah$count[susidx[k,1]],team2=blah$team[susidx[k,2]],player2=blah$player_name[susidx[k,2]],count2=blah$count[susidx[k,2]],stringsAsFactors=FALSE))
         }
