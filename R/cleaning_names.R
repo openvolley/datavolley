@@ -4,6 +4,7 @@
 #'
 #' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
 #' @param remap data.frame: data.frame of strings with columns from and to
+#' @param fixed logical: treat the \code{to} and \code{from} entries as fixed string? (Treat as regexps if \code{fixed} is \code{FALSE})
 #'
 #' @return datavolley object or list with corresponding team names changed
 #'
@@ -18,10 +19,11 @@
 #'   summary(x)
 #' }
 #' @export
-remap_team_names=function(x,remap) {
+remap_team_names=function(x,remap,fixed=TRUE) {
     if (!(inherits(x,"datavolley") | (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
         stop("x must be a datavolley object or list of such objects")
     assert_that(is.data.frame(remap))
+    assert_that(is.flag(fixed))
     assert_that(has_name(remap,"from"),has_name(remap,"to"))
     if (is.factor(remap$from)) remap$from <- as.character(remap$from)
     if (is.factor(remap$to)) remap$to <- as.character(remap$to)
@@ -34,13 +36,19 @@ remap_team_names=function(x,remap) {
     for (k in 1:length(x)) {
         for (t in 1:2) {
             this_team <- x[[k]]$meta$teams$team[t]
-            if (this_team %in% remap$from) {
-                team_should_be <- remap$to[remap$from==this_team]
+            if (fixed)
+                idx <- remap$from==this_team
+            else
+                idx <- !is.na(str_locate(this_team,team_remaps$from)[,1])
+            if (sum(idx)==1) {
+                team_should_be <- remap$to[which(idx)]
                 x[[k]]$meta$teams$team[t] <- team_should_be
                 x[[k]]$plays$team <- str_replace_all(x[[k]]$plays$team,fixed(this_team),team_should_be)
                 x[[k]]$plays$point_won_by <- str_replace_all(x[[k]]$plays$point_won_by,fixed(this_team),team_should_be)
                 x[[k]]$plays$home_team <- str_replace_all(x[[k]]$plays$home_team,fixed(this_team),team_should_be)
                 x[[k]]$plays$visiting_team <- str_replace_all(x[[k]]$plays$visiting_team,fixed(this_team),team_should_be)
+            } else if (sum(idx)>1) {
+                stop(sprintf("ambiguous team name remapping: %s matches more than one 'from' entry",this_team))
             }
         }
     }

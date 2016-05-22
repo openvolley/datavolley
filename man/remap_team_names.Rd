@@ -4,12 +4,14 @@
 \alias{remap_team_names}
 \title{Change team names}
 \usage{
-remap_team_names(x, remap)
+remap_team_names(x, remap, fixed = TRUE)
 }
 \arguments{
 \item{x}{datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects}
 
 \item{remap}{data.frame: data.frame of strings with columns from and to}
+
+\item{fixed}{logical: treat the \code{to} and \code{from} entries as fixed string? (Treat as regexps if \code{fixed} is \code{FALSE})}
 }
 \value{
 datavolley object or list with corresponding team names changed
