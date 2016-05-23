@@ -53,8 +53,8 @@ read_players <- function(txt,team) {
     txt <- switch(tolower(team),
         home=text_chunk(txt,"[3PLAYERS-H]"),
         text_chunk(txt,"[3PLAYERS-V]")
-        )
-    tryCatch({ p <- data.table::fread(txt,data.table=FALSE) },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
+                  )
+    tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
     names(p)[2] <- "number"
     names(p)[4] <- "starting_position_set1"
     names(p)[5] <- "starting_position_set1"
@@ -74,7 +74,8 @@ read_attacks <- function(txt) {
     if (str_trim(txt)=="") {
         NULL
     } else {
-        tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
+        ##tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
+        tryCatch({ p <- read.table(text=txt,sep=";",stringsAsFactors=FALSE) },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         names(p)[1] <- "code"
         names(p)[3] <- "side"
