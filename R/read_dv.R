@@ -49,6 +49,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         dv <- iconv(dv,from=encoding,to="utf-8") ## convert to utf-8
     }
     if (do_transliterate) {
+        if (missing(encoding) & do_warn) warning("transliteration may not work without an encoding specified")
         dv <- iconv(dv,from="utf-8",to="ascii//TRANSLIT")
     }
     if (!do_warn) {
