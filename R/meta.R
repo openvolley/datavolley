@@ -48,7 +48,8 @@ read_teams <- function(txt) {
 }
 
 ## players
-read_players <- function(txt,team) {
+read_players <- function(txt,team,surname_case) {
+    if (missing(surname_case)) surname_case <- "asis"
     if (missing(team)) team <- "home"
     txt <- switch(tolower(team),
         home=text_chunk(txt,"[3PLAYERS-H]"),
@@ -64,6 +65,15 @@ read_players <- function(txt,team) {
     names(p)[10] <- "lastname"
     names(p)[11] <- "firstname"
     names(p)[13] <- "special_role"
+    if (is.character(surname_case)) {
+        p$lastname <- switch(tolower(surname_case),
+                             upper=toupper(p$lastname),
+                             lower=tolower(p$lastname),
+                             title=str_to_title(p$lastname),
+                             p$lastname)
+    } else if (is.function(surname_case)) {
+        p$lastname <- surname_case(p$lastname)
+    }
     p$name <- paste(p$firstname,p$lastname,sep=" ")
     p
 }
@@ -98,7 +108,7 @@ read_setter_calls <- function(txt) {
     }
 }
 
-read_meta <- function(txt) {
+read_meta <- function(txt,surname_case) {
     out <- list()
     out$match <- read_match(txt)
     out$result <- read_result(txt)
@@ -108,8 +118,8 @@ read_meta <- function(txt) {
     } else {
         out$teams$won_match <- c(FALSE,TRUE)
     }
-    out$players_h <- read_players(txt,"home")
-    out$players_v <- read_players(txt,"visiting")
+    out$players_h <- read_players(txt,"home",surname_case)
+    out$players_v <- read_players(txt,"visiting",surname_case)
     out$attacks <- read_attacks(txt)
     out$sets <- read_setter_calls(txt)
     temp <- out$match

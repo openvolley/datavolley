@@ -5,7 +5,7 @@
 \title{Read a datavolley file}
 \usage{
 read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
-  do_transliterate = FALSE, encoding)
+  do_transliterate = FALSE, encoding, surname_case = "asis")
 }
 \arguments{
 \item{filename}{string: file name to read}
@@ -17,12 +17,14 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 \item{do_transliterate}{logical: should we transliterate all text to ASCII? See details}
 
 \item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental)}
+
+\item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 }
 \value{
 named list with \code{meta} and \code{plays} components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame
 }
 \description{
-The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western European), "windows-1250" (central European), "iso88592" (central/eastern European), "iso885913" (Baltic languages)
+The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso88591" (western Europe and Americas), "iso88592" (central/eastern Europe), "iso885913" (Baltic languages)
 }
 \examples{
 \dontrun{

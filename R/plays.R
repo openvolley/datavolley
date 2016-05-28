@@ -137,10 +137,11 @@ parse_code=function(code,meta) {
         } else {
             team=substr(code,1,1)
             if (!team %in% c("a","*")) {
-                stop("code does not start with * or a")
-                team="unknown"
+                warning("code [",code,"] does not start with * or a")
+                out$team[ci] <- "unknown"
+                next
             }
-            out$team[ci]=team
+            out$team[ci] <- team
             if (substr(code,2,2) %in% c("z","p","P","C")) {
                 ## automatic codes
                 thischar=substr(code,2,2)
@@ -218,9 +219,12 @@ parse_code=function(code,meta) {
                     } else if (skill=="E") {
                         out$set_code[ci]=attack_code
                         if (!attack_code %in% meta$sets$code) {
-                            stop("unmatched set code ",attack_code," in code ",fullcode)
+                            warning("unmatched set code ",attack_code," in code ",fullcode)
+                            descr <- "unknown set code"
+                        } else {
+                            descr <- meta$sets$description[meta$sets$code==attack_code]
                         }
-                        out$set_description[ci]=meta$sets$description[meta$sets$code==attack_code]
+                        out$set_description[ci] <- descr
                     } else {
                         warning("unexpected non-null attack code ",attack_code," for non-attack code ",fullcode)
                     }
@@ -454,7 +458,7 @@ parse_code=function(code,meta) {
                     }
                 }
                 if (nchar(code)>12) {
-                    warning("code: ",fullcode," new info ",substr(code,13,nchar(code)))
+                    warning("code ",fullcode," has unparsed custom info: ",substr(code,13,nchar(code)))
                 }
             }
         }

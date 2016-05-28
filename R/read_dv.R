@@ -2,7 +2,7 @@
 
 #' Read a datavolley file
 #'
-#' The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western European), "windows-1250" (central European), "iso88592" (central/eastern European), "iso885913" (Baltic languages)
+#' The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso88591" (western Europe and Americas), "iso88592" (central/eastern Europe), "iso885913" (Baltic languages)
 #' 
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
@@ -10,6 +10,7 @@
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental)
+#' @param surname_case string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings
 #'
 #' @return named list with \code{meta} and \code{plays} components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame
 #'
@@ -20,10 +21,11 @@
 #'   summary(x)
 #' }
 #' @export
-read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding) {
+read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding,surname_case="asis") {
     assert_that(is.flag(insert_technical_timeouts))
     assert_that(is.flag(do_warn))
     assert_that(is.flag(do_transliterate))
+    assert_that(is.string(surname_case) || is.function(surname_case))
     
     out <- list()
     ## read raw lines in
@@ -53,9 +55,9 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         dv <- iconv(dv,from="utf-8",to="ascii//TRANSLIT")
     }
     if (!do_warn) {
-        suppressWarnings(out$meta <- read_meta(dv))
+        suppressWarnings(out$meta <- read_meta(dv,surname_case))
     } else {
-        out$meta <- read_meta(dv)
+        out$meta <- read_meta(dv,surname_case)
     }
     out$meta$filename <- filename
     if (!do_warn) {
