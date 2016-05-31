@@ -6,7 +6,7 @@
 #' 
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
-#' @param insert_technical_timeouts logical: should we insert technical timeouts at points 8 and 16 of sets 1--4?
+#' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4. Otherwise a two-element list can be supplied, giving the point-scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental)
@@ -19,14 +19,18 @@
 #'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
 #'     insert_technical_timeouts=FALSE)
 #'   summary(x)
+#'
+#' ## Insert a technical timeout at point 12 in sets 1 to 4:
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
+#'     insert_technical_timeouts=list(c(12),NULL))
 #' }
 #' @export
 read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding,surname_case="asis") {
-    assert_that(is.flag(insert_technical_timeouts))
+    assert_that(is.flag(insert_technical_timeouts) || is.list(insert_technical_timeouts))
     assert_that(is.flag(do_warn))
     assert_that(is.flag(do_transliterate))
     assert_that(is.string(surname_case) || is.function(surname_case))
-    
+
     out <- list()
     ## read raw lines in
     dv <- readLines(filename,warn=do_warn)
@@ -79,19 +83,40 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     for (si in 2:length(temp)) {
         out$plays$set_number[(temp[si-1]+1):(temp[si]-1)] <- (si-1)
     }
-    if (insert_technical_timeouts) {
-        ## find technical timeouts at points 8 and 16 in sets 1-4
+
+    ## technical timeouts
+    if (is.flag(insert_technical_timeouts)) {
+        if (insert_technical_timeouts) {
+            insert_technical_timeouts <- list(c(8,16),NULL)
+        } else {
+            insert_technical_timeouts <- list(NULL,NULL)
+        }
+    }   
+    ## find technical timeouts at points 8 and 16 in sets 1-4
+    if (!is.null(insert_technical_timeouts[[1]])) {
         for (this_set in 1:4) {
-            for (thisp in c(8,16)) {
+            for (thisp in insert_technical_timeouts[[1]]) {
                 idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
                 if (length(idx)>0) {
                     idx <- idx[1]
-                    ##cat(sprintf("Inserting technical timeout at row %d\n",idx))
+                    ##cat(sprintf("Inserting technical timeout at row %d (set %d, score %d)\n",idx,this_set,thisp))
                     out$plays <- rbind.fill(out$plays[1:idx,],data.frame(skill="Technical timeout",timeout=TRUE,set_number=this_set,point=FALSE,end_of_set=FALSE,substitution=FALSE),out$plays[(idx+1):nrow(out$plays),])
                 }
             }
         }
     }
+    if (!is.null(insert_technical_timeouts[[2]])) {
+        this_set <- 5
+        for (thisp in insert_technical_timeouts[[2]]) {
+            idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
+            if (length(idx)>0) {
+                idx <- idx[1]
+                ##cat(sprintf("Inserting technical timeout at row %d (set %d, score %d)\n",idx,this_set,thisp))
+                out$plays <- rbind.fill(out$plays[1:idx,],data.frame(skill="Technical timeout",timeout=TRUE,set_number=this_set,point=FALSE,end_of_set=FALSE,substitution=FALSE),out$plays[(idx+1):nrow(out$plays),])
+            }
+        }
+    }
+    
     ## add match_id
     out$plays$match_id <- out$meta$match_id
     
