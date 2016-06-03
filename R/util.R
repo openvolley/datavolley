@@ -22,10 +22,22 @@ text_chunk=function(txt,token1,token2) {
 }
 
 
-findnext <- function(these,after) {
-    ## return the number in after that comes after each of these
-    sapply(these,function(z){
-        temp <- after-z
+
+#' Find each entry in y that follows each entry in x
+#'
+#' @param x numeric: vector 
+#' @param y numeric: vector 
+#'
+#' @return vector, each entry is the value in y that is next-largest to each corresponding entry in x
+#'
+#' @examples
+#' findnext(c(1,5,10),c(1,2,3,7,8,9))
+#' 
+#' @export
+findnext <- function(x,y) {
+    ## return the number in y that comes after each of x
+    sapply(x,function(z){
+        temp <- y-z
         temp <- temp[temp>0]
         if (length(temp)<1)
             NA
@@ -34,10 +46,34 @@ findnext <- function(these,after) {
     })
 }
 
-findprev <- function(these,prev) {
-    ## return the number in prev that comes before each of these
-    sapply(these,function(z){
-        temp <- z-prev
+##findnext <- function(these,after) {
+##    ## return the number in after that comes after each of these
+##    sapply(these,function(z){
+##        temp <- after-z
+##        temp <- temp[temp>0]
+##        if (length(temp)<1)
+##            NA
+##        else
+##            min(temp)+z
+##    })
+##}
+
+
+#' Find each entry in y that precedes each entry in x
+#'
+#' @param x numeric: vector 
+#' @param y numeric: vector 
+#'
+#' @return vector, each entry is the value in y that is next-smallest to each corresponding entry in x
+#'
+#' @examples
+#' findprev(c(1,5,10),c(1,2,3,7,8,9))
+#' 
+#' @export
+findprev <- function(x,y) {
+    ## return the number in y that comes before each of x
+    sapply(x,function(z){
+        temp <- z-y
         temp <- temp[temp>0]
         if (length(temp)<1)
             NA
@@ -45,6 +81,19 @@ findprev <- function(these,prev) {
             z-min(temp)
     })
 }
+
+
+##findprev <- function(these,prev) {
+##    ## return the number in prev that comes before each of these
+##    sapply(these,function(z){
+##        temp <- z-prev
+##        temp <- temp[temp>0]
+##        if (length(temp)<1)
+##            NA
+##        else
+##            z-min(temp)
+##    })
+##}
 
 
 ## equality with NAs considered false
