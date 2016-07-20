@@ -39,7 +39,7 @@ remap_team_names=function(x,remap,fixed=TRUE) {
             if (fixed)
                 idx <- remap$from==this_team
             else
-                idx <- !is.na(str_locate(this_team,team_remaps$from)[,1])
+                idx <- !is.na(str_locate(this_team,remap$from)[,1])
             if (sum(idx)==1) {
                 team_should_be <- remap$to[which(idx)]
                 x[[k]]$meta$teams$team[t] <- team_should_be
