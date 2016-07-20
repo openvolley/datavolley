@@ -24,6 +24,35 @@
 #' ggplot(attack_rate,aes(x,y,fill=rate))+geom_tile()+ggcourt()+
 #'     scale_fill_gradient2(name="Attack rate")
 #' }
+#'
+#' \dontrun{
+#' ## show map of starting and ending zones of attacks
+#' ## tabulate attacks by starting and ending zone
+#' attack_rate <- as.data.frame(xtabs(~start_zone+end_zone,data=subset(plays(x),skill=="Attack")),
+#'     stringsAsFactors=FALSE)
+#' attack_rate$start_zone <- as.numeric(attack_rate$start_zone)
+#' attack_rate$end_zone <- as.numeric(attack_rate$end_zone)
+#' attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
+#' attack_rate <- attack_rate[attack_rate$Freq>0,]
+#' ## starting x,y coordinates
+#' temp <- ggxy(attack_rate$start_zone,type="start")
+#' names(temp) <- c("sx","sy")
+#' attack_rate <- cbind(attack_rate,temp)
+#' ## ending x,y coordinates
+#' temp <- ggxy(attack_rate$end_zone,type="end")
+#' names(temp) <- c("ex","ey")
+#' attack_rate <- cbind(attack_rate,temp)
+#' ## plot in reverse order so largest arrows are on the bottom
+#' attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),]
+#' p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt()+scale_fill_gradient2(name="Attack rate")
+#' for (n in 1:nrow(attack_rate))
+#'     p <- p+geom_path(data=data.frame(
+#'             x=c(attack_rate$sx[n],attack_rate$ex[n]),
+#'             y=c(attack_rate$sy[n],attack_rate$ey[n]),
+#'             rate=attack_rate$rate[n]),
+#'         aes(size=rate),lineend="round",arrow=arrow(ends="last",type="closed"))
+#' p+scale_fill_gradient(name="Attack rate")+guides(size="none")
+#' }
 #' @export
 ggcourt <- function(court="full",show_zones=TRUE,show_labels=TRUE) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
@@ -93,6 +122,34 @@ ggcourt <- function(court="full",show_zones=TRUE,show_labels=TRUE) {
 #' attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,type="start"))
 #' ggplot(attack_rate,aes(x,y,fill=rate))+geom_tile()+ggcourt()+
 #'     scale_fill_gradient2(name="Attack rate")
+#' }
+#' \dontrun{
+#' ## show map of starting and ending zones of attacks
+#' ## tabulate attacks by starting and ending zone
+#' attack_rate <- as.data.frame(xtabs(~start_zone+end_zone,data=subset(plays(x),skill=="Attack")),
+#'     stringsAsFactors=FALSE)
+#' attack_rate$start_zone <- as.numeric(attack_rate$start_zone)
+#' attack_rate$end_zone <- as.numeric(attack_rate$end_zone)
+#' attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
+#' attack_rate <- attack_rate[attack_rate$Freq>0,]
+#' ## starting x,y coordinates
+#' temp <- ggxy(attack_rate$start_zone,type="start")
+#' names(temp) <- c("sx","sy")
+#' attack_rate <- cbind(attack_rate,temp)
+#' ## ending x,y coordinates
+#' temp <- ggxy(attack_rate$end_zone,type="end")
+#' names(temp) <- c("ex","ey")
+#' attack_rate <- cbind(attack_rate,temp)
+#' ## plot in reverse order so largest arrows are on the bottom
+#' attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),]
+#' p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt()+scale_fill_gradient2(name="Attack rate")
+#' for (n in 1:nrow(attack_rate))
+#'     p <- p+geom_path(data=data.frame(
+#'             x=c(attack_rate$sx[n],attack_rate$ex[n]),
+#'             y=c(attack_rate$sy[n],attack_rate$ey[n]),
+#'             rate=attack_rate$rate[n]),
+#'         aes(size=rate),lineend="round",arrow=arrow(ends="last",type="closed"))
+#' p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 #' }
 #' @export
 ggxy <- function(zones,type="start") {
