@@ -71,7 +71,8 @@ Or using arrows to show the starting and ending zones of attacks:
 
 ```R
 ## tabulate attacks by starting and ending zone
-attack_rate <- as.data.frame(xtabs(~start_zone+end_zone,data=subset(plays(x),skill=="Attack")),stringsAsFactors=FALSE)
+attack_rate <- as.data.frame(xtabs(~start_zone+end_zone,data=subset(plays(x),skill=="Attack")),
+  stringsAsFactors=FALSE)
 attack_rate$start_zone <- as.numeric(attack_rate$start_zone)
 attack_rate$end_zone <- as.numeric(attack_rate$end_zone)
 attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
