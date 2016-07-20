@@ -135,11 +135,11 @@ remap_player_names=function(x,remap) {
         ## apply to team lists
         t <- "*"
         this_team <- x[[k]]$meta$teams$team[x[[k]]$meta$teams$home_away_team==t]
-        this_to_change <- subset(remap,team==this_team)
+        this_to_change <- remap[remap$team==this_team,]
         x[[k]]$meta$players_h$name <- mapvalues(x[[k]]$meta$players_h$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
         t <- "a"
         this_team <- x[[k]]$meta$teams$team[x[[k]]$meta$teams$home_away_team==t]
-        this_to_change <- subset(remap,team==this_team)
+        this_to_change <- remap[remap$team==this_team,]
         x[[k]]$meta$players_v$name <- mapvalues(x[[k]]$meta$players_v$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
         ## and to plays dataframe
         for (ti in 1:nrow(remap)) {
@@ -185,8 +185,8 @@ find_player_name_remapping=function(x,distance_threshold=3,verbose=TRUE) {
 
     names_to_change <- data.frame()
     for (t in all_teams) {
-        this_names <- subset(all_names,team==t)$player_name ##sort(unique(
-        this_names_count <- as.data.frame(table(subset(all_names,team==t)$player_name))
+        this_names <- all_names$player_name[all_names$team==t] ##subset(all_names,team==t)$player_name
+        this_names_count <- as.data.frame(table(all_names$player_name[all_names$team==t])) ##subset(all_names,team==t)$player_name))
         names(this_names_count) <- c("name","count")
         ##this_names_count <- arrange(this_names_count,name)
         ## check for suspect names by transliteration (removing diacriticals) and by text distance
