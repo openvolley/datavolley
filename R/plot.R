@@ -2,7 +2,7 @@
 #'
 #' @param court string: "full" (show full court) or "attack" or "defence" (show only the attacking or defending half of the court)
 #' @param show_zones logical: add numbers indicating the court zones?
-#' @param show_labels logical: add labels indicating the attacking and receiving sides of the court?
+#' @param labels string: labels for the lower and upper court halves (pass NULL for no labels)
 #'
 #' @return ggplot layer
 #'
@@ -54,7 +54,7 @@
 #' p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 #' }
 #' @export
-ggcourt <- function(court="full",show_zones=TRUE,show_labels=TRUE) {
+ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Receiving team")) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }    
@@ -78,11 +78,11 @@ ggcourt <- function(court="full",show_zones=TRUE,show_labels=TRUE) {
     thm <- ggplot2::theme_classic()
     thm2 <- ggplot2::theme(axis.line=ggplot2::element_blank(),axis.text.x=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank(),axis.ticks=ggplot2::element_blank(), axis.title.x=ggplot2::element_blank(), axis.title.y=ggplot2::element_blank())
     out <- list(hl,vl,net,thm,thm2)
-    if (show_labels) {
+    if (!is.null(labels)) {
         if (court %in% c("full","attack"))
-            out <- c(out,ggplot2::annotate("text",x=2,y=0.4,label="Attacking team"))
+            out <- c(out,ggplot2::annotate("text",x=2,y=0.4,label=labels[1]))
         if (court %in% c("full","defence"))
-            out <- c(out,ggplot2::annotate("text",x=2,y=6.6,label="Receiving team"))
+            out <- c(out,ggplot2::annotate("text",x=2,y=6.6,label=labels[2]))
     }
     if (show_zones) {
         szx <- c(3,3,2,1,1,2,1,2,3)

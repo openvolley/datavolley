@@ -4,14 +4,15 @@
 \alias{ggcourt}
 \title{Add volleyball court schematic to a ggplot}
 \usage{
-ggcourt(court = "full", show_zones = TRUE, show_labels = TRUE)
+ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
+  "Receiving team"))
 }
 \arguments{
 \item{court}{string: "full" (show full court) or "attack" or "defence" (show only the attacking or defending half of the court)}
 
 \item{show_zones}{logical: add numbers indicating the court zones?}
 
-\item{show_labels}{logical: add labels indicating the attacking and receiving sides of the court?}
+\item{labels}{string: labels for the lower and upper court halves (pass NULL for no labels)}
 }
 \value{
 ggplot layer
