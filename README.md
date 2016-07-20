@@ -50,6 +50,23 @@ table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
     34 16  7  4  1  1  1 
 
 
+Heatmap of attack rate by court position:
+
+```R
+attack_rate <- as.data.frame(xtabs(~start_zone,data=subset(plays(x),skill=="Attack")),
+    stringsAsFactors=FALSE)
+attack_rate$start_zone <- as.numeric(attack_rate$start_zone)
+attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
+
+## plot
+attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,type="start"))
+ggplot(attack_rate,aes(x,y,fill=rate))+geom_tile()+ggcourt()+
+    scale_fill_gradient2(name="Attack rate")
+```
+
+![Attack rate heatmap](./vignettes/attack_rate_heatmap.png?raw=true "attack rate heatmap")
+
+
 ## Troubleshooting
 
 If you see unexpected behaviour, try `read_dv(...,do_warn=TRUE)` to obtain more diagnostic information during the process of reading and parsing the DataVolley file. Also check the text encoding specified to `read_dv` (did you specify one??)
