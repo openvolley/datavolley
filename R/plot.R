@@ -35,13 +35,9 @@
 #' attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
 #' attack_rate <- attack_rate[attack_rate$Freq>0,]
 #' ## starting x,y coordinates
-#' temp <- ggxy(attack_rate$start_zone,end="lower")
-#' names(temp) <- c("sx","sy")
-#' attack_rate <- cbind(attack_rate,temp)
+#' attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower",xynames=c("sx","sy")))
 #' ## ending x,y coordinates
-#' temp <- ggxy(attack_rate$end_zone,end="upper")
-#' names(temp) <- c("ex","ey")
-#' attack_rate <- cbind(attack_rate,temp)
+#' attack_rate <- cbind(attack_rate,ggxy(attack_rate$end_zone,end="upper",xynames=c("ex","ey")))
 #' ## plot in reverse order so largest arrows are on the bottom
 #' attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),]
 #' p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt(labels=c(x$meta$teams$team[1],""))
@@ -102,6 +98,7 @@ ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Rece
 #'
 #' @param zones numeric: zones numbers 1-9 to convert to x and y coordinates
 #' @param end string: use the "lower" or "upper" part of the figure
+#' @param xynames character: names to use for the x and y columns of the returned data.frame
 #'
 #' @return data.frame with x and y components
 #'
@@ -134,13 +131,9 @@ ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Rece
 #' attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
 #' attack_rate <- attack_rate[attack_rate$Freq>0,]
 #' ## starting x,y coordinates
-#' temp <- ggxy(attack_rate$start_zone,end="lower")
-#' names(temp) <- c("sx","sy")
-#' attack_rate <- cbind(attack_rate,temp)
+#' attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower",xynames=c("sx","sy")))
 #' ## ending x,y coordinates
-#' temp <- ggxy(attack_rate$end_zone,end="upper")
-#' names(temp) <- c("ex","ey")
-#' attack_rate <- cbind(attack_rate,temp)
+#' attack_rate <- cbind(attack_rate,ggxy(attack_rate$end_zone,end="upper",xynames=c("ex","ey")))
 #' ## plot in reverse order so largest arrows are on the bottom
 #' attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),]
 #' p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt(labels=c(x$meta$teams$team[1],""))
@@ -153,7 +146,7 @@ ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Rece
 #' p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 #' }
 #' @export
-ggxy <- function(zones,end="lower") {
+ggxy <- function(zones,end="lower",xynames=c("x","y")) {
     end <- match.arg(tolower(end),c("lower","upper"))
     ## define zones and their corresponding coordinates
     start_zones <- 1:9 ## lower part of figure
@@ -164,9 +157,11 @@ ggxy <- function(zones,end="lower") {
     ezy <- 3+4-szy
 
     zones[!zones %in% 1:9] <- NA
-    switch(end,
-           lower=data.frame(x=mapvalues(zones,start_zones,szx,warn_missing=FALSE),y=mapvalues(zones,start_zones,szy,warn_missing=FALSE)),
-           upper=data.frame(x=mapvalues(zones,end_zones,ezx,warn_missing=FALSE),y=mapvalues(zones,end_zones,ezy,warn_missing=FALSE)),
-           stop("unexpected end, should be \"lower\" or \"upper\"")
-           )
+    out <- switch(end,
+                  lower=data.frame(x=mapvalues(zones,start_zones,szx,warn_missing=FALSE),y=mapvalues(zones,start_zones,szy,warn_missing=FALSE)),
+                  upper=data.frame(x=mapvalues(zones,end_zones,ezx,warn_missing=FALSE),y=mapvalues(zones,end_zones,ezy,warn_missing=FALSE)),
+                  stop("unexpected end, should be \"lower\" or \"upper\"")
+                  )
+    names(out) <- xynames
+    out
 }

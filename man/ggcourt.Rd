@@ -47,13 +47,9 @@ attack_rate$end_zone <- as.numeric(attack_rate$end_zone)
 attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
 attack_rate <- attack_rate[attack_rate$Freq>0,]
 ## starting x,y coordinates
-temp <- ggxy(attack_rate$start_zone,end="lower")
-names(temp) <- c("sx","sy")
-attack_rate <- cbind(attack_rate,temp)
+attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower",xynames=c("sx","sy")))
 ## ending x,y coordinates
-temp <- ggxy(attack_rate$end_zone,end="upper")
-names(temp) <- c("ex","ey")
-attack_rate <- cbind(attack_rate,temp)
+attack_rate <- cbind(attack_rate,ggxy(attack_rate$end_zone,end="upper",xynames=c("ex","ey")))
 ## plot in reverse order so largest arrows are on the bottom
 attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),]
 p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt(labels=c(x$meta$teams$team[1],""))
