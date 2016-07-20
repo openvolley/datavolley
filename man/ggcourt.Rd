@@ -32,7 +32,7 @@ attack_rate <- ddply(subset(plays(x),skill=="Attack"),.(team),
 ## add x,y coordinates associated with the zones
 attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower"))
 ## for team 2, these need to be on the top half of the diagram
-tm2 <- attack_rate$team==attack_rate$team[2]
+tm2 <- attack_rate$team==x$meta$teams$team[2]
 attack_rate[tm2,c("x","y")] <- ggxy(attack_rate$start_zone,end="upper")[tm2,]
 ggplot(attack_rate,aes(x,y,fill=rate))+geom_tile()+ggcourt(labels=x$meta$teams$team)+
   scale_fill_gradient2(name="Attack rate")
