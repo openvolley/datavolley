@@ -84,11 +84,17 @@ attack_rate <- cbind(attack_rate,temp)
 temp <- ggxy(attack_rate$end_zone,type="end")
 names(temp) <- c("ex","ey")
 attack_rate <- cbind(attack_rate,temp)
-attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),] ## plot in reverse order so largest arrows are on the bottom
+## plot in reverse order so largest arrows are on the bottom
+attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),]
 
 p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt()+scale_fill_gradient2(name="Attack rate")
-for (n in 1:nrow(attack_rate)) p <- p+geom_path(data=data.frame(x=c(attack_rate$sx[n],attack_rate$ex[n]),y=c(attack_rate$sy[n],attack_rate$ey[n]),rate=attack_rate$rate[n]),aes(size=rate),lineend="round",arrow=arrow(ends="last",type="closed"))+guides(size="none")
-p+scale_fill_gradient(name="Attack rate")
+for (n in 1:nrow(attack_rate))
+  p <- p+geom_path(data=data.frame(
+      x=c(attack_rate$sx[n],attack_rate$ex[n]),
+      y=c(attack_rate$sy[n],attack_rate$ey[n]),
+      rate=attack_rate$rate[n]),
+    aes(size=rate),lineend="round",arrow=arrow(ends="last",type="closed"))
+p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 ```
 
 ![Attack rate by start and end zone](./vignettes/attack_rate_arrows.png?raw=true "attack rate by start and end zone")
