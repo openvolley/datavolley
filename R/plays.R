@@ -145,12 +145,14 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 }
 
 parse_code=function(code,meta,evaluation_decoder) {
-    out=data.frame(code=code,team=NA,player_number=NA,player_name=NA,skill=NA,skill_type=NA,evaluation=NA,
+    out=data.frame(code=code,team=NA,player_number=NA,player_name=NA,
+        skill=NA,skill_type=NA,evaluation_code=NA,evaluation=NA,
         attack_code=NA, attack_description=NA,
         set_code=NA, set_description=NA, set_type=NA,
         start_zone=NA,end_zone=NA,end_subzone=NA,
         skill_subtype=NA,num_players=NA,special_code=NA,
-        timeout=FALSE,end_of_set=FALSE,substitution=FALSE,point=FALSE,home_team_score=NA,visiting_team_score=NA,home_setter_position=NA,visiting_setter_position=NA,stringsAsFactors=FALSE)
+        timeout=FALSE,end_of_set=FALSE,substitution=FALSE,point=FALSE,home_team_score=NA,visiting_team_score=NA,
+        home_setter_position=NA,visiting_setter_position=NA,stringsAsFactors=FALSE)
     for (ci in 1:nrow(out)) {
         code=out$code[ci]
         if (grepl("\\*\\*\\dset",code)) {
@@ -228,6 +230,7 @@ parse_code=function(code,meta,evaluation_decoder) {
                 hit_type=substr(code,2,2)
                 out$skill_type[ci]=skill_type_decode(skill,hit_type)
                 skill_eval=substr(code,3,3)
+                out$evaluation_code[ci] <- skill_eval
                 out$evaluation[ci]=evaluation_decoder(skill,skill_eval)
                 ## for attacks, next 2 chars are the attack code from the metadata$attacks table, and similarly for sets
                 attack_code=substr(code,4,5)
@@ -360,8 +363,8 @@ parse_code=function(code,meta,evaluation_decoder) {
                             "1"="Two players receiving, the player on left receives",
                             "2"="Two players receiving, the player on right receives",
                             "3"="Three players receiving, the player on left receives",
-                            "4"="Three players receiving, the player on center receives",
-                            "5"="Three players receiving, the player on light receives",
+                            "4"="Three players receiving, the player in center receives",
+                            "5"="Three players receiving, the player on right receives",
                             "6"="Four players receiving, the player on left receives",
                             "7"="Four players receiving, the player on center-left receives",
                             "8"="Four players receiving, the player on center-right receives",
