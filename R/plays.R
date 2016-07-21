@@ -260,7 +260,7 @@ parse_code=function(code,meta,evaluation_decoder) {
                 start_zone=substr(code,7,7)
                 if (!start_zone %in% c("","~")) {
                     out$start_zone[ci]=as.numeric(start_zone)
-                    if (skill %in% c("R","S") & !start_zone %in% c(1,5,6)) {
+                    if (skill %in% c("R","S") & !start_zone %in% c(1,9,6,7,5)) {
                         warning("serve/reception start zone ",start_zone," in code ",fullcode)
                     }
                 }
