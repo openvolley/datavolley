@@ -91,11 +91,13 @@ S^/^Positive, no attack
 S^-^Negative, opponent free attack
 S^+^Positive, opponent some attack
 S^#^Ace
+S^!^OK, no first tempo possible
 R^=^Error
 R^/^Poor, no attack
 R^-^Negative, limited attack
 R^+^Positive, attack
 R^#^Perfect pass
+R^!^OK, no first tempo possible
 A^=^Error
 A^/^Blocked
 A^-^Poor, easily dug
@@ -107,16 +109,19 @@ B^/^Invasion
 B^-^Poor, opposition to replay
 B^+^Positive, block touch
 B^#^Winning block
+B^!^Poor, opposition to replay
 D^=^Error
 D^/^Ball directly back over net
 D^-^No structured attack possible
 D^#^Good dig
+D^!^OK, no first tempo possible
 E^=^Error
 E^-^Poor
 E^+^Positive
 E^#^Perfect
 F^=^Error
 F^/^Poor
+F^!^OK, no first tempo possible
 F^-^OK, only high set possible
 F^+^Good
 F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
