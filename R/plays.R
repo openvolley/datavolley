@@ -60,69 +60,86 @@ skill_type_decode=function(skill,type) {
         stop("Unknown skill: ",skill)
     }    
 }
+
+
+
+#' Translate skill evaluation codes into meaningful summary phrases
+#'
+#' If your DataVolley files use evaluation codes differently to those coded here, you will need to supply a custom
+#' skill_evaluation_decode function to \code{\link{read_dv}}
+#'
+#' @param skill string: one-character skill code, either "S"erve, "R"eception, "A"ttack, "B"lock, "D"ig, s"E"t, or "F"reeball
+#' @param evaluation_code string: one-character evaluation code, generally one of =/-+#!
+#' @param show_map logical: if TRUE, return the whole table being used to map evaluation codes to summary phrases
+#'
+#' @return string giving the interpretation of that skill evaluation code
+#'
+#' @seealso \code{\link{read_dv}}
+#' @examples
+#' skill_evaluation_decoder("S","#")
+#' skill_evaluation_decoder(show_map=TRUE)
+#'
+#' @export
+skill_evaluation_decoder <- function(skill,evaluation_code,show_map=FALSE) {
+    assert_that(is.string(skill),nchar(skill)==1)
+    assert_that(is.string(evaluation_code),nchar(evaluation_code)==1)
+    assert_that(is.logical(show_map))
     
-skill_eval_decode=function(skill,evaluation) {
-    if (skill=="S") {
-        switch(evaluation,
-               "="="Error",
-               "/"="Positive, no attack",
-               "-"="Negative, opponent free attack",
-               "+"="Positive, opponent some attack",
-               "#"="Ace",
-               "unknown serve evaluation")
-    } else if (skill=="R") {
-        switch(evaluation,
-               "="="Error",
-               "/"="Poor, no attack",
-               "-"="Negative, limited attack",
-               "+"="Positive, attack",
-               "#"="Perfect pass",
-               "unknown pass evaluation")
-    } else if (skill=="A") {
-        switch(evaluation,
-               "="="Error",
-               "/"="Blocked",
-               "-"="Poor, easily dug",
-               "!"="Blocked for reattack",
-               "+"="Positive, good attack",
-               "#"="Winning attack",
-               "unknown attack evaluation")
-    } else if (skill=="B") {
-        switch(evaluation,
-               "="="Error",
-               "/"="Invasion",
-               "-"="Poor, opposition to replay",
-               "+"="Positive, block touch",
-               "#"="Winning block",
-               "unknown block evaluation")
-    } else if (skill=="D") {
-        switch(evaluation,
-               "="="Error",
-               "/"="Ball directly back over net",
-               "-"="No structured attack possible",
-               "#"="Good dig",
-               "unknown dig evaluation")
-    } else if (skill=="E") {
-        switch(evaluation,
-               "="="Error",
-               "-"="Poor",
-               "+"="Positive",
-               "#"="Perfect",
-               "unknown set evaluation")
-    } else if (skill=="F") {
-        switch(evaluation,
-               "="="Error",
-               "/"="Poor",
-               "-"="OK, only high set possible",
-               "+"="Good",
-               "#"="Perfect",
-               "unknown freeball evaluation")
+    dtbl <- read.table(text="skill^evaluation_code^evaluation
+S^=^Error
+S^/^Positive, no attack
+S^-^Negative, opponent free attack
+S^+^Positive, opponent some attack
+S^#^Ace
+R^=^Error
+R^/^Poor, no attack
+R^-^Negative, limited attack
+R^+^Positive, attack
+R^#^Perfect pass
+A^=^Error
+A^/^Blocked
+A^-^Poor, easily dug
+A^!^Blocked for reattack
+A^+^Positive, good attack
+A^#^Winning attack
+B^=^Error
+B^/^Invasion
+B^-^Poor, opposition to replay
+B^+^Positive, block touch
+B^#^Winning block
+D^=^Error
+D^/^Ball directly back over net
+D^-^No structured attack possible
+D^#^Good dig
+E^=^Error
+E^-^Poor
+E^+^Positive
+E^#^Perfect
+F^=^Error
+F^/^Poor
+F^-^OK, only high set possible
+F^+^Good
+F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
+
+    if (show_map) return(dtbl)
+    if (!skill %in% dtbl$skill) stop("Unknown skill: ",skill)
+    this_eval <- dtbl$evaluation[dtbl$skill==skill & dtbl$evaluation_code==evaluation_code]
+    if (length(this_eval)<1) {
+        full_skill_name <- switch(skill,
+                                  S="serve",
+                                  R="pass",
+                                  A="attack",
+                                  B="block",
+                                  D="dig",
+                                  E="set",
+                                  F="freeball")
+        paste0("unknown ",full_skill_name," evaluation")
     } else {
-        stop("Unknown skill: ",skill)
+        this_eval
     }
 }
 
-parse_code=function(code,meta) {
+parse_code=function(code,meta,evaluation_decoder) {
     out=data.frame(code=code,team=NA,player_number=NA,player_name=NA,skill=NA,skill_type=NA,evaluation=NA,
         attack_code=NA, attack_description=NA,
         set_code=NA, set_description=NA, set_type=NA,
@@ -206,7 +223,7 @@ parse_code=function(code,meta) {
                 hit_type=substr(code,2,2)
                 out$skill_type[ci]=skill_type_decode(skill,hit_type)
                 skill_eval=substr(code,3,3)
-                out$evaluation[ci]=skill_eval_decode(skill,skill_eval)
+                out$evaluation[ci]=evaluation_decoder(skill,skill_eval)
                 ## for attacks, next 2 chars are the attack code from the metadata$attacks table, and similarly for sets
                 attack_code=substr(code,4,5)
                 if (!attack_code %in% c("","~~")) {
@@ -353,7 +370,7 @@ parse_code=function(code,meta) {
                 special_code=substr(code,12,12)
                 if (!special_code %in% c("","~")) {
                     if (skill=="A") {
-                        if (out$evaluation[ci]==skill_eval_decode("A","=")) {
+                        if (out$evaluation[ci]==evaluation_decoder("A","=")) {
                             ## error
                             if (!special_code %in% c("S","O","N","I","Z")) {
                                 warning("unexpected special code ",special_code," in code ",fullcode)
@@ -365,7 +382,7 @@ parse_code=function(code,meta) {
                                 "I"="Net contact",
                                 "Z"="Referee call",
                                 paste0("Unexpected ",special_code))
-                        } else if (out$evaluation[ci]==skill_eval_decode("A","#")) {
+                        } else if (out$evaluation[ci]==evaluation_decoder("A","#")) {
                             ## point ("Winning attack")
                             if (!special_code %in% c("S","O","F","X","N")) {
                                 warning("unexpected special code ",special_code," in code ",fullcode)
@@ -377,7 +394,7 @@ parse_code=function(code,meta) {
                                 "X"="Direct on floor",
                                 "N"="Let",
                                 paste0("Unexpected ",special_code))
-                        } else if (out$evaluation[ci] %in% c(skill_eval_decode("A","+"),skill_eval_decode("A","-"),skill_eval_decode("A","!"))) {
+                        } else if (out$evaluation[ci] %in% c(evaluation_decoder("A","+"),evaluation_decoder("A","-"),evaluation_decoder("A","!"))) {
                             ## continue
                             if (!special_code %in% c("C","N")) {
                                 warning("unexpected special code ",special_code," in code ",fullcode)
@@ -424,7 +441,7 @@ parse_code=function(code,meta) {
                             "Z"="Referee call",
                             paste0("Unexpected ",special_code))
                     } else if (skill=="S") {
-                        if (out$evaluation[ci]==skill_eval_decode("S","=")) {
+                        if (out$evaluation[ci]==evaluation_decoder("S","=")) {
                             ## error
                             if (!special_code %in% c("O","L","R","N")) {
                                 warning("unexpected special code ",special_code," in code ",fullcode)
@@ -435,7 +452,7 @@ parse_code=function(code,meta) {
                                 "R"="Ball out - right",
                                 "N"="Ball in net",
                                 paste0("Unexpected ",special_code))
-                        } else if (out$evaluation[ci]==skill_eval_decode("S","#")) {
+                        } else if (out$evaluation[ci]==evaluation_decoder("S","#")) {
                             ## point (ace)
                             if (!special_code %in% c("N")) {
                                 warning("unexpected special code ",special_code," in code ",fullcode)
@@ -443,7 +460,7 @@ parse_code=function(code,meta) {
                             out$special_code[ci]=switch(special_code,
                                 "N"="Let",
                                 paste0("Unexpected ",special_code))
-                        } else if (out$evaluation[ci] %in% c(skill_eval_decode("S","/"),skill_eval_decode("S","-"),skill_eval_decode("S","+"))) {
+                        } else if (out$evaluation[ci] %in% c(evaluation_decoder("S","/"),evaluation_decoder("S","-"),evaluation_decoder("S","+"))) {
                             ## continue
                             if (!special_code %in% c("N")) {
                                 warning("unexpected special code ",special_code," in code ",fullcode)
