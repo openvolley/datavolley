@@ -4,7 +4,7 @@
 \alias{inspect}
 \title{Convenience function for inspecting the plays component of a datavolley object}
 \usage{
-inspect(x, vars = "minimal", maxrows = 100)
+inspect(x, vars = "minimal", maxrows = 100, extra)
 }
 \arguments{
 \item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}}
@@ -12,6 +12,8 @@ inspect(x, vars = "minimal", maxrows = 100)
 \item{vars}{string: which variables to print? "minimal" set or "all"}
 
 \item{maxrows}{numeric: maximum number of rows to print}
+
+\item{extra}{character: names of any extra columns to include in the output}
 }
 \description{
 Convenience function for inspecting the plays component of a datavolley object

@@ -343,6 +343,7 @@ plays=function(x) {
 #' @param x datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}
 #' @param vars string: which variables to print? "minimal" set or "all"
 #' @param maxrows numeric: maximum number of rows to print
+#' @param extra character: names of any extra columns to include in the output
 #'
 #' @seealso \code{\link{read_dv}} \code{\link{plays}}
 #'
@@ -354,9 +355,13 @@ plays=function(x) {
 #' }
 #'
 #' @export
-inspect <- function(x,vars="minimal",maxrows=100) {
+inspect <- function(x,vars="minimal",maxrows=100,extra) {
     ##if (!(inherits(x,"datavolleyplays"))) stop("x must be a datavolleyplays object")
     vars <- match.arg(vars,c("minimal","all"))
     cols_to_show <- if (vars=="all") names(x) else c("time","code","team","player_number","player_name","skill","skill_type","evaluation")##,"match_id","set_number")
+    if (!missing(extra)) {
+        extra <- intersect(extra,names(x))
+        cols_to_show <- c(cols_to_show,extra)
+    }
     print(x[1:min(nrow(x),maxrows),cols_to_show])
 }
