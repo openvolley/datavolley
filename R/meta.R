@@ -138,3 +138,79 @@ get_player_name <- function(team,number,meta) {
         meta$players_v$name[meta$players_v$number==number]
     }        
 }
+
+
+
+## #' Provide descriptions for attack codes
+## #'
+## #' DataVolley files generally contain a set of attack codes and corresponding descriptions (in Italian).
+## #' If you use these codes differently, or wish to change the descriptions, you can pass a customised
+## #' attack_code_describe function to \code{\link{read_dv}}
+## #'
+## #' @param code string: two-character attack code
+## #' @param translation string: description of the corresponding attack
+## #' @param show_map logical: if TRUE, return the whole table being used to map codes to descriptions
+## #'
+## #' @return string giving the description of that attack code
+## #'
+## #' @seealso \code{\link{read_dv}}
+## #' @examples
+## #' attack_code_describe("X2")
+## #' attack_code_describe(show_map=TRUE)
+## #'
+## #' @export
+## attack_code_describe <- function(code,show_map=FALSE,stop_on_unknown=FALSE) {  
+##     dtbl <- read.table(text="code^description
+## X2^Quickball behind
+## X1^Quickball
+## XM^Veloce in punto
+## XG^7-1 Gun
+## XC^veloce spostata
+## XD^DoppiaC
+## X7^Sette Davanti
+## XS^Sette Dietro
+## XO^Veloce Dietro Opp.
+## XF^Fast Opposto
+## PP^Setter dump
+## X9^Mezza davanti dopo
+## XT^Mezza da posto
+## X3^Mezza da posto
+## X4^Mezza dietro C.A.
+## XQ^Mezza Dietro C.D.
+## XB^Pipe spostata 6-1
+## XP^Pipe
+## XR^Pipe spostata 6-5
+## X5^Tip in position 4
+## X0^Tip in position 5
+## X6^Tip in position 2
+## X8^Tip in position 1
+## CD^Fast vicino al palleggiatore
+## CB^Fast spostata dal palleggiator
+## CF^Fast lontano dal palleggiatore
+## C5^Super in posto 4
+## C0^Super in posto 5
+## C6^Super in posto 2
+## C8^Super in posto 1
+## V5^Alta in posto 4
+## V0^Alta in posto 5
+## V6^Alta in posto 2
+## V8^Alta in posto 1
+## VB^Pipe Alta spostata 6-1
+## VP^Pipe Alta
+## VR^Pipe Alta spostata 6-5
+## V3^Alta in posto 3
+## P2^Secondo tocco di  lŕ
+## PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
+## 
+##     assert_that(is.logical(show_map))
+##     if (show_map) return(dtbl)
+## 
+##     assert_that(is.string(code),nchar(code)==2)
+##     this_desc <- dtbl$description[dtbl$code==code]
+##     if (length(this_desc)<1) {
+##         if (stop_on_unknown) stop("unknown attack code: ",code)
+##         "unknown attack code"
+##     } else {
+##         this_desc
+##     }
+## }
