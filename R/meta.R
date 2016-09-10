@@ -130,16 +130,33 @@ read_meta <- function(txt,surname_case) {
 }
 
 
-get_player_name <- function(team,number,meta) {
-    if (team=="*") {
-        meta$players_h$name[meta$players_h$number==number]
-    } else if (team=="a") {
-        meta$players_v$name[meta$players_v$number==number]
-    } else {
-        stop("team must be * or a")
-    }
-}
+##get_player_name <- function(team,number,meta) {
+##    if (team=="*") {
+##        meta$players_h$name[meta$players_h$number==number]
+##    } else if (team=="a") {
+##        meta$players_v$name[meta$players_v$number==number]
+##    } else {
+##        stop("team must be * or a")
+##    }
+##}
 
+get_player_name <- function(team,number,meta) {
+    if (!all(team=="*" | team=="a")) stop("team must be * or a")
+    out <- rep(as.character(NA),length(number))
+    idx <- team=="*"
+    if (any(idx)) {
+        out[idx] <- mapvalues(number[idx],from=meta$players_h$number,to=meta$players_h$name,warn_missing=FALSE)
+        invalid_number <- out[idx]==number[idx]
+        if (any(invalid_number)) stop("invalid home team player number")
+    }
+    idx <- team=="a"
+    if (any(idx)) {
+        out[idx] <- mapvalues(number[idx],from=meta$players_v$number,to=meta$players_v$name,warn_missing=FALSE)
+        invalid_number <- out[idx]==number[idx]
+        if (any(invalid_number)) stop("invalid visiting team player number")
+    }        
+    out
+}
 
 
 ## #' Provide descriptions for attack codes
