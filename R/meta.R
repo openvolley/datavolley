@@ -131,12 +131,13 @@ read_meta <- function(txt,surname_case) {
 
 
 get_player_name <- function(team,number,meta) {
-    team <- match.arg(team,c("a","*"))
     if (team=="*") {
         meta$players_h$name[meta$players_h$number==number]
-    } else {
+    } else if (team=="a") {
         meta$players_v$name[meta$players_v$number==number]
-    }        
+    } else {
+        stop("team must be * or a")
+    }
 }
 
 
@@ -159,58 +160,59 @@ get_player_name <- function(team,number,meta) {
 ## #' attack_code_describe(show_map=TRUE)
 ## #'
 ## #' @export
-## attack_code_describe <- function(code,show_map=FALSE,stop_on_unknown=FALSE) {  
-##     dtbl <- read.table(text="code^description
-## X2^Quickball behind
-## X1^Quickball
-## XM^Veloce in punto
-## XG^7-1 Gun
-## XC^veloce spostata
-## XD^DoppiaC
-## X7^Sette Davanti
-## XS^Sette Dietro
-## XO^Veloce Dietro Opp.
-## XF^Fast Opposto
-## PP^Setter dump
-## X9^Mezza davanti dopo
-## XT^Mezza da posto
-## X3^Mezza da posto
-## X4^Mezza dietro C.A.
-## XQ^Mezza Dietro C.D.
-## XB^Pipe spostata 6-1
-## XP^Pipe
-## XR^Pipe spostata 6-5
-## X5^Tip in position 4
-## X0^Tip in position 5
-## X6^Tip in position 2
-## X8^Tip in position 1
-## CD^Fast vicino al palleggiatore
-## CB^Fast spostata dal palleggiator
-## CF^Fast lontano dal palleggiatore
-## C5^Super in posto 4
-## C0^Super in posto 5
-## C6^Super in posto 2
-## C8^Super in posto 1
-## V5^Alta in posto 4
-## V0^Alta in posto 5
-## V6^Alta in posto 2
-## V8^Alta in posto 1
-## VB^Pipe Alta spostata 6-1
-## VP^Pipe Alta
-## VR^Pipe Alta spostata 6-5
-## V3^Alta in posto 3
-## P2^Secondo tocco di  lŕ
-## PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
-## 
-##     assert_that(is.logical(show_map))
-##     if (show_map) return(dtbl)
-## 
-##     assert_that(is.string(code),nchar(code)==2)
-##     this_desc <- dtbl$description[dtbl$code==code]
-##     if (length(this_desc)<1) {
-##         if (stop_on_unknown) stop("unknown attack code: ",code)
-##         "unknown attack code"
-##     } else {
-##         this_desc
-##     }
-## }
+attack_code_describe <- function(code,show_map=FALSE,stop_on_unknown=FALSE) {  
+    dtbl <- read.table(text="code^description
+X2^Quickball behind
+X1^Quickball
+XM^Veloce in punto 3
+XG^7-1 Gun
+XC^Quickball shifted (B-quick)
+XD^DoppiaC
+X7^Sette Davanti
+XS^Sette Dietro
+XO^Fast behind Opp.
+XF^Fast opposite
+PP^Setter dump
+X9^Half davanti dopo
+XT^Half from position 4
+X3^Half from position 2
+X4^Half dietro C.A.
+XQ^Half Dietro C.D.
+XB^Pipe between 6 and 1
+XP^Pipe
+XR^Pipe between 6 and 5
+X5^Tip to position 4
+X0^Tip to position 5
+X6^Tip to position 2
+X8^Tip to position 1
+CD^Fast close to the setter
+CB^Fast shifted from the setter
+CF^Fast away from the setter
+C5^Super to position 4
+C0^Super to position 5
+C6^Super to position 2
+C8^Super to position 1
+V5^High to position 4
+V0^High to position 5
+V6^High to position 2
+V8^High to position 1
+VB^High pipe between 6 and 1
+VP^High pipe
+VR^High pipe between 6 and 5
+V3^High to position 3
+P2^Secondo tocco di  lŕ
+PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
+
+    assert_that(is.logical(show_map))
+    if (show_map) return(dtbl)
+
+    #assert_that(is.string(code),nchar(code)==2)
+    #this_desc <- dtbl$description[dtbl$code==code]
+    #if (length(this_desc)<1) {
+    #    if (stop_on_unknown) stop("unknown attack code: ",code)
+    #    "unknown attack code"
+    #} else {
+    #    this_desc
+                                        #}
+    mapvalues(code,dtbl$code,dtbl$description,warn_missing=FALSE)
+}
