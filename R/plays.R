@@ -36,29 +36,34 @@ serve_map <- function(type,skill) {
     }
    
 skill_type_decode <- function(skill,type) {
-    if (!skill %in% c("S","R","A","B","D","E","F")) {
-        stop("unexpected skill: ",skill)
-    }
-    if (!type %in% c("H","M","Q","T","U","F","O")) {
-        warning("skill ",skill," type: ",type," not recognized")
-    }
-    if (skill=="S") {
-        serve_map(type,"serve")
-    } else if (skill=="R") {
-        serve_map(type,"serve reception")
-    } else if (skill=="A") {
-        attack_map(type,"attack")
-    } else if (skill=="B") {
-        attack_map(type,"block")
-    } else if (skill=="D") {
-        attack_map(type,"dig")
-    } else if (skill=="E") {
-        attack_map(type,"set")
-    } else if (skill=="F") {
-        "Unknown freeball type"
-    } else {
-        stop("Unknown skill: ",skill)
-    }    
+    if (!any(skill==c("S","R","A","B","D","E","F"))) stop("unexpected skill: ",skill)
+    if (!any(type==c("H","M","Q","T","U","F","O"))) warning("skill ",skill," type: ",type," not recognized")
+    switch(skill,
+           S=serve_map(type,"serve"),
+           R=serve_map(type,"serve reception"),
+           A=attack_map(type,"attack"),
+           B=attack_map(type,"block"),
+           D=attack_map(type,"dig"),
+           E=attack_map(type,"set"),
+           F="Unknown freeball type",
+           stop("Unknown skill: ",skill))
+    ##if (skill=="S") {
+    ##    serve_map(type,"serve")
+    ##} else if (skill=="R") {
+    ##    serve_map(type,"serve reception")
+    ##} else if (skill=="A") {
+    ##    attack_map(type,"attack")
+    ##} else if (skill=="B") {
+    ##    attack_map(type,"block")
+    ##} else if (skill=="D") {
+    ##    attack_map(type,"dig")
+    ##} else if (skill=="E") {
+    ##    attack_map(type,"set")
+    ##} else if (skill=="F") {
+    ##    "Unknown freeball type"
+    ##} else {
+    ##    stop("Unknown skill: ",skill)
+    ##}    
 }
 
 
@@ -68,19 +73,21 @@ skill_type_decode <- function(skill,type) {
 #' If your DataVolley files use evaluation codes differently to those coded here, you will need to supply a custom
 #' skill_evaluation_decode function to \code{\link{read_dv}}
 #'
-#' @param skill string: one-character skill code, either "S"erve, "R"eception, "A"ttack, "B"lock, "D"ig, s"E"t, or "F"reeball
-#' @param evaluation_code string: one-character evaluation code, generally one of =/-+#!
-#' @param show_map logical: if TRUE, return the whole table being used to map evaluation codes to summary phrases
-#'
-#' @return string giving the interpretation of that skill evaluation code
+#' @return function. This function takes arguments skill, evaluation_code, and show_map and returns a string giving the interpretation of that skill evaluation code
 #'
 #' @seealso \code{\link{read_dv}}
 #' @examples
-#' skill_evaluation_decoder("S","#")
-#' skill_evaluation_decoder(show_map=TRUE)
+#' sd <- skill_evaluation_decoder()
+#' sd("S","#")
+#' sd(show_map=TRUE)
 #'
-#' @export
-skill_evaluation_decoder <- function(skill,evaluation_code,show_map=FALSE) {  
+#' @export skill_evaluation_decoder
+# @param skill string: one-character skill code, either "S"erve, "R"eception, "A"ttack, "B"lock, "D"ig, s"E"t, or "F"reeball
+# @param evaluation_code string: one-character evaluation code, generally one of =/-+#!
+# @param show_map logical: if TRUE, return the whole table being used to map evaluation codes to summary phrases
+
+skill_evaluation_decoder <- function() {
+    ## reading this table is slow, so do it once and return the function
     dtbl <- read.table(text="skill^evaluation_code^evaluation
 S^=^Error
 S^/^Positive, no attack
@@ -121,26 +128,33 @@ F^!^OK, no first tempo possible
 F^-^OK, only high set possible
 F^+^Good
 F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
-
-    assert_that(is.logical(show_map))
-    if (show_map) return(dtbl)
+    ## extract the columns as vectors: faster
+    dtbl_evaluation <- dtbl$evaluation
+    dtbl_skill <- dtbl$skill
+    dtbl_evaluation_code <- dtbl$evaluation_code
+    function(skill,evaluation_code,show_map=FALSE) {  
+        if (!is.logical(show_map)) show_map <- FALSE
+        if (show_map) return(dtbl)
     
-    assert_that(is.string(skill),nchar(skill)==1)
-    assert_that(is.string(evaluation_code),nchar(evaluation_code)==1)
-    if (!skill %in% dtbl$skill) stop("Unknown skill: ",skill)
-    this_eval <- dtbl$evaluation[dtbl$skill==skill & dtbl$evaluation_code==evaluation_code]
-    if (length(this_eval)<1) {
-        full_skill_name <- switch(skill,
-                                  S="serve",
-                                  R="pass",
-                                  A="attack",
-                                  B="block",
-                                  D="dig",
-                                  E="set",
-                                  F="freeball")
-        paste0("unknown ",full_skill_name," evaluation")
-    } else {
-        this_eval
+        if (!is.character(skill) || nchar(skill)!=1) stop("requires 1-character skill input")
+        if (!is.character(evaluation_code) || nchar(evaluation_code)!=1) stop("requires 1-character evaluation_code input")
+        ##assert_that(is.string(skill),nchar(skill)==1)
+        ##assert_that(is.string(evaluation_code),nchar(evaluation_code)==1)
+        if (!any(skill==dtbl_skill)) stop("Unknown skill: ",skill)
+        this_eval <- dtbl_evaluation[dtbl_skill==skill & dtbl_evaluation_code==evaluation_code]
+        if (length(this_eval)<1) {
+            full_skill_name <- switch(skill,
+                                      S="serve",
+                                      R="pass",
+                                      A="attack",
+                                      B="block",
+                                      D="dig",
+                                      E="set",
+                                      F="freeball")
+            paste0("unknown ",full_skill_name," evaluation")
+        } else {
+            this_eval
+        }
     }
 }
 
@@ -483,7 +497,7 @@ parse_code <- function(code,meta,evaluation_decoder) {
                     }
                 }
                 if (nchar(code)>12) {
-                    warning("code ",fullcode," has unparsed custom info: ",substr(code,13,nchar(code)))
+                    warning("code ",fullcode," has unparsed custom info: ",substr(code,13,100))
                 }
             }
         }
@@ -500,4 +514,455 @@ read_main <- function(filename) {
     names(x)[21:26] <- paste("visiting_p",1:6,sep="") ## visiting team
     x$code <- as.character(x$code)
     x
+}
+
+
+
+
+parse_code2 <- function(code,meta,evaluation_decoder) {
+    in_code <- code
+    N <- length(code)
+    out_team <- rep(as.character(NA),N)
+    out_player_number <- rep(NA,N)
+    out_player_name <- rep(as.character(NA),N)
+    out_skill <- rep(as.character(NA),N)
+    out_skill_type <- rep(as.character(NA),N)
+    out_evaluation_code <- rep(as.character(NA),N)
+    out_evaluation <- rep(as.character(NA),N)
+    out_attack_code <- rep(as.character(NA),N)
+    out_attack_description <- rep(as.character(NA),N)
+    out_set_code <- rep(as.character(NA),N)
+    out_set_description <- rep(as.character(NA),N)
+    out_set_type <- rep(as.character(NA),N)
+    out_start_zone <- rep(NA,N)
+    out_end_zone <- rep(NA,N)
+    out_end_subzone <- rep(as.character(NA),N)
+    out_skill_subtype <- rep(as.character(NA),N)
+    out_num_players <- rep(NA,N)
+    out_special_code <- rep(as.character(NA),N)
+    out_timeout <- rep(FALSE,N)
+    out_end_of_set <- rep(FALSE,N)
+    out_substitution <- rep(FALSE,N)
+    out_point <- rep(FALSE,N)
+    out_home_team_score <- rep(NA,N)
+    out_visiting_team_score <- rep(NA,N)
+    out_home_setter_position <- rep(NA,N)
+    out_visiting_setter_position <- rep(NA,N)
+    ## vectorised end-of-set handling
+    done <- grepl("\\*\\*\\dset",in_code) ## end-of-set markers
+    out_end_of_set[done] <- TRUE
+    ## team handling
+    tm <- substr(in_code[!done],1,1)
+    oktm <- tm=="a" | tm=="*" ##tm %in% c("a","*")
+    if (!all(oktm)) {
+        warning("team entries not starting with * or a on line(s): ",paste(which(!done)[!oktm],collapse=","))
+        tm[!oktm] <- "unknown"
+    }
+    out_team[!done] <- tm
+    
+    ## handle "automatic" codes
+    thisidx <- grepl("^.p",in_code)
+    ## point for the associated team
+    out_point[thisidx] <- TRUE
+    ## scores are given as .pX:Y where X=home team score, Y=visiting team score
+    temp <- str_match(in_code[thisidx],"^.p(\\d+):(\\d+)")
+        #cat(str(temp))
+        #cat(str(in_code))
+        #cat(str(out_home_team_score))
+    out_home_team_score[thisidx] <- as.numeric(temp[,2])
+    out_visiting_team_score[thisidx] <- as.numeric(temp[,3])
+    done[thisidx] <- TRUE
+
+    thisidx <- grepl("^\\*z",in_code)
+    if (any(thisidx)) {
+        ## identifying the position of the setter, *=home team
+        temp <- str_match(in_code[thisidx],"^\\*z(\\d+)")
+        out_home_setter_position[thisidx] <- as.numeric(temp[,2])
+        done[thisidx] <- TRUE
+    }
+    thisidx <- grepl("^az",in_code)
+    if (any(thisidx)) {
+        ## identifying the position of the setter, a=visiting team
+        temp <- str_match(in_code[thisidx],"^az(\\d+)")
+        out_visiting_setter_position[thisidx] <- as.numeric(temp[,2])
+        done[thisidx] <- TRUE
+    }
+    
+    thisidx <- grepl("^.[PC]",in_code)
+    ## substitution of setter (P) or other player (C)
+    out_substitution[thisidx] <- TRUE
+    done[thisidx] <- TRUE
+    
+    thisidx <- grepl("^.\\$\\$&",in_code)
+    ## win or loss of a point in an undefined way
+    ## team marker here says which team played the ball
+    ## but doesn't say which team won the point
+    ## so don't set out_point here
+    done[thisidx] <- TRUE
+    
+    thisidx <- grepl("^.\\$\\$R",in_code)
+    ## rotation error? not entirely sure, not many of these 
+    ## these lines are followed by a $$& line, so don't do anything here for the time being
+    out_skill[thisidx] <- "Rotation error"
+    out_evaluation[thisidx] <- "Error"
+    done[thisidx] <- TRUE
+
+    thisidx <- grepl("^.\\$\\$[SE]",in_code)
+    ## sanction
+    ## not handled yet
+    ## e.g.
+    ##a$$SQ-;;;;;;;16.45.22;4;1;4;1;7138;;16;15;9;6;7;8;2;18;8;10;7;1;
+    ##a$$EH=~~~~~~~~~RED;s;;;;;;16.45.22;4;1;4;1;7138;;16;15;9;6;7;8;2;18;8;10;7;1;
+    done[thisidx] <- TRUE
+
+    thisidx <- grepl("^.T",in_code)
+    ## timeout by this team
+    out_timeout[thisidx] <- TRUE
+    out_skill[thisidx] <- "Timeout"
+    done[thisidx] <- TRUE
+
+    thisidx <- grepl("^.c",in_code)
+    ## substitution
+    out_substitution[thisidx] <- TRUE
+    done[thisidx] <- TRUE    
+
+    notdone <- which(!done)
+    for (ci in notdone) {
+        code <- in_code[ci]
+        thischar <- substr(code,2,2)
+        ## "automatic" codes first
+        if (FALSE) {##(thischar=="p") {
+            ## point for the associated team
+            out_point[ci] <- TRUE
+            ## scores are given as .pX:Y where X=home team score, Y=visiting team score
+            temp <- strget2(code,"^.p(\\d+):(\\d+)",as.numeric)##str_match(code,".p(\\d+):(\\d+)")
+            out_home_team_score[ci] <- temp[1]##as.numeric(temp[2])
+            out_visiting_team_score[ci] <- temp[2]##as.numeric(temp[3])
+        } else if (FALSE) {##(thischar=="z") {
+            ## identifying the position of the setter
+            temp <- strget1(code,"^.z(\\d+)")##str_match(code,".z(\\d+)")[2]
+            if (out_team[ci]=="*")
+                out_home_setter_position[ci] <- as.numeric(temp)
+            else
+                out_visiting_setter_position[ci] <- as.numeric(temp)
+        } else if (FALSE) {##(thischar=="P") {
+            ## substitution of setter
+            out_substitution[ci] <- TRUE
+        } else if (FALSE) {##(thischar=="C") {
+            ## substitution of player
+            out_substitution[ci] <- TRUE
+        } else if (FALSE) {##(substr(code,2,4)=="$$&") {
+            ## win or loss of a point in an undefined way
+            ## team marker here says which team played the ball
+            ## but doesn't say which team won the point
+            ## so don't set out_point here
+        } else if (FALSE) {##(substr(code,2,4)=="$$R") {
+            ## rotation error? not entirely sure, not many of these 
+            ## these lines are followed by a $$& line, so don't do anything here for the time being
+            out_skill[ci] <- "Rotation error"
+            out_evaluation[ci] <- "Error"
+        } else if (FALSE) {##(any(substr(code,2,4)==c("$$S","$$E"))) {
+            ## sanction
+            ## not handled yet
+            ## e.g.
+            ##a$$SQ-;;;;;;;16.45.22;4;1;4;1;7138;;16;15;9;6;7;8;2;18;8;10;7;1;
+            ##a$$EH=~~~~~~~~~RED;s;;;;;;16.45.22;4;1;4;1;7138;;16;15;9;6;7;8;2;18;8;10;7;1;
+        } else if (FALSE) {##(substr(code,2,2)=="T") {
+            ## timeout by this team
+            out_timeout[ci] <- TRUE
+            out_skill[ci] <- "Timeout"
+        } else if (FALSE) {##(substr(code,2,2)=="c") {
+            ## substitution
+            out_substitution[ci] <- TRUE
+        } else {
+            ##player_number <- str_match(code,".(\\d+)") ##player_number <- as.numeric(player_number[2])
+            tmp <- regexpr("^.(\\d+)",code)
+            if (tmp!=1) stop("player number not as expected in code: ",code)
+            player_number <- as.numeric(substr(code,2,attr(tmp,"match.length")[1]))
+            if (is.na(player_number)) {
+                stop("unexpected player number in code: ",code)
+            }
+            player_name <- get_player_name(out_team[ci],player_number,meta)
+            out_player_number[ci] <- player_number
+            out_player_name[ci] <- player_name
+            fullcode <- code
+            code <- sub("^.\\d+","",code)
+            skill <- substr(code,1,1)
+            out_skill[ci] <- skill_decode(skill,fullcode)
+            hit_type <- substr(code,2,2)
+            out_skill_type[ci] <- skill_type_decode(skill,hit_type)
+            skill_eval <- substr(code,3,3)
+            out_evaluation_code[ci] <- skill_eval
+            out_evaluation[ci] <- evaluation_decoder(skill,skill_eval)
+            ## for attacks, next 2 chars are the attack code from the metadata$attacks table, and similarly for sets
+            attack_code <- substr(code,4,5)
+            if (!any(attack_code==c("","~~"))) {
+                if (skill=="A") {
+                    out_attack_code[ci] <- attack_code
+                    if (!any(attack_code==meta$attacks$code)) {
+                        stop("unmatched attack code ",attack_code," in code ",fullcode)
+                    }
+                    out_attack_description[ci] <- meta$attacks$description[meta$attacks$code==attack_code]
+                } else if (skill=="E") {
+                    out_set_code[ci] <- attack_code
+                    if (!any(attack_code==meta$sets$code)) {
+                        warning("unmatched set code ",attack_code," in code ",fullcode)
+                        descr <- "unknown set code"
+                    } else {
+                        descr <- meta$sets$description[meta$sets$code==attack_code]
+                    }
+                    out_set_description[ci] <- descr
+                } else {
+                    warning("unexpected non-null attack code ",attack_code," for non-attack code ",fullcode)
+                }
+            }
+            set_type <- substr(code,6,6)
+            if (!any(set_type==c("","~"))) {
+                if (skill=="E") {
+                    out_set_type[ci] <- set_type
+                    if (!any(set_type==meta$attacks$set_type)) {
+                        stop("unmatched set type ",set_type," in code ",fullcode)
+                    }
+                } else {
+                    warning("found set type ",set_type," in code ",fullcode)
+                }
+            }
+            start_zone <- substr(code,7,7)
+            if (!any(start_zone==c("","~"))) {
+                out_start_zone[ci] <- as.numeric(start_zone)
+                if ((skill=="R" || skill=="S") && !any(start_zone==c(1,9,6,7,5))) {
+                    warning("serve/reception start zone ",start_zone," in code ",fullcode)
+                }
+            }
+            end_zone <- substr(code,8,8)
+            if (!any(end_zone==c("","~"))) {
+                out_end_zone[ci] <- as.numeric(end_zone)
+                if (skill=="B" & !any(end_zone==c(2,3,4))) {
+                    warning("block end zone ",end_zone," in code ",fullcode)
+                }
+            }
+            end_subzone <- substr(code,9,9)
+            if (!any(end_subzone==c("","~"))) {
+                out_end_subzone[ci] <- end_subzone
+                if (!any(end_subzone==c("A","B","C","D"))) {
+                    warning("end subzone ",end_subzone," in code ",fullcode)
+                }
+            }
+            ## skill sub type ("TYPE OF HIT", p32)
+            skill_subtype <- substr(code,10,10)
+            if (!any(skill_subtype==c("","~"))) {
+                if (skill=="A") {
+                    if (!any(skill_subtype==c("H","P","T"))) {
+                        warning("unknown attack subtype ",skill_subtype," in code ",fullcode)
+                    }
+                    out_skill_subtype[ci] <- switch(skill_subtype,
+                                                    H="Hard spike",
+                                                    P="Soft spike/topspin",
+                                                    T="Tip",
+                                                    paste0("Unknown ",skill_subtype))
+                } else if (skill=="B") {
+                    if (!any(skill_subtype==c("A","T"))) {
+                        warning("unknown block subtype ",skill_subtype," in code ",fullcode)
+                    }
+                    out_skill_subtype[ci] <- switch(skill_subtype,
+                                                    A="Block assist",
+                                                    T="Block attempt",
+                                                    paste0("Unknown ",skill_subtype))
+                } else if (skill=="R") {
+                    if (!any(skill_subtype==c("L","R","W","O","M"))) {
+                        warning("unknown reception subtype ",skill_subtype," in code ",fullcode)
+                    }
+                    out_skill_subtype[ci] <- switch(skill_subtype,
+                                                    L="On left",
+                                                    R="On right",
+                                                    W="Low",
+                                                    O="Overhand",
+                                                    M="Middle line",
+                                                    paste0("Unknown ",skill_subtype))
+                } else if (skill=="D") {
+                    if (!any(skill_subtype==c("S","C","B","E"))) {
+                        warning("unknown dig subtype ",skill_subtype," in code ",fullcode)
+                    }
+                    out_skill_subtype[ci] <- switch(skill_subtype,
+                                                    S="On spike",
+                                                    C="Spike cover",
+                                                    B="After block",
+                                                    E="Emergency",
+                                                    paste0("Unknown dig subtype ",skill_subtype))
+                } else {
+                    out_skill_subtype[ci] <- paste0("Unknown ",skill_subtype)
+                }
+            }
+            ## number of people ("PLAYERS", p33)
+            num_players <- substr(code,11,11)
+            if (!any(num_players==c("","~"))) {
+                if (skill=="A") {
+                    if (!any(num_players==c("0","1","2","3"))) {
+                        warning("unexpected number of players ",num_players," in code ",fullcode)
+                    }
+                    out_num_players[ci] <- switch(num_players,
+                                                  "0"="No block",
+                                                  "1"="1 player block",
+                                                  "2"="2 player block",
+                                                  "3"="3 player block",
+                                                  paste0("Unexpected ",num_players))
+                } else if (skill=="B") {
+                    if (!any(num_players==c("0","1","2","3","4"))) {
+                        warning("unexpected number of players ",num_players," in code ",fullcode)
+                    }
+                    out_num_players[ci] <- switch(num_players,
+                                                  "0"="No block",
+                                                  "1"="1 player block",
+                                                  "2"="2 player block",
+                                                  "3"="3 player block",
+                                                  "4"="Hole block",
+                                                  paste0("Unexpected ",num_players))
+                } else if (skill=="R") {
+                    if (!any(num_players==1:9)) {
+                        warning("unexpected number of players ",num_players," in code ",fullcode)
+                    }
+                    out_num_players[ci] <- switch(num_players,
+                                                  "1"="Two players receiving, the player on left receives",
+                                                  "2"="Two players receiving, the player on right receives",
+                                                  "3"="Three players receiving, the player on left receives",
+                                                  "4"="Three players receiving, the player in center receives",
+                                                  "5"="Three players receiving, the player on right receives",
+                                                  "6"="Four players receiving, the player on left receives",
+                                                  "7"="Four players receiving, the player on center-left receives",
+                                                  "8"="Four players receiving, the player on center-right receives",
+                                                  "9"="Four players receiving, the player on right receives",
+                                                  paste0("Unexpected ",num_players))
+                } else {
+                    out_num_players[ci] <- paste0("Unexpected ",num_players)
+                }
+            }
+            ## special ("SPECIAL CODES", p33)
+            special_code <- substr(code,12,12)
+            if (!any(special_code==c("","~"))) {
+                if (skill=="A") {
+                    if (out_evaluation[ci]==evaluation_decoder("A","=")) {
+                        ## error
+                        if (!any(special_code==c("S","O","N","I","Z"))) {
+                            warning("unexpected special code ",special_code," in code ",fullcode)
+                        }
+                        out_special_code[ci] <- switch(special_code,
+                                                       "S"="Attack out - side",
+                                                       "O"="Attack out - long",
+                                                       "N"="Attack in net",
+                                                       "I"="Net contact",
+                                                       "Z"="Referee call",
+                                                       paste0("Unexpected ",special_code))
+                    } else if (out_evaluation[ci]==evaluation_decoder("A","#")) {
+                        ## point ("Winning attack")
+                        if (!any(special_code==c("S","O","F","X","N"))) {
+                            warning("unexpected special code ",special_code," in code ",fullcode)
+                        }
+                        out_special_code[ci] <- switch(special_code,
+                                                       "S"="Block out - side",
+                                                       "O"="Block out - long",
+                                                       "F"="Block on floor",
+                                                       "X"="Direct on floor",
+                                                       "N"="Let",
+                                                       paste0("Unexpected ",special_code))
+                    } else if (any(out_evaluation[ci]==c(evaluation_decoder("A","+"),evaluation_decoder("A","-"),evaluation_decoder("A","!")))) {
+                        ## continue
+                        if (!any(special_code==c("C","N"))) {
+                            warning("unexpected special code ",special_code," in code ",fullcode)
+                        }
+                        out_special_code[ci] <- switch(special_code,
+                                                       "C"="Block control",
+                                                       "N"="Let",
+                                                       paste0("Unexpected ",special_code))
+                    } else {
+                        ## not expecting special code for this attack evaluation outcome
+                        warning("unexpected special code ",special_code," for attack evaluation \"",out_evaluation[ci],"\" in code ",fullcode)
+                    }
+                } else if (skill=="B") {
+                    if (!any(special_code==c("S","O","F","X","N","I","P","Z"))) {
+                        warning("unexpected special code ",special_code," in code ",fullcode)
+                    }
+                    out_special_code[ci] <- switch(special_code,
+                                                   "S"="Ball out - side",
+                                                   "O"="Ball out - long",
+                                                   "F"="Ball on floor",
+                                                   "X"="Between hands",
+                                                   "N"="Hands - net",
+                                                   "I"="Net contact",
+                                                   "P"="No jump",
+                                                   "Z"="Referee call",
+                                                   paste0("Unexpected ",special_code))
+                } else if (skill=="D") {
+                    if (!any(special_code==c("U","X","P","Z"))) {
+                        warning("unexpected special code ",special_code," in code ",fullcode)
+                    }
+                    out_special_code[ci] <- switch(special_code,
+                                                   "U"="Unplayable",
+                                                   "X"="Body error",
+                                                   "P"="Position error",
+                                                   "Z"="Referee call",
+                                                   paste0("Unexpected ",special_code))
+                } else if (skill=="E") {
+                    if (!any(special_code==c("U","I","Z"))) {
+                        warning("unexpected special code ",special_code," in code ",fullcode)
+                    }
+                    out_special_code[ci] <- switch(special_code,
+                                                   "U"="Cannot be hit",
+                                                   "I"="Net touch",
+                                                   "Z"="Referee call",
+                                                   paste0("Unexpected ",special_code))
+                } else if (skill=="S") {
+                    if (out_evaluation[ci]==evaluation_decoder("S","=")) {
+                        ## error
+                        if (!any(special_code==c("O","L","R","N"))) {
+                            warning("unexpected special code ",special_code," in code ",fullcode)
+                        }
+                        out_special_code[ci] <- switch(special_code,
+                                                       "O"="Ball out - long",
+                                                       "L"="Ball out - left",
+                                                       "R"="Ball out - right",
+                                                       "N"="Ball in net",
+                                                       paste0("Unexpected ",special_code))
+                    } else if (out_evaluation[ci]==evaluation_decoder("S","#")) {
+                        ## point (ace)
+                        if (special_code!="N") {
+                            warning("unexpected special code ",special_code," in code ",fullcode)
+                        }
+                        out_special_code[ci] <- switch(special_code,
+                                                       "N"="Let",
+                                                       paste0("Unexpected ",special_code))
+                    } else if (any(out_evaluation[ci]==c(evaluation_decoder("S","/"),evaluation_decoder("S","-"),evaluation_decoder("S","+")))) {
+                        ## continue
+                        if (special_code!="N") {
+                            warning("unexpected special code ",special_code," in code ",fullcode)
+                        }
+                        out_special_code[ci] <- switch(special_code,
+                                                       "N"="Let",
+                                                       paste0("Unexpected ",special_code))
+                    } else {
+                        ## not expecting special code for this attack evaluation outcome
+                        warning("unexpected special code ",special_code," for attack evaluation \"",out_evaluation[ci],"\" in code ",fullcode)
+                    }
+                }
+            }
+            if (nchar(code)>12) {
+                warning("code ",fullcode," has unparsed custom info: ",substr(code,13,100))
+            }
+        }
+    }
+    data.frame(code=in_code, team=out_team,player_number=out_player_number,player_name=out_player_name,skill=out_skill,skill_type=out_skill_type,evaluation_code=out_evaluation_code,evaluation=out_evaluation,attack_code=out_attack_code,attack_description=out_attack_description,set_code=out_set_code,set_description=out_set_description,set_type=out_set_type,start_zone=out_start_zone,end_zone=out_end_zone,end_subzone=out_end_subzone,skill_subtype=out_skill_subtype,num_players=out_num_players,special_code=out_special_code,timeout=out_timeout,end_of_set=out_end_of_set,substitution=out_substitution,point=out_point,home_team_score=out_home_team_score,visiting_team_score=out_visiting_team_score,home_setter_position=out_home_setter_position,visiting_setter_position=out_visiting_setter_position,stringsAsFactors=FALSE)
+}
+
+## single parenthesised capture
+strget1 <- function(s,re,cast_to) {
+    tmp <- regexec(re,s)
+    out <- substr(s,tmp[[1]][2],tmp[[1]][2]+attr(tmp[[1]],"match.length")[2]-1)
+    if (!missing(cast_to)) cast_to(out) else out
+}
+
+## two parenthesised captures
+strget2 <- function(s,re,cast_to) {
+    tmp <- regexec(re,s)
+    out <- c(substr(s,tmp[[1]][2],tmp[[1]][2]+attr(tmp[[1]],"match.length")[2]-1),
+             substr(s,tmp[[1]][3],tmp[[1]][3]+attr(tmp[[1]],"match.length")[3]-1))
+    if (!missing(cast_to)) cast_to(out) else out
 }
