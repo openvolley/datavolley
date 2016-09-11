@@ -158,7 +158,7 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
     }
 }
 
-parse_code <- function(code,meta,evaluation_decoder) {
+parse_code_old <- function(code,meta,evaluation_decoder) {
     out <- data.frame(code=code,team=NA,player_number=NA,player_name=NA,
         skill=NA,skill_type=NA,evaluation_code=NA,evaluation=NA,
         attack_code=NA, attack_description=NA,
@@ -519,7 +519,7 @@ read_main <- function(filename) {
 
 
 
-parse_code2 <- function(code,meta,evaluation_decoder) {
+parse_code <- function(code,meta,evaluation_decoder) {
     in_code <- code
     N <- length(code)
     out_team <- rep(as.character(NA),N)
@@ -649,8 +649,18 @@ parse_code2 <- function(code,meta,evaluation_decoder) {
         skill_eval <- substr(code,3,3)
         out_evaluation_code[ci] <- skill_eval
         out_evaluation[ci] <- evaluation_decoder(skill,skill_eval)
+        ## extract the next few characters:
         ## for attacks, next 2 chars are the attack code from the metadata$attacks table, and similarly for sets
-        attack_code <- substr(code,4,5)
+        ##attack_code <- substr(code,4,5)
+        ##set_type <- substr(code,6,6)
+        ##start_zone <- substr(code,7,7)
+        ##end_zone <- substr(code,8,8)
+        ##end_subzone <- substr(code,9,9)
+        ##skill_subtype <- substr(code,10,10)
+        ##num_players <- substr(code,11,11)
+        ##special_code <- substr(code,12,12)
+        some_codes <- str_sub(code,start=c(4,6,7,8,9,10,11,12),end=c(5,6,7,8,9,10,11,12))
+        attack_code <- some_codes[1]##substr(code,4,5)
         if (!any(attack_code==c("","~~"))) {
             if (skill=="A") {
                 out_attack_code[ci] <- attack_code
@@ -671,7 +681,7 @@ parse_code2 <- function(code,meta,evaluation_decoder) {
                 warning("unexpected non-null attack code ",attack_code," for non-attack code ",fullcode)
             }
         }
-        set_type <- substr(code,6,6)
+        set_type <- some_codes[2]##substr(code,6,6)
         if (!any(set_type==c("","~"))) {
             if (skill=="E") {
                 out_set_type[ci] <- set_type
@@ -682,21 +692,21 @@ parse_code2 <- function(code,meta,evaluation_decoder) {
                 warning("found set type ",set_type," in code ",fullcode)
             }
         }
-        start_zone <- substr(code,7,7)
+        start_zone <- some_codes[3]##substr(code,7,7)
         if (!any(start_zone==c("","~"))) {
             out_start_zone[ci] <- as.numeric(start_zone)
             if ((skill=="R" || skill=="S") && !any(start_zone==c(1,9,6,7,5))) {
                 warning("serve/reception start zone ",start_zone," in code ",fullcode)
             }
         }
-        end_zone <- substr(code,8,8)
+        end_zone <- some_codes[4]##substr(code,8,8)
         if (!any(end_zone==c("","~"))) {
             out_end_zone[ci] <- as.numeric(end_zone)
-            if (skill=="B" & !any(end_zone==c(2,3,4))) {
+            if (skill=="B" && !any(end_zone==c(2,3,4))) {
                 warning("block end zone ",end_zone," in code ",fullcode)
             }
         }
-        end_subzone <- substr(code,9,9)
+        end_subzone <- some_codes[5]##substr(code,9,9)
         if (!any(end_subzone==c("","~"))) {
             out_end_subzone[ci] <- end_subzone
             if (!any(end_subzone==c("A","B","C","D"))) {
@@ -704,7 +714,7 @@ parse_code2 <- function(code,meta,evaluation_decoder) {
             }
         }
         ## skill sub type ("TYPE OF HIT", p32)
-        skill_subtype <- substr(code,10,10)
+        skill_subtype <- some_codes[6]##substr(code,10,10)
         if (!any(skill_subtype==c("","~"))) {
             if (skill=="A") {
                 if (!any(skill_subtype==c("H","P","T"))) {
@@ -749,7 +759,7 @@ parse_code2 <- function(code,meta,evaluation_decoder) {
             }
         }
         ## number of people ("PLAYERS", p33)
-        num_players <- substr(code,11,11)
+        num_players <- some_codes[7]##substr(code,11,11)
         if (!any(num_players==c("","~"))) {
             if (skill=="A") {
                 if (!any(num_players==c("0","1","2","3"))) {
@@ -792,7 +802,7 @@ parse_code2 <- function(code,meta,evaluation_decoder) {
             }
         }
         ## special ("SPECIAL CODES", p33)
-        special_code <- substr(code,12,12)
+        special_code <- some_codes[8]##substr(code,12,12)
         if (!any(special_code==c("","~"))) {
             if (skill=="A") {
                 if (out_evaluation[ci]==evaluation_decoder("A","=")) {
@@ -900,7 +910,7 @@ parse_code2 <- function(code,meta,evaluation_decoder) {
             }
         }
         if (nchar(code)>12) {
-            warning("code ",fullcode," has unparsed custom info: ",substr(code,13,100))
+            warning(paste0("code ",fullcode," has unparsed custom info: ",substr(code,13,100)))
         }
     }
     ## fill in player_name from player_number
