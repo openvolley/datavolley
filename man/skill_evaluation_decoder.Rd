@@ -4,25 +4,19 @@
 \alias{skill_evaluation_decoder}
 \title{Translate skill evaluation codes into meaningful summary phrases}
 \usage{
-skill_evaluation_decoder(skill, evaluation_code, show_map = FALSE)
-}
-\arguments{
-\item{skill}{string: one-character skill code, either "S"erve, "R"eception, "A"ttack, "B"lock, "D"ig, s"E"t, or "F"reeball}
-
-\item{evaluation_code}{string: one-character evaluation code, generally one of =/-+#!}
-
-\item{show_map}{logical: if TRUE, return the whole table being used to map evaluation codes to summary phrases}
+skill_evaluation_decoder()
 }
 \value{
-string giving the interpretation of that skill evaluation code
+function. This function takes arguments skill, evaluation_code, and show_map and returns a string giving the interpretation of that skill evaluation code
 }
 \description{
 If your DataVolley files use evaluation codes differently to those coded here, you will need to supply a custom
 skill_evaluation_decode function to \code{\link{read_dv}}
 }
 \examples{
-skill_evaluation_decoder("S","#")
-skill_evaluation_decoder(show_map=TRUE)
+sd <- skill_evaluation_decoder()
+sd("S","#")
+sd(show_map=TRUE)
 
 }
 \seealso{

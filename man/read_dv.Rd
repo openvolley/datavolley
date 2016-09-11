@@ -6,7 +6,7 @@
 \usage{
 read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
   do_transliterate = FALSE, encoding, surname_case = "asis",
-  skill_evaluation_decode = skill_evaluation_decoder)
+  skill_evaluation_decode = skill_evaluation_decoder())
 }
 \arguments{
 \item{filename}{string: file name to read}
