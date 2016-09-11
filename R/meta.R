@@ -217,7 +217,7 @@ VB^High pipe between 6 and 1
 VP^High pipe
 VR^High pipe between 6 and 5
 V3^High to position 3
-P2^Secondo tocco di  lŕ
+P2^Secondo tocco di  lr
 PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 
     assert_that(is.logical(show_map))
