@@ -5,8 +5,8 @@
 \title{Read a datavolley file}
 \usage{
 read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
-  do_transliterate = FALSE, encoding, surname_case = "asis",
-  skill_evaluation_decode = skill_evaluation_decoder())
+  do_transliterate = FALSE, encoding = "guess", surname_case = "asis",
+  skill_evaluation_decode = skill_evaluation_decoder(), verbose = FALSE)
 }
 \arguments{
 \item{filename}{string: file name to read}
@@ -17,11 +17,13 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 
 \item{do_transliterate}{logical: should we transliterate all text to ASCII? See details}
 
-\item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental)}
+\item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)}
 
 \item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 
 \item{skill_evaluation_decode}{function: function to use to convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}}
+
+\item{verbose}{logical: if TRUE, show progress}
 }
 \value{
 named list with \code{meta} and \code{plays} components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame
