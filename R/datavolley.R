@@ -8,6 +8,7 @@
 #' @import plyr assertthat
 #' @importFrom lubridate dmy_hms mdy_hms hms ymd_hms
 #' @importFrom digest digest
+#' @importFrom stringi stri_trans_general
 #' @importFrom stringr str_match str_trim regex fixed str_replace_all str_to_title str_locate str_sub
 #' @importFrom data.table fread
 #' @importFrom stats na.omit
