@@ -1,3 +1,5 @@
+[![Travis-CI Build Status](https://travis-ci.org/raymondben/datavolley.svg?branch=master)](https://travis-ci.org/raymondben/datavolley)
+
 # datavolley
 An R package for reading DataVolley scouting files.
 
