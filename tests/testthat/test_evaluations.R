@@ -1,11 +1,12 @@
 context("Skill evaluation decoder")
 
 test_that("skill_evaluation_decoder generally functions as expected", {
-    expect_error(skill_evaluation_decoder())
-    expect_error(skill_evaluation_decoder("X"))
-    expect_error(skill_evaluation_decoder("X","$"))
+    sed <- skill_evaluation_decoder()
+    expect_error(sed())
+    expect_error(sed("X"))
+    expect_error(sed("X","$"))
 
-    expect_equal(skill_evaluation_decoder("E","#"),"Perfect")
-    expect_equal(skill_evaluation_decoder("E","x"),"unknown set evaluation")    
+    expect_equal(sed("E","#"),"Perfect")
+    expect_equal(sed("E","x"),"unknown set evaluation")    
 })
 
