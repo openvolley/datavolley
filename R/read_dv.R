@@ -57,31 +57,44 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
             ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
             ## surely there is a better way to do this
             badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso885913"),"\u008a","\u008e","\u009a","\u00b3"))
+            ## any unicode 0500 to 08ff is likely wrong
+            badchars <- c(badchars,0x500:0x8ff)
             enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
             encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars))
             idx <- encerrors==min(encerrors)
-            if (any(duplicated(enctest[idx]))) {
+            if (!any(idx)) stop("error in guessing text encoding")
+            enctest <- enctest[idx]
+            encoding <- encoding[idx]
+            other_enc <- c()
+            if (any(duplicated(enctest))) {
                 ## pick from the ones that give the most common output
-                un <- unique(enctest[idx])
-                ui <- sapply(enctest[idx],function(z)which(z==un))
+                un <- unique(enctest)
+                ui <- sapply(enctest,function(z)which(z==un))
                 tmp <- as.data.frame(table(ui),stringsAsFactors=FALSE)
                 umax <- as.numeric(tmp$ui[which.max(tmp$Freq)])
                 ## want encoding that has ui==umax
-                rset <- encoding[idx][ui==umax]
+                rset <- encoding[ui==umax]
                 ## pick windows- if there is one, else first
                 if (any(grepl("^windows",tolower(rset))))
                     encoding <- rset[grepl("^windows",tolower(rset))][1]
                 else
                     encoding <- rset[1]
-                
+                other_enc <- setdiff(encoding,rset)
             } else {
                 ## pick the first windows- encoding if there is one, else just pick first
-                if (any(grepl("^windows",tolower(encoding[idx]))))
-                    encoding <- encoding[idx][grepl("^windows",tolower(encoding[idx]))][1]
+                other_enc <- encoding
+                if (any(grepl("^windows",tolower(encoding))))
+                    encoding <- encoding[grepl("^windows",tolower(encoding))][1]
                 else
-                    encoding <- encoding[idx][1]
+                    encoding <- encoding[1]
+                other_enc <- setdiff(other_enc,encoding)
             }
-            if (verbose) cat(sprintf("Using text encoding: %s\n",encoding))
+            if (verbose) {
+                cat(sprintf("Using text encoding: %s",encoding))
+                if (length(other_enc)>0)
+                    cat(sprintf(" (Other possible options: %s)",paste(other_enc,collapse=", ")))
+                cat("\n")
+            }
         }
         dv <- iconv(dv,from=encoding,to="utf-8") ## convert to utf-8
     if (do_transliterate) {
