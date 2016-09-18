@@ -1,6 +1,10 @@
 #' \pkg{datavolley}
 #'
-#' The example data provided with the datavolley package came from \url{http://www.odbojka.si/}, and is the January 2015 junior women's final between Braslovče and Nova KBM Branik. 
+#' The example data files provided with the datavolley package came from \url{http://www.odbojka.si/}:
+#' \itemize{
+#'   \item{\code{system.file("extdata/example_data.dvw",package="datavolley")}: the January 2015 junior women's final between Braslovče and Nova KBM Branik}
+#'   \item{\code{system.file("extdata/PM06.dvw",package="datavolley")}: the December 2012 men's Slovenian national championship semifinal between ACH Volley and Maribor}
+#' }
 #'
 #' @name datavolley
 #' @author Ben Raymond \email{ben@@untan.gl}
