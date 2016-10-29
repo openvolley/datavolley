@@ -233,3 +233,23 @@ PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
                                         #}
     mapvalues(code,dtbl$code,dtbl$description,warn_missing=FALSE)
 }
+
+
+
+#' Get team names from datavolley object
+#'
+#' @param x datavolley: a datavolley object as returned by \code{read_dv}
+#'
+#' @return character vector of team names
+#'
+#' @seealso \code{\link{read_dv}}
+#' 
+#' @examples
+#' \dontrun{
+#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
+#'     insert_technical_timeouts=FALSE)
+#'   teams(x)
+#' }
+#' @export
+teams <- function(x) x$meta$teams$team
+
