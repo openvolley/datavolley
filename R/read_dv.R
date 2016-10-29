@@ -41,7 +41,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ## read raw lines in
     dv <- readLines(filename,warn=do_warn)
         assert_that(is.character(encoding))
-        if (length(encoding)>1 || tolower(encoding)=="guess") {
+        if (length(encoding)>1 || identical(tolower(encoding),"guess")) {
             ## try to guess encoding based on the first few lines of the file
             ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
             idx1 <- suppressWarnings(grep("[3TEAMS]",dv,fixed=TRUE))
@@ -50,7 +50,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
             if (is.na(idx1)) idx1 <- 15
             if (is.na(idx2)) idx2 <- 80
             tst <- paste(dv[idx1:idx2],collapse="")
-            if (tolower(encoding)=="guess") {
+            if (identical(tolower(encoding),"guess")) {
                 encoding <- stri_enc_detect2(tst)[[1]]$Encoding
                 encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
             }
@@ -287,6 +287,12 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ##        out$plays$visiting_team_score[k] <- out$plays$visiting_team_score[k-1]
     ##    }
     ##}
+
+    ## enforce some columns to be integer
+    ints <- intersect(names(out$plays),c("player_number","start_zone","end_zone","num_players","home_team_score","visiting_team_score","home_setter_position","visiting_setter_position","set_number"))
+    for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
+
+              
     class(out) <- c("datavolley",class(out))
     class(out$plays) <- c("datavolleyplays",class(out$plays))
     out
