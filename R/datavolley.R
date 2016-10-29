@@ -1,5 +1,7 @@
 #' \pkg{datavolley}
 #'
+#' Provides basic functions for parsing Datavolley scouting files. Datavolley is a software package used for scouting and summarizing volleyball matches.
+#' 
 #' The example data files provided with the datavolley package came from \url{http://www.odbojka.si/}:
 #' \itemize{
 #'   \item{\code{system.file("extdata/example_data.dvw",package="datavolley")}: the January 2015 junior women's final between Braslovče and Nova KBM Branik}
