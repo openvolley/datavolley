@@ -35,8 +35,6 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
 
-    npr <- TRUE ## use new parsing code
-
     out <- list()
     ## read raw lines in
     dv <- readLines(filename,warn=do_warn)
@@ -114,11 +112,10 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     } else {
         this_main <- read_main(filename)
     }
-    pcf <- if (npr) parse_code else parse_code_old
     if (do_warn) {
-        out$plays <- pcf(this_main$code,out$meta,skill_evaluation_decode)
+        out$plays <- parse_code(this_main$code,out$meta,skill_evaluation_decode)
     } else {
-        suppressMessages(out$plays <- pcf(this_main$code,out$meta,skill_evaluation_decode))
+        suppressMessages(out$plays <- parse_code(this_main$code,out$meta,skill_evaluation_decode))
     }
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
@@ -226,14 +223,9 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$plays$home_team <- home_team
     out$plays$visiting_team <- visiting_team
     ## keep track of who won each point
-    if (npr) {
-        temp <- ddply(out$plays,c("point_id"),function(z)if (any(z$point)) z$team[z$point] else as.character(NA)  )
-        names(temp) <- c("point_id","point_won_by")
-        suppressMessages(out$plays <- join(out$plays,temp))
-    } else {
-        temp <- ddply(out$plays,c("point_id"),function(z)data.frame(point_won_by=if (any(z$point)) { z$team[z$point] } else { as.character(NA) }, stringsAsFactors=FALSE ))
-        suppressMessages(out$plays <- join(out$plays,temp))
-    }        
+    temp <- ddply(out$plays,c("point_id"),function(z)if (any(z$point)) z$team[z$point] else as.character(NA)  )
+    names(temp) <- c("point_id","point_won_by")
+    suppressMessages(out$plays <- join(out$plays,temp))
     ## catch any that we missed
     ##dud_point_id <- unique(out$plays$point_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
     ##for (dpi in dud_point_id) {
@@ -251,12 +243,8 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ## note the block error is not actually needed there, since such attacks are recorded as winning ones anyway
     out$plays$winning_attack[is.na(out$plays$winning_attack)] <- FALSE
     ## fill in scores, so that all lines have a score
-    if (npr) {
-        scores <- unique(na.omit(out$plays[,c("point_id","home_team_score","visiting_team_score")]))
-        scores <- suppressMessages(join(out$plays[,"point_id",drop=FALSE],scores))
-    } else {
-        scores <- ddply(out$plays,c("point_id"),function(z)na.omit(z[,c("point_id","home_team_score","visiting_team_score")]))
-        scores <- suppressMessages(join(out$plays[,"point_id",drop=FALSE],scores))
+    scores <- unique(na.omit(out$plays[,c("point_id","home_team_score","visiting_team_score")]))
+    scores <- suppressMessages(join(out$plays[,"point_id",drop=FALSE],scores))
     }
     ## double-check
     if (any(na.omit(out$plays$home_team_score-scores$home_team_score) != 0) | any(na.omit(out$plays$visiting_team_score-scores$visiting_team_score) != 0)) stop("error in scores")
