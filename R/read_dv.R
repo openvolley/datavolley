@@ -38,65 +38,65 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out <- list()
     ## read raw lines in
     dv <- readLines(filename,warn=do_warn)
-        assert_that(is.character(encoding))
-        if (length(encoding)>1 || identical(tolower(encoding),"guess")) {
-            ## try to guess encoding based on the first few lines of the file
-            ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
-            idx1 <- suppressWarnings(grep("[3TEAMS]",dv,fixed=TRUE))
-            idx2 <- suppressWarnings(grep("[3ATTACKCOMBINATION]",dv,fixed=TRUE))+1
-            ## fallback
-            if (is.na(idx1)) idx1 <- 15
-            if (is.na(idx2)) idx2 <- 80
-            tst <- paste(dv[idx1:idx2],collapse="")
-            if (identical(tolower(encoding),"guess")) {
-                encoding <- stri_enc_detect2(tst)[[1]]$Encoding
-                encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
-            }
-            ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
-            ## surely there is a better way to do this
-            badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso885913"),"\u008a","\u008e","\u009a","\u00b3"))
-            ## any unicode 0x0500 to 0x08ff is likely wrong
-            badchars <- c(badchars,0x500:0x8ff)
-            ## as are 0x2000 to 0x206f (general punctuation)
-            badchars <- c(badchars,0x2000:0x206f)            
-            enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
-            encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars))
-            idx <- encerrors==min(encerrors)
-            if (!any(idx)) stop("error in guessing text encoding")
-            enctest <- enctest[idx]
-            encoding <- encoding[idx]
-            other_enc <- c()
-            if (any(duplicated(enctest))) {
-                ## pick from the ones that give the most common output
-                un <- unique(enctest)
-                ui <- sapply(enctest,function(z)which(z==un))
-                tmp <- as.data.frame(table(ui),stringsAsFactors=FALSE)
-                umax <- as.numeric(tmp$ui[which.max(tmp$Freq)])
-                ## want encoding that has ui==umax
-                rset <- encoding[ui==umax]
-                ## pick windows- if there is one, else first
-                if (any(grepl("^windows",tolower(rset))))
-                    encoding <- rset[grepl("^windows",tolower(rset))][1]
-                else
-                    encoding <- rset[1]
-                other_enc <- setdiff(encoding,rset)
-            } else {
-                ## pick the first windows- encoding if there is one, else just pick first
-                other_enc <- encoding
-                if (any(grepl("^windows",tolower(encoding))))
-                    encoding <- encoding[grepl("^windows",tolower(encoding))][1]
-                else
-                    encoding <- encoding[1]
-                other_enc <- setdiff(other_enc,encoding)
-            }
-            if (verbose) {
-                cat(sprintf("Using text encoding: %s",encoding))
-                if (length(other_enc)>0)
-                    cat(sprintf(" (Other possible options: %s)",paste(other_enc,collapse=", ")))
-                cat("\n")
-            }
+    assert_that(is.character(encoding))
+    if (length(encoding)>1 || identical(tolower(encoding),"guess")) {
+        ## try to guess encoding based on the first few lines of the file
+        ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
+        idx1 <- suppressWarnings(grep("[3TEAMS]",dv,fixed=TRUE))
+        idx2 <- suppressWarnings(grep("[3ATTACKCOMBINATION]",dv,fixed=TRUE))+1
+        ## fallback
+        if (is.na(idx1)) idx1 <- 15
+        if (is.na(idx2)) idx2 <- 80
+        tst <- paste(dv[idx1:idx2],collapse="")
+        if (identical(tolower(encoding),"guess")) {
+            encoding <- stri_enc_detect2(tst)[[1]]$Encoding
+            encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
         }
-        dv <- iconv(dv,from=encoding,to="utf-8") ## convert to utf-8
+        ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
+        ## surely there is a better way to do this
+        badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso885913"),"\u008a","\u008e","\u009a","\u00b3"))
+        ## any unicode 0x0500 to 0x08ff is likely wrong
+        badchars <- c(badchars,0x500:0x8ff)
+        ## as are 0x2000 to 0x206f (general punctuation)
+        badchars <- c(badchars,0x2000:0x206f)            
+        enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
+        encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars))
+        idx <- encerrors==min(encerrors)
+        if (!any(idx)) stop("error in guessing text encoding")
+        enctest <- enctest[idx]
+        encoding <- encoding[idx]
+        other_enc <- c()
+        if (any(duplicated(enctest))) {
+            ## pick from the ones that give the most common output
+            un <- unique(enctest)
+            ui <- sapply(enctest,function(z)which(z==un))
+            tmp <- as.data.frame(table(ui),stringsAsFactors=FALSE)
+            umax <- as.numeric(tmp$ui[which.max(tmp$Freq)])
+            ## want encoding that has ui==umax
+            rset <- encoding[ui==umax]
+            ## pick windows- if there is one, else first
+            if (any(grepl("^windows",tolower(rset))))
+                encoding <- rset[grepl("^windows",tolower(rset))][1]
+            else
+                encoding <- rset[1]
+            other_enc <- setdiff(encoding,rset)
+        } else {
+            ## pick the first windows- encoding if there is one, else just pick first
+            other_enc <- encoding
+            if (any(grepl("^windows",tolower(encoding))))
+                encoding <- encoding[grepl("^windows",tolower(encoding))][1]
+            else
+                encoding <- encoding[1]
+            other_enc <- setdiff(other_enc,encoding)
+        }
+        if (verbose) {
+            cat(sprintf("Using text encoding: %s",encoding))
+            if (length(other_enc)>0)
+                cat(sprintf(" (Other possible options: %s)",paste(other_enc,collapse=", ")))
+            cat("\n")
+        }
+    }
+    dv <- iconv(dv,from=encoding,to="utf-8") ## convert to utf-8
     if (do_transliterate) {
         if (missing(encoding)) warning("transliteration may not work without an encoding specified")
         dv <- stri_trans_general(dv,"latin-ascii") ##dv <- iconv(dv,from="utf-8",to="ascii//TRANSLIT")
