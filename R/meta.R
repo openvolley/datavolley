@@ -14,7 +14,7 @@ read_match <- function(txt) {
         temp <- suppressWarnings(dmy_hms(paste(p$date,p$time,sep=" "),truncated=3))
     }
     p$date <- temp
-    p$time <- hms(p$time)
+    p$time <- suppressWarnings(hms(p$time))
     p
 }
 
