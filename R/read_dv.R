@@ -37,7 +37,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
 
     out <- list()
     ## read raw lines in
-    dv <- readLines(filename,warn=do_warn)
+    dv <- readLines(filename,warn=FALSE)
     assert_that(is.character(encoding))
     if (length(encoding)>1 || identical(tolower(encoding),"guess")) {
         ## try to guess encoding based on the first few lines of the file
