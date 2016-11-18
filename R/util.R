@@ -1,3 +1,24 @@
+# Accumulate messages for later display
+# Internal function, not exported
+collect_messages <- function(msgs,msg_text,line_nums,raw_lines) {
+    if (missing(line_nums)) line_nums <- NA
+    if (missing(raw_lines)) raw_lines <- "[unknown]"
+    lnt <- as.character(line_nums)
+    lnt[is.na(lnt)] <- "[unknown]"
+    msgs$line <- c(msgs$line,line_nums)
+    txt <- paste0("line ",lnt,": ",msg_text," (line in file is: \"",raw_lines,"\")")
+    msgs$text <- c(msgs$text,txt)
+    msgs
+}
+
+join_messages <- function(msgs1,msgs2) {
+    if (length(msgs2$text)>0) {
+        msgs1$text <- c(msgs1$text,msgs2$text)
+        msgs1$line <- c(msgs1$line,msgs2$line)
+    }
+    msgs1
+}
+
 # Extract text chunks from datavolley file. Internal function, not exported for users.
 #
 # @param txt: dv text

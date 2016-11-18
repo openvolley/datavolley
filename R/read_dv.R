@@ -34,7 +34,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     assert_that(is.flag(do_transliterate))
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
-
+    
     out <- list()
     ## read raw lines in
     dv <- readLines(filename,warn=FALSE)
@@ -112,10 +112,20 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     } else {
         this_main <- read_main(filename)
     }
-    if (do_warn) {
-        out$plays <- parse_code(this_main$code,out$meta,skill_evaluation_decode)
+    ## count line numbers: where do codes start from?
+    suppressWarnings(cln <- grep("[3SCOUT]",dv,fixed=TRUE))
+    if (length(cln)==1) {
+        cln <- (cln+1):length(dv)
     } else {
-        suppressMessages(out$plays <- parse_code(this_main$code,out$meta,skill_evaluation_decode))
+        cln <- NULL
+    }
+    temp <- parse_code(this_main$code,out$meta,skill_evaluation_decode,cln)
+    out$plays <- temp$plays
+    out$messages <- temp$messages
+    if (do_warn) {
+        ## spit the messages out
+        idx <- order(temp$messages$line)
+        for (k in idx) message(temp$messages$text[k])
     }
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
@@ -126,7 +136,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     for (si in 2:length(temp)) {
         out$plays$set_number[(temp[si-1]+1):(temp[si]-1)] <- (si-1)
     }
-
+    
     ## technical timeouts
     if (is.flag(insert_technical_timeouts)) {
         if (insert_technical_timeouts) {
@@ -232,7 +242,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ##    tail(na.omit(out$plays[out$plays$point_id<dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
     ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
     ##}
-    #### not sure how to deal with these!
+#### not sure how to deal with these!
     
     ## winning attacks
     ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
@@ -245,7 +255,6 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ## fill in scores, so that all lines have a score
     scores <- unique(na.omit(out$plays[,c("point_id","home_team_score","visiting_team_score")]))
     scores <- suppressMessages(join(out$plays[,"point_id",drop=FALSE],scores))
-    }
     ## double-check
     if (any(na.omit(out$plays$home_team_score-scores$home_team_score) != 0) | any(na.omit(out$plays$visiting_team_score-scores$visiting_team_score) != 0)) stop("error in scores")
 
