@@ -100,17 +100,17 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         }
         dv <- iconv(dv,from=encoding,to="utf-8") ## convert to utf-8
     if (do_transliterate) {
-        if (missing(encoding) & do_warn) warning("transliteration may not work without an encoding specified")
+        if (missing(encoding)) warning("transliteration may not work without an encoding specified")
         dv <- stri_trans_general(dv,"latin-ascii") ##dv <- iconv(dv,from="utf-8",to="ascii//TRANSLIT")
     }
     if (!do_warn) {
-        suppressWarnings(out$meta <- read_meta(dv,surname_case))
+        suppressMessages(out$meta <- read_meta(dv,surname_case))
     } else {
         out$meta <- read_meta(dv,surname_case)
     }
     out$meta$filename <- filename
     if (!do_warn) {
-        suppressWarnings(this_main <- read_main(filename))
+        suppressMessages(this_main <- read_main(filename))
     } else {
         this_main <- read_main(filename)
     }
@@ -118,7 +118,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     if (do_warn) {
         out$plays <- pcf(this_main$code,out$meta,skill_evaluation_decode)
     } else {
-        suppressWarnings(out$plays <- pcf(this_main$code,out$meta,skill_evaluation_decode))
+        suppressMessages(out$plays <- pcf(this_main$code,out$meta,skill_evaluation_decode))
     }
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
