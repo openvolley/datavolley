@@ -1,12 +1,13 @@
 # Accumulate messages for later display
 # Internal function, not exported
-collect_messages <- function(msgs,msg_text,line_nums,raw_lines) {
+collect_messages <- function(msgs,msg_text,line_nums,raw_lines,fatal=FALSE) {
     if (missing(line_nums)) line_nums <- NA
     if (missing(raw_lines)) raw_lines <- "[unknown]"
     lnt <- as.character(line_nums)
     lnt[is.na(lnt)] <- "[unknown]"
     msgs$line <- c(msgs$line,line_nums)
     txt <- paste0("line ",lnt,": ",msg_text," (line in file is: \"",raw_lines,"\")")
+    if (fatal) stop(paste(txt,collapse=" / "))
     msgs$text <- c(msgs$text,txt)
     msgs
 }
