@@ -148,7 +148,7 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 
     
 read_main <- function(filename) {
-    x <- data.table::fread(filename,skip="[3SCOUT]",data.table=FALSE)
+    suppressWarnings(x <- data.table::fread(filename,skip="[3SCOUT]",data.table=FALSE))
     names(x)[1] <- "code"
     names(x)[8] <- "time"
     names(x)[13] <- "video_time"
@@ -182,6 +182,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_ln) {
     out_skill_subtype <- rep(as.character(NA),N)
     out_num_players <- rep(NA,N)
     out_special_code <- rep(as.character(NA),N)
+    out_custom_code <- rep(as.character(NA),N)
     out_timeout <- rep(FALSE,N)
     out_end_of_set <- rep(FALSE,N)
     out_substitution <- rep(FALSE,N)
@@ -273,6 +274,12 @@ parse_code <- function(code,meta,evaluation_decoder,code_ln) {
     out_substitution[thisidx] <- TRUE
     done[thisidx] <- TRUE    
 
+    ## custom codes
+    ## not sure if numbers are always 2 digits??
+    ##out_custom_code <- substr(in_code,16,9999)
+    temp <- sub("^.\\d+","",in_code) ## drop leading [a*] and digits
+    out_custom_code <- substr(temp,13,9999)
+            
     notdone <- which(!done)
     for (ci in notdone) {
         code <- in_code[ci]
@@ -558,14 +565,14 @@ parse_code <- function(code,meta,evaluation_decoder,code_ln) {
                 }
             }
         }
-        if (nchar(code)>12) {
-            msgs <- collect_messages(msgs,paste0("unparsed custom info: ",substr(code,13,100)),code_ln[ci],fullcode)
-        }
+        ##if (nchar(code)>12) {
+        ##    msgs <- collect_messages(msgs,paste0("unparsed custom info: ",substr(code,13,length(code))),code_ln[ci],fullcode)
+        ##}
     }
     ## fill in player_name from player_number
     out_player_name[!done] <- get_player_name(out_team[!done],out_player_number[!done],meta)
         
-    list(plays=data.frame(code=in_code, team=out_team,player_number=out_player_number,player_name=out_player_name,skill=out_skill,skill_type=out_skill_type,evaluation_code=out_evaluation_code,evaluation=out_evaluation,attack_code=out_attack_code,attack_description=out_attack_description,set_code=out_set_code,set_description=out_set_description,set_type=out_set_type,start_zone=out_start_zone,end_zone=out_end_zone,end_subzone=out_end_subzone,skill_subtype=out_skill_subtype,num_players=out_num_players,special_code=out_special_code,timeout=out_timeout,end_of_set=out_end_of_set,substitution=out_substitution,point=out_point,home_team_score=out_home_team_score,visiting_team_score=out_visiting_team_score,home_setter_position=out_home_setter_position,visiting_setter_position=out_visiting_setter_position,stringsAsFactors=FALSE),
+    list(plays=data.frame(code=in_code, team=out_team,player_number=out_player_number,player_name=out_player_name,skill=out_skill,skill_type=out_skill_type,evaluation_code=out_evaluation_code,evaluation=out_evaluation,attack_code=out_attack_code,attack_description=out_attack_description,set_code=out_set_code,set_description=out_set_description,set_type=out_set_type,start_zone=out_start_zone,end_zone=out_end_zone,end_subzone=out_end_subzone,skill_subtype=out_skill_subtype,num_players=out_num_players,special_code=out_special_code,timeout=out_timeout,end_of_set=out_end_of_set,substitution=out_substitution,point=out_point,home_team_score=out_home_team_score,visiting_team_score=out_visiting_team_score,home_setter_position=out_home_setter_position,visiting_setter_position=out_visiting_setter_position,custom_code=out_custom_code,stringsAsFactors=FALSE),
          messages=msgs)
 }
 
