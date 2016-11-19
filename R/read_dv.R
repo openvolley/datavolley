@@ -8,6 +8,7 @@
 #' @param filename string: file name to read
 #' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4. Otherwise a two-element list can be supplied, giving the point-scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
+#' @param do_extra_validation logical: should we run some extra validation checks on the file? (Will be slower)
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)
 #' @param surname_case string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings
@@ -29,10 +30,11 @@
 #'     insert_technical_timeouts=list(c(12),NULL))
 #' }
 #' @export
-read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,verbose=FALSE) {
+read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",do_extra_validation=FALSE,surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,verbose=FALSE) {
     assert_that(is.flag(insert_technical_timeouts) || is.list(insert_technical_timeouts))
     assert_that(is.flag(do_warn))
     assert_that(is.flag(do_transliterate))
+    assert_that(is.flag(do_extra_validation))
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
     if (!missing(custom_code_parser)) assert_that(is.function(custom_code_parser) || is.null(custom_code_parser))
@@ -298,6 +300,15 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         out$messages <- c(out$messages,cx$messages)
     }
 
+    ## apply additional validation
+    if (do_extra_validation) {
+        moreval <- validate_dv(out)
+        if (nrow(moreval)>0) {
+            msg <- paste0("line ",moreval$file_line_number,": ",moreval$message," (line in file is: \"",moreval$file_line,"\")")
+            out$messages <- c(out$messages,msg)
+        }
+    }
+    
     if (do_warn) {
         ## spit the messages out
         for (k in out$messages) message(k)

@@ -5,7 +5,8 @@
 \title{Read a datavolley file}
 \usage{
 read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
-  do_transliterate = FALSE, encoding = "guess", surname_case = "asis",
+  do_transliterate = FALSE, encoding = "guess",
+  do_extra_validation = FALSE, surname_case = "asis",
   skill_evaluation_decode = skill_evaluation_decoder(), custom_code_parser,
   verbose = FALSE)
 }
@@ -19,6 +20,8 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 \item{do_transliterate}{logical: should we transliterate all text to ASCII? See details}
 
 \item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)}
+
+\item{do_extra_validation}{logical: should we run some extra validation checks on the file? (Will be slower)}
 
 \item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 
