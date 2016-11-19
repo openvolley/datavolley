@@ -29,7 +29,7 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 \item{verbose}{logical: if TRUE, show progress}
 }
 \value{
-named list with \code{meta} and \code{plays} components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame
+named list with several components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a character vector of any inconsistencies found in the file
 }
 \description{
 The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso88591" (western Europe and Americas), "iso88592" (central/eastern Europe), "iso885913" (Baltic languages)
@@ -49,6 +49,6 @@ The \code{do_transliterate} option may be helpful when trying to work with multi
 \url{http://www.dataproject.com/IT/en/Volleyball}
 }
 \seealso{
-\code{\link{skill_evaluation_decoder}}
+\code{\link{skill_evaluation_decoder}} \code{\link{validate_dv}}
 }
 
