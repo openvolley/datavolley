@@ -243,7 +243,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     ## so don't set out_point here
     done[thisidx] <- TRUE
     
-    thisidx <- grepl("^.\\$\\$R",in_code)
+    thisidx <- grepl("^.\\$\\$R",in_code) | grepl("^>ROT<",in_code)
     ## rotation error? not entirely sure, not many of these 
     ## these lines are followed by a $$& line, so don't do anything here for the time being
     out_skill[thisidx] <- "Rotation error"
