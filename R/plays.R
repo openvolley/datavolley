@@ -326,9 +326,12 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
             if (skill=="A") {
                 out_attack_code[ci] <- attack_code
                 if (!any(attack_code==meta$attacks$code)) {
-                    stop("unmatched attack code ",attack_code," in code ",fullcode)
+                    msgs <- collect_messages(msgs,paste0("unmatched attack code: ",attack_code),code_line_num[ci],full_lines[ci])
+                    descr <- "unknown attack code"
+                } else {
+                    descr <- meta$attacks$description[meta$attacks$code==attack_code]
                 }
-                out_attack_description[ci] <- meta$attacks$description[meta$attacks$code==attack_code]
+                out_attack_description[ci] <- descr
             } else if (skill=="E") {
                 out_set_code[ci] <- attack_code
                 if (!any(attack_code==meta$sets$code)) {
