@@ -284,9 +284,9 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ##        out$plays$visiting_team_score[k] <- out$plays$visiting_team_score[k-1]
     ##    }
     ##}
-
+    
     ## enforce some columns to be integer
-    ints <- intersect(names(out$plays),c("player_number","start_zone","end_zone","num_players","home_team_score","visiting_team_score","home_setter_position","visiting_setter_position","set_number"))
+    ints <- intersect(names(out$plays),c("player_number","start_zone","end_zone","home_team_score","visiting_team_score","home_setter_position","visiting_setter_position","set_number"))
     for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
 
               
@@ -313,6 +313,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         ## spit the messages out
         for (k in out$messages) message(k)
     }
+    
     out
 }
 
