@@ -119,7 +119,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     } else {
         cln <- NULL
     }
-    temp <- parse_code(this_main$code,out$meta,skill_evaluation_decode,cln)
+    temp <- parse_code(this_main$code,out$meta,skill_evaluation_decode,cln,if (is.null(cln)) NULL else dv[cln])
     out$plays <- temp$plays
     out$messages <- temp$messages
     if (do_warn) {
