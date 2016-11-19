@@ -124,8 +124,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$messages <- temp$messages
     if (do_warn) {
         ## spit the messages out
-        idx <- order(temp$messages$line)
-        for (k in idx) message(temp$messages$text[k])
+        for (k in temp$messages$text) message(k)
     }
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
