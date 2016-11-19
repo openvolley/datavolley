@@ -122,10 +122,6 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     temp <- parse_code(this_main$code,out$meta,skill_evaluation_decode,cln,if (is.null(cln)) NULL else dv[cln])
     out$plays <- temp$plays
     out$messages <- temp$messages
-    if (do_warn) {
-        ## spit the messages out
-        for (k in temp$messages$text) message(k)
-    }
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
     out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6")])
@@ -291,6 +287,11 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
               
     class(out) <- c("datavolley",class(out))
     class(out$plays) <- c("datavolleyplays",class(out$plays))
+
+    if (do_warn) {
+        ## spit the messages out
+        for (k in out$messages$text) message(k)
+    }
     out
 }
 
