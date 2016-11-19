@@ -121,6 +121,8 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     suppressWarnings(cln <- grep("[3SCOUT]",dv,fixed=TRUE))
     if (length(cln)==1) {
         cln <- (cln+1):length(dv)
+        ## dv may have empty lines at end, which won't show up in codes from read_main
+        cln <- cln[1:min(length(cln),length(this_main$code))]
     } else {
         cln <- NULL
     }
