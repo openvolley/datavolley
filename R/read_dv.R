@@ -16,7 +16,7 @@
 #' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}
 #' @param verbose logical: if TRUE, show progress
 #'
-#' @return named list with several components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a character vector of any inconsistencies found in the file
+#' @return named list with several components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file
 #'
 #' @seealso \code{\link{skill_evaluation_decoder}} \code{\link{validate_dv}}
 #' @examples
@@ -299,21 +299,25 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     if (!missing(custom_code_parser) && !is.null(custom_code_parser)) {
         cx <- custom_code_parser(out)
         out$plays <- cx$plays
-        out$messages <- c(out$messages,cx$messages)
+        if (nrow(cx$messages)>0) out$messages <- rbind.fill(out$messages,cx$messages)
     }
 
     ## apply additional validation
     if (do_extra_validation) {
         moreval <- validate_dv(out)
         if (nrow(moreval)>0) {
-            msg <- paste0("line ",moreval$file_line_number,": ",moreval$message," (line in file is: \"",moreval$file_line,"\")")
-            out$messages <- c(out$messages,msg)
+            out$messages <- rbind.fill(out$messages,moreval)
+            ##msg <- paste0("line ",moreval$file_line_number,": ",moreval$message," (line in file is: \"",moreval$file_line,"\")")
+            ##out$messages <- c(out$messages,msg)
         }
     }
-    
+    if (nrow(out$messages)>0) out$messages <- arrange(out$messages,file_line_number)
+
     if (do_warn) {
         ## spit the messages out
-        for (k in out$messages) message(k)
+        ##for (k in out$messages) message(k)
+        for (k in 1:nrow(out$messages))
+            cat(paste0("line ",out$messages$file_line_number[k],": ",out$messages$message[k]," (line in file is: \"",out$messages$file_line[k],"\")"),"\n")
     }
     
     out

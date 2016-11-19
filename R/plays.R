@@ -36,7 +36,7 @@ serve_map <- function(type,skill) {
     }
 
 skill_type_decode <- function(skill,type,full_line,line_num) {
-    mymsgs <- list(text=c(),line=c())
+    mymsgs <- list()##text=c(),line=c())
     if (!any(skill==c("S","R","A","B","D","E","F")))
         mymsgs <- collect_messages(mymsgs,paste0("unexpected skill: ",skill),line_num,full_line,fatal=TRUE)
     if (!any(type==c("H","M","Q","T","U","F","O")))
@@ -160,7 +160,7 @@ read_main <- function(filename) {
 parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     if (missing(code_line_num)) code_line_num <- NULL
     if (missing(full_lines)) full_lines <- code ## default to codes, if full lines not supplied
-    msgs <- list(text=c(),line=c())
+    msgs <- list()##text=c(),line=c())
     in_code <- code
     N <- length(code)
     if (is.null(code_line_num)) code_line_num <- rep(NA,N)
@@ -582,11 +582,15 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     out_player_name[!done] <- get_player_name(out_team[!done],out_player_number[!done],meta)
 
     ## order messages by line number
-    if (length(msgs$text)>0) {
-        idx <- order(msgs$line)
-        msgs <- msgs$text[idx]
-    }
-    
+    #if (length(msgs$text)>0) {
+    #    idx <- order(msgs$line)
+    #    msgs <- msgs$text[idx]
+    #}
+    if (length(msgs)>0) {
+        msgs <- ldply(msgs,as.data.frame)
+        msgs <- arrange(msgs,file_line_number)
+    }    
+
     list(plays=data.frame(code=in_code, team=out_team,player_number=out_player_number,player_name=out_player_name,skill=out_skill,skill_type=out_skill_type,evaluation_code=out_evaluation_code,evaluation=out_evaluation,attack_code=out_attack_code,attack_description=out_attack_description,set_code=out_set_code,set_description=out_set_description,set_type=out_set_type,start_zone=out_start_zone,end_zone=out_end_zone,end_subzone=out_end_subzone,skill_subtype=out_skill_subtype,num_players=out_num_players,special_code=out_special_code,timeout=out_timeout,end_of_set=out_end_of_set,substitution=out_substitution,point=out_point,home_team_score=out_home_team_score,visiting_team_score=out_visiting_team_score,home_setter_position=out_home_setter_position,visiting_setter_position=out_visiting_setter_position,custom_code=out_custom_code,file_line_number=as.integer(code_line_num),stringsAsFactors=FALSE),
          messages=msgs)
 }
