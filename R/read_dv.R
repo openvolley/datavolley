@@ -12,6 +12,7 @@
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)
 #' @param surname_case string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings
 #' @param skill_evaluation_decode function: function to use to convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}
+#' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}
 #' @param verbose logical: if TRUE, show progress
 #'
 #' @return named list with \code{meta} and \code{plays} components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame
@@ -28,12 +29,13 @@
 #'     insert_technical_timeouts=list(c(12),NULL))
 #' }
 #' @export
-read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),verbose=FALSE) {
+read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,verbose=FALSE) {
     assert_that(is.flag(insert_technical_timeouts) || is.list(insert_technical_timeouts))
     assert_that(is.flag(do_warn))
     assert_that(is.flag(do_transliterate))
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
+    if (!missing(custom_code_parser)) assert_that(is.function(custom_code_parser) || is.null(custom_code_parser))
     
     out <- list()
     ## read raw lines in
@@ -288,9 +290,16 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     class(out) <- c("datavolley",class(out))
     class(out$plays) <- c("datavolleyplays",class(out$plays))
 
+    ## now call custom code parser, if it was provided
+    if (!missing(custom_code_parser) && !is.null(custom_code_parser)) {
+        cx <- custom_code_parser(out)
+        out$plays <- cx$plays
+        out$messages <- c(out$messages,cx$messages)
+    }
+
     if (do_warn) {
         ## spit the messages out
-        for (k in out$messages$text) message(k)
+        for (k in out$messages) message(k)
     }
     out
 }

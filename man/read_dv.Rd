@@ -6,7 +6,8 @@
 \usage{
 read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
   do_transliterate = FALSE, encoding = "guess", surname_case = "asis",
-  skill_evaluation_decode = skill_evaluation_decoder(), verbose = FALSE)
+  skill_evaluation_decode = skill_evaluation_decoder(), custom_code_parser,
+  verbose = FALSE)
 }
 \arguments{
 \item{filename}{string: file name to read}
@@ -22,6 +23,8 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 \item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 
 \item{skill_evaluation_decode}{function: function to use to convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}}
+
+\item{custom_code_parser}{function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}}
 
 \item{verbose}{logical: if TRUE, show progress}
 }
