@@ -580,7 +580,14 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     }
     ## fill in player_name from player_number
     out_player_name[!done] <- get_player_name(out_team[!done],out_player_number[!done],meta)
-        
+
+    ## order messages by line number
+    if (length(msgs$text)>0) {
+        idx <- order(msgs$line)
+        msgs$line <- msgs$line[idx]
+        msgs$text <- msgs$text[idx]
+    }
+    
     list(plays=data.frame(code=in_code, team=out_team,player_number=out_player_number,player_name=out_player_name,skill=out_skill,skill_type=out_skill_type,evaluation_code=out_evaluation_code,evaluation=out_evaluation,attack_code=out_attack_code,attack_description=out_attack_description,set_code=out_set_code,set_description=out_set_description,set_type=out_set_type,start_zone=out_start_zone,end_zone=out_end_zone,end_subzone=out_end_subzone,skill_subtype=out_skill_subtype,num_players=out_num_players,special_code=out_special_code,timeout=out_timeout,end_of_set=out_end_of_set,substitution=out_substitution,point=out_point,home_team_score=out_home_team_score,visiting_team_score=out_visiting_team_score,home_setter_position=out_home_setter_position,visiting_setter_position=out_visiting_setter_position,custom_code=out_custom_code,stringsAsFactors=FALSE),
          messages=msgs)
 }
