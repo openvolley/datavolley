@@ -55,7 +55,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         if (identical(tolower(encoding),"guess")) {
             encoding <- stri_enc_detect2(tst)[[1]]$Encoding
             encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
-            if (length(encoding)<=1) encoding <- iconvlist()
+            ##if (length(encoding)<=1) encoding <- iconvlist()
         }
       ##cat(encoding,"\n")
         ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
