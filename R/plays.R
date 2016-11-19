@@ -1,8 +1,8 @@
 ## functions for dealing with the main data part of the datavolley file
 
-skill_decode <- function(skill,code) {
+skill_decode <- function(skill,code,full_line,line_num) {
     if (!skill %in% c("S","R","A","B","D","E","F")) {
-        stop("code: ",code," --- unexpected skill: ",skill)
+        mymsgs <- collect_messages(mymsgs,paste0("unexpected skill: ",skill),line_num,full_line,fatal=TRUE)
     }
     switch(skill,
            S="Serve",
@@ -38,8 +38,7 @@ serve_map <- function(type,skill) {
 skill_type_decode <- function(skill,type,full_line,line_num) {
     mymsgs <- list(text=c(),line=c())
     if (!any(skill==c("S","R","A","B","D","E","F")))
-        mymsgs <- collect_messages(mymsgs,paste0("unexpected skill: ",skill),line_num,full_line)
-        ##stop("unexpected skill: ",skill)
+        mymsgs <- collect_messages(mymsgs,paste0("unexpected skill: ",skill),line_num,full_line,fatal=TRUExs)
     if (!any(type==c("H","M","Q","T","U","F","O")))
         mymsgs <- collect_messages(mymsgs,paste0("unexpected skill type: ",type," for skill: ",skill),line_num,full_line)
     list(decoded=switch(skill,
@@ -287,10 +286,15 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         thischar <- substr(code,2,2)
         ##player_number <- str_match(code,".(\\d+)") ##player_number <- as.numeric(player_number[2])
         tmp <- regexpr("^.(\\d+)",code)
-        if (tmp!=1) stop("player number not as expected in code: ",code)
-        player_number <- as.numeric(substr(code,2,attr(tmp,"match.length")[1]))
-        if (is.na(player_number)) {
-            stop("unexpected player number in code: ",code)
+        if (tmp!=1) {
+            msgs <- collect_messages(msgs,paste0("error: player number should start at the second character"),code_line_num[ci],full_lines[ci])
+            player_number <- NA
+            ##stop("player number not as expected in code: ",code)
+        } else {
+            player_number <- as.numeric(substr(code,2,attr(tmp,"match.length")[1]))
+            ##if (is.na(player_number)) {
+            ##    stop("unexpected player number in code: ",code)
+            ##}
         }
         out_player_number[ci] <- player_number
         ##player_name <- get_player_name(out_team[ci],player_number,meta)
@@ -298,7 +302,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         fullcode <- code
         code <- sub("^.\\d+","",code)
         skill <- substr(code,1,1)
-        out_skill[ci] <- skill_decode(skill,fullcode)
+        out_skill[ci] <- skill_decode(skill,fullcode,full_lines[ci],ci)
         hit_type <- substr(code,2,2)
         tmp <- skill_type_decode(skill,hit_type,full_lines[ci],ci)
         out_skill_type[ci] <- tmp$decoded
