@@ -302,9 +302,9 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         fullcode <- code
         code <- sub("^.\\d+","",code)
         skill <- substr(code,1,1)
-        out_skill[ci] <- skill_decode(skill,fullcode,full_lines[ci],ci)
+        out_skill[ci] <- skill_decode(skill,fullcode,full_lines[ci],code_line_num[ci])
         hit_type <- substr(code,2,2)
-        tmp <- skill_type_decode(skill,hit_type,full_lines[ci],ci)
+        tmp <- skill_type_decode(skill,hit_type,full_lines[ci],code_line_num[ci])
         out_skill_type[ci] <- tmp$decoded
         msgs <- join_messages(msgs,tmp$messages)
         skill_eval <- substr(code,3,3)
