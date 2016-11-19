@@ -102,13 +102,13 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         dv <- stri_trans_general(dv,"latin-ascii") ##dv <- iconv(dv,from="utf-8",to="ascii//TRANSLIT")
     }
     if (!do_warn) {
-        suppressMessages(out$meta <- read_meta(dv,surname_case))
+        suppressWarnings(out$meta <- read_meta(dv,surname_case))
     } else {
         out$meta <- read_meta(dv,surname_case)
     }
     out$meta$filename <- filename
     if (!do_warn) {
-        suppressMessages(this_main <- read_main(filename))
+        suppressWarnings(this_main <- read_main(filename))
     } else {
         this_main <- read_main(filename)
     }
