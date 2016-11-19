@@ -65,12 +65,14 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         badchars <- c(badchars,0x2000:0x206f)            
         enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars))
+        ##cat(str(sort(encerrors)),"\n")
         idx <- encerrors==min(encerrors)
         if (!any(idx)) stop("error in guessing text encoding")
         enctest <- enctest[idx]
         encoding <- encoding[idx]
+        ##cat(str(sort(encoding)),"\n")
         other_enc <- c()
-        if (any(duplicated(enctest))) {
+        if (FALSE) {##(any(duplicated(enctest))) {
             ## pick from the ones that give the most common output
             un <- unique(enctest)
             ui <- sapply(enctest,function(z)which(z==un))
