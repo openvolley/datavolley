@@ -2,7 +2,7 @@
 % Please edit documentation in R/validation.R
 \name{validate_dv}
 \alias{validate_dv}
-\title{Additional validation checks on a datavolley object}
+\title{Additional validation checks on a DataVolley file}
 \usage{
 validate_dv(x)
 }
@@ -10,10 +10,15 @@ validate_dv(x)
 \item{x}{datavolley: datavolley object as returned by \code{read_dv}}
 }
 \value{
-data.frame
+data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).
 }
 \description{
-This function is automatically run as part of \code{read_dv} if \code{do_extra_validation} is TRUE
+This function is automatically run as part of \code{read_dv} if \code{do_extra_validation} is TRUE.
+The current validation messages/checks are:
+\itemize{
+  \item message "the listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
+  \item message "player making a front row attack is not in the front row": an attack starting from zones 2-4 was made by a player not in the front row of the current rotation
+}
 }
 \examples{
 \dontrun{
