@@ -543,7 +543,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
             } else if (skill=="S") {
                 if (out_evaluation[ci]==evaluation_decoder("S","=")) {
                     ## error
-                    if (!any(special_code==c("O","L","R","N"))) {
+                    if (!any(special_code==c("O","L","R","N","Z"))) {
                         msgs <- collect_messages(msgs,paste0("unexpected special code: ",special_code),code_line_num[ci],full_lines[ci])
                     }
                     out_special_code[ci] <- switch(special_code,
@@ -551,6 +551,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                    "L"="Ball out - left",
                                                    "R"="Ball out - right",
                                                    "N"="Ball in net",
+                                                   "Z"="Referee call",
                                                    paste0("Unexpected ",special_code))
                 } else if (out_evaluation[ci]==evaluation_decoder("S","#")) {
                     ## point (ace)
