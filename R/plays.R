@@ -561,7 +561,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                     out_special_code[ci] <- switch(special_code,
                                                    "N"="Let",
                                                    paste0("Unexpected ",special_code))
-                } else if (any(out_evaluation[ci]==c(evaluation_decoder("S","/"),evaluation_decoder("S","-"),evaluation_decoder("S","+")))) {
+                } else if (any(out_evaluation[ci]==c(evaluation_decoder("S","/"),evaluation_decoder("S","-"),evaluation_decoder("S","+"),evaluation_decoder("S","!")))) {
                     ## continue
                     if (special_code!="N") {
                         msgs <- collect_messages(msgs,paste0("unexpected special code: ",special_code),code_line_num[ci],full_lines[ci])
@@ -571,7 +571,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                    paste0("Unexpected ",special_code))
                 } else {
                     ## not expecting special code for this attack evaluation outcome
-                    msgs <- collect_messages(msgs,paste0("unexpected special code: ",special_code," for attack evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci])
+                    msgs <- collect_messages(msgs,paste0("unexpected special code: ",special_code," for serve evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci])
                 }
             }
         }
