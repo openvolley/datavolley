@@ -5,6 +5,8 @@
 #' \itemize{
 #'   \item message "the listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
 #'   \item message "player making a front row attack is not in the front row": an attack starting from zones 2-4 was made by a player not in the front row of the current rotation
+#'   \item message "point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
+#'   \item message "point awarded to incorrect team (or [winning play] evaluation incorrect)"
 #' }
 #' 
 #' @param x datavolley: datavolley object as returned by \code{read_dv}
@@ -36,7 +38,6 @@ validate_dv <- function(x) {
     
     if (nrow(chk)>0)
         out <- rbind(out,data.frame(file_line_number=chk$file_line_number,message="player making a front row attack is not in the front row",file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE))
-    out
 
     ## player not in recorded rotation making a play (other than by libero)
     liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)] ##subset(x$meta$players_v,grepl("L",special_role))$number
@@ -48,6 +49,18 @@ validate_dv <- function(x) {
     chk <- sapply(1:nrow(pp),function(z) !pp$player_number[z] %in% (if (temp$which_team[z]=="home_team") liberos_h else liberos_v) & (!pp$player_number[z] %in% temp[z,]))
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],message="the listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],stringsAsFactors=FALSE))
+
+    ## point not awarded to right team following error
+    chk <- (plays$evaluation_code %eq% "=" | (plays$skill %eq% "Block" & plays$evaluation_code %eq% "/")) &  ## error or block Invasion
+            (plays$team %eq% plays$point_won_by)
+    if (any(chk))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message="point awarded to incorrect team following error (or \"error\" evaluation incorrect)",file_line=x$raw[plays$file_line_number[chk]],stringsAsFactors=FALSE))
+    
+    ## point not awarded to right team following win
+    chk <- (plays$skill %in% c("Serve","Attack","Block") & plays$evaluation_code %eq% "#") &  ## ace or winning attack or block
+            (!plays$team %eq% plays$point_won_by)
+    if (any(chk))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message=paste0("point awarded to incorrect team (or \"",plays$evaluation[chk],"\" evaluation incorrect)"),file_line=x$raw[plays$file_line_number[chk]],stringsAsFactors=FALSE))
     out
 }
 
