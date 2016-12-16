@@ -7,6 +7,8 @@
 #'   \item message "player making a front row attack is not in the front row": an attack starting from zones 2-4 was made by a player not in the front row of the current rotation
 #'   \item message "point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
 #'   \item message "point awarded to incorrect team (or [winning play] evaluation incorrect)"
+#'   \item message "player lineup did not change after substitution: was the sub recorded incorrectly?"
+#'   \item message "player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
 #' }
 #' 
 #' @param x datavolley: datavolley object as returned by \code{read_dv}
@@ -61,6 +63,40 @@ validate_dv <- function(x) {
             (!plays$team %eq% plays$point_won_by)
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message=paste0("point awarded to incorrect team (or \"",plays$evaluation[chk],"\" evaluation incorrect)"),file_line=x$raw[plays$file_line_number[chk]],stringsAsFactors=FALSE))
+
+    ## check that players changed correctly on substitution
+    ## e.g. *c02:01 means player 2 replaced by player 1
+    idx <- which(plays$substitution & grepl("^.c",plays$code))
+    idx <- idx[idx>2 & idx<(nrow(plays)-1)] ## discard anything at the start or end of the file
+    rot_errors <- list()
+    for (k in idx) {
+        rot_cols <- if (grepl("^a",plays$code[k])) paste0("visiting_p",1:6) else paste0("home_p",1:6)
+        prev_rot <- plays[k-1,rot_cols]
+        if (any(is.na(prev_rot))) {
+            if (k>2) prev_rot <- plays[k-2,rot_cols]
+        }
+        if (any(is.na(prev_rot))) next ## could perhaps search further backwards, but should not need to
+        ## have only seen one NA rot row in sequence in files so far
+        
+        new_rot <- plays[k+1,rot_cols]
+        if (any(is.na(new_rot))) {
+            if (k<(nrow(plays)-2)) new_rot <- plays[k+2,rot_cols]
+        }
+        if (any(is.na(new_rot))) next
+        
+        if (all(new_rot==prev_rot)) {
+            ## players did not change
+            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],message=paste0("player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],stringsAsFactors=FALSE)
+            next
+        }
+        sub_out <- as.numeric(sub(":.*$","",sub("^.c","",plays$code[k]))) ## outgoing player
+        sub_in <- as.numeric(sub("^.*:","",plays$code[k])) ## incoming player
+        if (!sub_out %in% prev_rot || !sub_in %in% new_rot || sub_in %in% prev_rot || sub_out %in% new_rot) {
+            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],message=paste0("player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],stringsAsFactors=FALSE)
+            next
+        }
+    }
+    if (length(rot_errors)>0) out <- rbind(out,do.call(rbind,rot_errors))
     out
 }
 

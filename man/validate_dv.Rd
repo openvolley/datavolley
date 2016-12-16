@@ -20,6 +20,8 @@ The current validation messages/checks are:
   \item message "player making a front row attack is not in the front row": an attack starting from zones 2-4 was made by a player not in the front row of the current rotation
   \item message "point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
   \item message "point awarded to incorrect team (or [winning play] evaluation incorrect)"
+  \item message "player lineup did not change after substitution: was the sub recorded incorrectly?"
+  \item message "player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
 }
 }
 \examples{
