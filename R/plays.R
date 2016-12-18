@@ -194,6 +194,9 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     ## vectorised end-of-set handling
     done <- grepl("\\*\\*\\dset",in_code) ## end-of-set markers
     out_end_of_set[done] <- TRUE
+    ## sanctions that look like ">RED"
+    idx <- !done & grepl("^>RED",in_code)
+    done[idx] <- TRUE
     ## team handling
     tm <- substr(in_code[!done],1,1)
     oktm <- tm=="a" | tm=="*"
@@ -256,10 +259,10 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     ## e.g.
     ##a$$SQ-;;;;;;;16.45.22;4;1;4;1;7138;;16;15;9;6;7;8;2;18;8;10;7;1;
     ##a$$EH=~~~~~~~~~RED;s;;;;;;16.45.22;4;1;4;1;7138;;16;15;9;6;7;8;2;18;8;10;7;1;
-    ## TODO add unhandled sanction message
     if (any(thisidx)) {
         myidx <- which(thisidx)
-        msgs <- collect_messages(msgs,"unhandled code, likely a sanction",code_line_num[myidx],full_lines[myidx])
+        ## don't issue a message ...
+        ##msgs <- collect_messages(msgs,"unhandled code, likely a sanction",code_line_num[myidx],full_lines[myidx])
     }
     done[thisidx] <- TRUE
 
