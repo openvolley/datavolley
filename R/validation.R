@@ -9,6 +9,11 @@
 #'   \item message "point awarded to incorrect team (or [winning play] evaluation incorrect)"
 #'   \item message "player lineup did not change after substitution: was the sub recorded incorrectly?"
 #'   \item message "player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
+#'   \item message "reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
+#'   \item message "reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
+#'   \item message "reception start zone does not match serve start zone"
+#'   \item message "reception end zone does not match serve end zone"
+#'   \item message "reception end sub-zone does not match serve end sub-zone"
 #' }
 #' 
 #' @param x datavolley: datavolley object as returned by \code{read_dv}
@@ -28,6 +33,28 @@
 validate_dv <- function(x) {
     plays <- plays(x)
     out <- data.frame(file_line_number=integer(),message=character(),file_line=character(),stringsAsFactors=FALSE)
+    chk_df <- function(chk,msg) data.frame(file_line_number=chk$file_line_number,message=msg,file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE)
+
+    ## receive type must match serve type
+    idx <- which(plays$skill %eq% "Reception")
+    chk <- plays[!plays$skill[idx-1] %eq% "Serve",]
+    if (nrow(chk)>0) {
+        out <- rbind(out,data.frame(file_line_number=chk$file_line_number,message="reception was not preceded by a serve",file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE))
+        idx <- idx[plays$skill[idx-1] %eq% "Serve"]
+    }
+    chk <- plays[idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception")],]
+    if (nrow(chk)>0)
+        out <- rbind(out,data.frame(file_line_number=chk$file_line_number,message="reception type does not match serve type",file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE))
+    ## reception zones must match serve zones
+    chk <- plays[idx[(!plays$start_zone[idx] %eq% plays$start_zone[idx-1]) & !(is.na(plays$start_zone[idx]) & is.na(plays$start_zone[idx-1]))],] ## start zones mismatch, but not both missing
+    if (nrow(chk)>0)
+        out <- rbind(out,chk_df(chk,"reception start zone does not match serve start zone"))
+    chk <- plays[idx[(!plays$end_zone[idx] %eq% plays$end_zone[idx-1]) & !(is.na(plays$end_zone[idx]) & is.na(plays$end_zone[idx-1]))],] ## end zones mismatch, but not both missing
+    if (nrow(chk)>0)
+        out <- rbind(out,chk_df(chk,"reception end zone does not match serve end zone"))
+    chk <- plays[idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx-1]) & !(is.na(plays$end_subzone[idx]) & is.na(plays$end_subzone[idx-1]))],] ## end zones mismatch, but not both missing
+    if (nrow(chk)>0)
+        out <- rbind(out,chk_df(chk,"reception end sub-zone does not match serve end sub-zone"))
     ## find front-row players for each attack
     attacks <- plays[plays$skill %eq% "Attack",]
     for (p in 1:6) attacks[,paste0("attacker_",p)] <- NA

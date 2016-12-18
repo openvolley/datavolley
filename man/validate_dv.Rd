@@ -22,6 +22,11 @@ The current validation messages/checks are:
   \item message "point awarded to incorrect team (or [winning play] evaluation incorrect)"
   \item message "player lineup did not change after substitution: was the sub recorded incorrectly?"
   \item message "player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
+  \item message "reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
+  \item message "reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
+  \item message "reception start zone does not match serve start zone"
+  \item message "reception end zone does not match serve end zone"
+  \item message "reception end sub-zone does not match serve end sub-zone"
 }
 }
 \examples{
