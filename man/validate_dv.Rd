@@ -17,7 +17,7 @@ This function is automatically run as part of \code{read_dv} if \code{do_extra_v
 The current validation messages/checks are:
 \itemize{
   \item message "the listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
-  \item message "player making a front row attack is not in the front row": an attack starting from zones 2-4 was made by a player not in the front row of the current rotation
+  \item message "player making a front row attack is in the back row": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
   \item message "point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
   \item message "point awarded to incorrect team (or [winning play] evaluation incorrect)"
   \item message "player lineup did not change after substitution: was the sub recorded incorrectly?"

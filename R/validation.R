@@ -4,7 +4,7 @@
 #' The current validation messages/checks are:
 #' \itemize{
 #'   \item message "the listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
-#'   \item message "player making a front row attack is not in the front row": an attack starting from zones 2-4 was made by a player not in the front row of the current rotation
+#'   \item message "player making a front row attack is in the back row": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
 #'   \item message "point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
 #'   \item message "point awarded to incorrect team (or [winning play] evaluation incorrect)"
 #'   \item message "player lineup did not change after substitution: was the sub recorded incorrectly?"
@@ -30,16 +30,18 @@ validate_dv <- function(x) {
     out <- data.frame(file_line_number=integer(),message=character(),file_line=character(),stringsAsFactors=FALSE)
     ## find front-row players for each attack
     attacks <- plays[plays$skill %eq% "Attack",]
-    temp <- ldply(1:nrow(attacks),function(z) {fcols <- if (attacks$home_team[z]==attacks$team[z]) c("home_p2","home_p3","home_p4") else c("visiting_p2","visiting_p3","visiting_p4"); data.frame(attacker2=attacks[z,fcols[1]],attacker3=attacks[z,fcols[2]],attacker4=attacks[z,fcols[3]])})
-    attacks$attacker2 <- temp$attacker2
-    attacks$attacker3 <- temp$attacker3
-    attacks$attacker4 <- temp$attacker4
+    for (p in 1:6) attacks[,paste0("attacker_",p)] <- NA
+    idx <- attacks$home_team==attacks$team
+    attacks[idx,paste0("attacker_",1:6)] <- attacks[idx,paste0("home_p",1:6)]
+    attacks[!idx,paste0("attacker_",1:6)] <- attacks[!idx,paste0("visiting_p",1:6)]
 
     ## front-row attacking player isn't actually in front row
-    chk <- attacks[attacks$start_zone %in% c(2,3,4) & attacks$player_number!=attacks$attacker2 & attacks$player_number!=attacks$attacker3 & attacks$player_number!=attacks$attacker4,]
+    ##chk <- attacks[attacks$start_zone %in% c(2,3,4) & attacks$player_number!=attacks$attacker_2 & attacks$player_number!=attacks$attacker_3 & attacks$player_number!=attacks$attacker_4,]
+    ## exclude instances where the player isn't on court, because this gets picked up elsewhere
+    chk <- attacks[attacks$start_zone %in% c(2,3,4) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
     
     if (nrow(chk)>0)
-        out <- rbind(out,data.frame(file_line_number=chk$file_line_number,message="player making a front row attack is not in the front row",file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE))
+        out <- rbind(out,data.frame(file_line_number=chk$file_line_number,message="player making a front row attack is in the back row",file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE))
 
     ## player not in recorded rotation making a play (other than by libero)
     liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)] ##subset(x$meta$players_v,grepl("L",special_role))$number
@@ -99,5 +101,3 @@ validate_dv <- function(x) {
     if (length(rot_errors)>0) out <- rbind(out,do.call(rbind,rot_errors))
     out
 }
-
-
