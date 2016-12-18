@@ -14,6 +14,9 @@
 #'   \item message "reception start zone does not match serve start zone"
 #'   \item message "reception end zone does not match serve end zone"
 #'   \item message "reception end sub-zone does not match serve end sub-zone"
+#'   \item message "attack type ([type]) does not match set type ([type])": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
+#'   \item message "block type ([type]) does not match attack type ([type])": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
+#'   \item message "dig type ([type]) does not match attack type ([type])": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
 #' }
 #' 
 #' @param x datavolley: datavolley object as returned by \code{read_dv}
@@ -42,19 +45,43 @@ validate_dv <- function(x) {
         out <- rbind(out,chk_df(chk,"reception was not preceded by a serve"))
         idx <- idx[plays$skill[idx-1] %eq% "Serve"]
     }
-    chk <- plays[idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception")],]
-    if (nrow(chk)>0)
-        out <- rbind(out,chk_df(chk,"reception type does not match serve type"))
+    idx2 <- idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception")]
+    if (length(idx2)>0)
+        out <- rbind(out,chk_df(plays[idx2,],paste0("reception type (",plays$skill_type[idx2],") does not match serve type (",plays$skill_type[idx2-1],")")))
     ## reception zones must match serve zones
-    chk <- plays[idx[(!plays$start_zone[idx] %eq% plays$start_zone[idx-1]) & !(is.na(plays$start_zone[idx]) & is.na(plays$start_zone[idx-1]))],] ## start zones mismatch, but not both missing
-    if (nrow(chk)>0)
-        out <- rbind(out,chk_df(chk,"reception start zone does not match serve start zone"))
-    chk <- plays[idx[(!plays$end_zone[idx] %eq% plays$end_zone[idx-1]) & !(is.na(plays$end_zone[idx]) & is.na(plays$end_zone[idx-1]))],] ## end zones mismatch, but not both missing
-    if (nrow(chk)>0)
-        out <- rbind(out,chk_df(chk,"reception end zone does not match serve end zone"))
-    chk <- plays[idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx-1]) & !(is.na(plays$end_subzone[idx]) & is.na(plays$end_subzone[idx-1]))],] ## end zones mismatch, but not both missing
-    if (nrow(chk)>0)
-        out <- rbind(out,chk_df(chk,"reception end sub-zone does not match serve end sub-zone"))
+    ## start zones mismatch, but not any missing
+    idx2 <- idx[(!plays$start_zone[idx] %eq% plays$start_zone[idx-1]) & !is.na(plays$start_zone[idx]) & !is.na(plays$start_zone[idx-1])]
+    if (length(idx2)>0)
+        out <- rbind(out,chk_df(plays[idx2,],paste0("reception start zone (",plays$start_zone[idx2],") does not match serve start zone (",plays$start_zone[idx2-1],")")))
+    ## end zones mismatch, but not any missing
+    idx2 <- idx[(!plays$end_zone[idx] %eq% plays$end_zone[idx-1]) & !is.na(plays$end_zone[idx]) & !is.na(plays$end_zone[idx-1])]
+    if (length(idx2)>0)
+        out <- rbind(out,chk_df(plays[idx2,],paste0("reception end zone (",plays$end_zone[idx2],") does not match serve end zone (",plays$end_zone[idx2-1],")")))
+    ## end zones mismatch, but not any missing
+    idx2 <- idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx-1]) & !is.na(plays$end_subzone[idx]) & !is.na(plays$end_subzone[idx-1])]
+    if (length(idx2)>0)
+        out <- rbind(out,chk_df(plays[idx2,],paste0("reception end sub-zone (",plays$end_subzone[idx2],") does not match serve end sub-zone (",plays$end_subzone[idx2-1],")")))
+
+    ## attack type must match set type
+    idx <- which(plays$skill %eq% "Attack")
+    idx <- idx[plays$skill[idx-1] %eq% "Set"]
+    idx <- idx[plays$skill_type[idx]!=gsub(" set"," attack",plays$skill_type[idx-1])]
+    if (length(idx)>0)
+        out <- rbind(out,chk_df(plays[idx,],paste0("attack type (",plays$skill_type[idx],") does not match set type (",plays$skill_type[idx-1],")")))
+
+    ## block type must match attack type
+    idx <- which(plays$skill %eq% "Block")
+    idx <- idx[plays$skill[idx-1] %eq% "Attack"]
+    idx <- idx[plays$skill_type[idx]!=gsub(" attack"," block",plays$skill_type[idx-1])]
+    if (length(idx)>0)
+        out <- rbind(out,chk_df(plays[idx,],paste0("block type (",plays$skill_type[idx],") does not match attack type (",plays$skill_type[idx-1],")")))
+
+    ## dig type must match attack type
+    idx <- which(plays$skill %eq% "Dig")
+    idx <- idx[plays$skill[idx-1] %eq% "Attack"]
+    idx <- idx[plays$skill_type[idx]!=gsub(" attack"," dig",plays$skill_type[idx-1])]
+    if (length(idx)>0)
+        out <- rbind(out,chk_df(plays[idx,],paste0("dig type (",plays$skill_type[idx],") does not match attack type (",plays$skill_type[idx-1],")")))
     
     ## front-row attacking player isn't actually in front row
     ## find front-row players for each attack

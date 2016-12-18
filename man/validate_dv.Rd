@@ -27,6 +27,9 @@ The current validation messages/checks are:
   \item message "reception start zone does not match serve start zone"
   \item message "reception end zone does not match serve end zone"
   \item message "reception end sub-zone does not match serve end sub-zone"
+  \item message "attack type ([type]) does not match set type ([type])": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
+  \item message "block type ([type]) does not match attack type ([type])": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
+  \item message "dig type ([type]) does not match attack type ([type])": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
 }
 }
 \examples{
