@@ -391,12 +391,13 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                 T="Tip",
                                                 paste0("Unknown ",skill_subtype))
             } else if (skill=="B") {
-                if (!any(skill_subtype==c("A","T"))) {
+                if (!any(skill_subtype==c("A","T","P"))) {
                     msgs <- collect_messages(msgs,paste0("unexpected block subtype: ",skill_subtype),code_line_num[ci],full_lines[ci])
                 }
                 out_skill_subtype[ci] <- switch(skill_subtype,
                                                 A="Block assist",
                                                 T="Block attempt",
+                                                P="Block on soft spike",
                                                 paste0("Unknown ",skill_subtype))
             } else if (skill=="R") {
                 if (!any(skill_subtype==c("L","R","W","O","M"))) {
@@ -410,7 +411,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                 M="Middle line",
                                                 paste0("Unknown ",skill_subtype))
             } else if (skill=="D") {
-                if (!any(skill_subtype==c("S","C","B","E"))) {
+                if (!any(skill_subtype==c("S","C","B","E","T","P"))) {
                     msgs <- collect_messages(msgs,paste0("unexpected dig subtype: ",skill_subtype),code_line_num[ci],full_lines[ci])
                 }
                 out_skill_subtype[ci] <- switch(skill_subtype,
@@ -418,6 +419,8 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                 C="Spike cover",
                                                 B="After block",
                                                 E="Emergency",
+                                                T="Tip",
+                                                P="Soft spike",
                                                 paste0("Unknown dig subtype ",skill_subtype))
             } else {
                 out_skill_subtype[ci] <- paste0("Unknown ",skill_subtype)
