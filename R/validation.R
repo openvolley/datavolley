@@ -39,12 +39,12 @@ validate_dv <- function(x) {
     idx <- which(plays$skill %eq% "Reception")
     chk <- plays[!plays$skill[idx-1] %eq% "Serve",]
     if (nrow(chk)>0) {
-        out <- rbind(out,data.frame(file_line_number=chk$file_line_number,message="reception was not preceded by a serve",file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE))
+        out <- rbind(out,chk_df(chk,"reception was not preceded by a serve"))
         idx <- idx[plays$skill[idx-1] %eq% "Serve"]
     }
     chk <- plays[idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception")],]
     if (nrow(chk)>0)
-        out <- rbind(out,data.frame(file_line_number=chk$file_line_number,message="reception type does not match serve type",file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE))
+        out <- rbind(out,chk_df(chk,"reception type does not match serve type"))
     ## reception zones must match serve zones
     chk <- plays[idx[(!plays$start_zone[idx] %eq% plays$start_zone[idx-1]) & !(is.na(plays$start_zone[idx]) & is.na(plays$start_zone[idx-1]))],] ## start zones mismatch, but not both missing
     if (nrow(chk)>0)
@@ -55,20 +55,17 @@ validate_dv <- function(x) {
     chk <- plays[idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx-1]) & !(is.na(plays$end_subzone[idx]) & is.na(plays$end_subzone[idx-1]))],] ## end zones mismatch, but not both missing
     if (nrow(chk)>0)
         out <- rbind(out,chk_df(chk,"reception end sub-zone does not match serve end sub-zone"))
+    
+    ## front-row attacking player isn't actually in front row
     ## find front-row players for each attack
     attacks <- plays[plays$skill %eq% "Attack",]
     for (p in 1:6) attacks[,paste0("attacker_",p)] <- NA
     idx <- attacks$home_team==attacks$team
     attacks[idx,paste0("attacker_",1:6)] <- attacks[idx,paste0("home_p",1:6)]
     attacks[!idx,paste0("attacker_",1:6)] <- attacks[!idx,paste0("visiting_p",1:6)]
-
-    ## front-row attacking player isn't actually in front row
-    ##chk <- attacks[attacks$start_zone %in% c(2,3,4) & attacks$player_number!=attacks$attacker_2 & attacks$player_number!=attacks$attacker_3 & attacks$player_number!=attacks$attacker_4,]
-    ## exclude instances where the player isn't on court, because this gets picked up elsewhere
     chk <- attacks[attacks$start_zone %in% c(2,3,4) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
-    
     if (nrow(chk)>0)
-        out <- rbind(out,data.frame(file_line_number=chk$file_line_number,message="player making a front row attack is in the back row",file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE))
+        out <- rbind(out,chk_df(chk,"player making a front row attack is in the back row"))
 
     ## player not in recorded rotation making a play (other than by libero)
     liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)] ##subset(x$meta$players_v,grepl("L",special_role))$number
