@@ -1,15 +1,17 @@
-# Accumulate messages for later display
-# Internal function, not exported
-collect_messages <- function(msgs,msg_text,line_nums,raw_lines,fatal=FALSE) {
+## Accumulate messages for later display
+## Internal function, not exported
+## severity: 2=critical, 1=informative, may lead to misinterpretation of data, 0=minor
+collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FALSE) {
     if (missing(line_nums)) line_nums <- NA
     if (missing(raw_lines)) raw_lines <- "[unknown]"
+    if (missing(severity)) severity <- NA
     if (fatal) {
         lnt <- as.character(line_nums)
         lnt[is.na(lnt)] <- "[unknown]"
         txt <- paste0("line ",lnt,": ",msg_text," (line in file is: \"",raw_lines,"\")")
         if (fatal) stop(paste(txt,collapse=" / "))
     } else {
-        msgs[[length(msgs)+1]] <- list(file_line_number=line_nums,message=msg_text,file_line=raw_lines)
+        msgs[[length(msgs)+1]] <- list(file_line_number=line_nums,message=msg_text,file_line=raw_lines,severity=severity)
     }
     #lnt <- as.character(line_nums)
     #lnt[is.na(lnt)] <- "[unknown]"
