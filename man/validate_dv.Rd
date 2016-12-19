@@ -4,10 +4,12 @@
 \alias{validate_dv}
 \title{Additional validation checks on a DataVolley file}
 \usage{
-validate_dv(x)
+validate_dv(x, strict = FALSE)
 }
 \arguments{
 \item{x}{datavolley: datavolley object as returned by \code{read_dv}}
+
+\item{strict}{logical: be strict about the checking? If FALSE, only identify critical issues (likely to result in misinterpretation of the data). If TRUE, return all detected issues}
 }
 \value{
 data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).

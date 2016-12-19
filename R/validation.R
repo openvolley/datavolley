@@ -20,6 +20,7 @@
 #' }
 #' 
 #' @param x datavolley: datavolley object as returned by \code{read_dv}
+#' @param strict logical: be strict about the checking? If FALSE, only identify critical issues (likely to result in misinterpretation of the data). If TRUE, return all detected issues
 #'
 #' @return data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).
 #'
@@ -33,35 +34,39 @@
 #' }
 #'
 #' @export
-validate_dv <- function(x) {
+validate_dv <- function(x,strict=FALSE) {
+    assert_that(is.flag(strict))
+    
     plays <- plays(x)
     out <- data.frame(file_line_number=integer(),message=character(),file_line=character(),stringsAsFactors=FALSE)
     chk_df <- function(chk,msg) data.frame(file_line_number=chk$file_line_number,message=msg,file_line=x$raw[chk$file_line_number],stringsAsFactors=FALSE)
 
     ## receive type must match serve type
     idx <- which(plays$skill %eq% "Reception")
-    chk <- plays[!plays$skill[idx-1] %eq% "Serve",]
-    if (nrow(chk)>0) {
-        out <- rbind(out,chk_df(chk,"reception was not preceded by a serve"))
+    idx2 <- idx[!plays$skill[idx-1] %eq% "Serve"]
+    if (length(idx2)>0) {
+        out <- rbind(out,chk_df(plays[idx2,],"reception was not preceded by a serve"))
         idx <- idx[plays$skill[idx-1] %eq% "Serve"]
     }
     idx2 <- idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception")]
     if (length(idx2)>0)
         out <- rbind(out,chk_df(plays[idx2,],paste0("reception type (",plays$skill_type[idx2],") does not match serve type (",plays$skill_type[idx2-1],")")))
-    ## reception zones must match serve zones
-    ## start zones mismatch, but not any missing
-    idx2 <- idx[(!plays$start_zone[idx] %eq% plays$start_zone[idx-1]) & !is.na(plays$start_zone[idx]) & !is.na(plays$start_zone[idx-1])]
-    if (length(idx2)>0)
-        out <- rbind(out,chk_df(plays[idx2,],paste0("reception start zone (",plays$start_zone[idx2],") does not match serve start zone (",plays$start_zone[idx2-1],")")))
-    ## end zones mismatch, but not any missing
-    idx2 <- idx[(!plays$end_zone[idx] %eq% plays$end_zone[idx-1]) & !is.na(plays$end_zone[idx]) & !is.na(plays$end_zone[idx-1])]
-    if (length(idx2)>0)
-        out <- rbind(out,chk_df(plays[idx2,],paste0("reception end zone (",plays$end_zone[idx2],") does not match serve end zone (",plays$end_zone[idx2-1],")")))
-    ## end zones mismatch, but not any missing
-    idx2 <- idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx-1]) & !is.na(plays$end_subzone[idx]) & !is.na(plays$end_subzone[idx-1])]
-    if (length(idx2)>0)
-        out <- rbind(out,chk_df(plays[idx2,],paste0("reception end sub-zone (",plays$end_subzone[idx2],") does not match serve end sub-zone (",plays$end_subzone[idx2-1],")")))
-
+    if (strict) {
+        ## reception zones must match serve zones
+        ## start zones mismatch, but not any missing
+        idx2 <- idx[(!plays$start_zone[idx] %eq% plays$start_zone[idx-1]) & !is.na(plays$start_zone[idx]) & !is.na(plays$start_zone[idx-1])]
+        if (length(idx2)>0)
+            out <- rbind(out,chk_df(plays[idx2,],paste0("reception start zone (",plays$start_zone[idx2],") does not match serve start zone (",plays$start_zone[idx2-1],")")))
+        ## end zones mismatch, but not any missing
+        idx2 <- idx[(!plays$end_zone[idx] %eq% plays$end_zone[idx-1]) & !is.na(plays$end_zone[idx]) & !is.na(plays$end_zone[idx-1])]
+        if (length(idx2)>0)
+            out <- rbind(out,chk_df(plays[idx2,],paste0("reception end zone (",plays$end_zone[idx2],") does not match serve end zone (",plays$end_zone[idx2-1],")")))
+        ## end zones mismatch, but not any missing
+        idx2 <- idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx-1]) & !is.na(plays$end_subzone[idx]) & !is.na(plays$end_subzone[idx-1])]
+        if (length(idx2)>0)
+            out <- rbind(out,chk_df(plays[idx2,],paste0("reception end sub-zone (",plays$end_subzone[idx2],") does not match serve end sub-zone (",plays$end_subzone[idx2-1],")")))
+    }
+    
     ## attack type must match set type
     idx <- which(plays$skill %eq% "Attack")
     idx <- idx[plays$skill[idx-1] %eq% "Set"]
