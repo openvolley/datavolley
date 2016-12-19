@@ -1,6 +1,6 @@
 ## Accumulate messages for later display
 ## Internal function, not exported
-## severity: 2=critical, 1=informative, may lead to misinterpretation of data, 0=minor
+## severity: 3=critical, 2=informative, may lead to misinterpretation of data, 1=minor, esp. those that might have resulted from selective post-processing of combo codes
 collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FALSE) {
     if (missing(line_nums)) line_nums <- NA
     if (missing(raw_lines)) raw_lines <- "[unknown]"
