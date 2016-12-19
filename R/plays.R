@@ -2,7 +2,7 @@
 
 skill_decode <- function(skill,code,full_line,line_num) {
     if (!skill %in% c("S","R","A","B","D","E","F")) {
-        mymsgs <- collect_messages(mymsgs,paste0("unexpected skill: ",skill),line_num,full_line,fatal=TRUE)
+        mymsgs <- collect_messages(mymsgs,paste0("unexpected skill: ",skill),line_num,full_line)
     }
     switch(skill,
            S="Serve",
@@ -38,7 +38,7 @@ serve_map <- function(type,skill) {
 skill_type_decode <- function(skill,type,full_line,line_num) {
     mymsgs <- list()##text=c(),line=c())
     if (!any(skill==c("S","R","A","B","D","E","F")))
-        mymsgs <- collect_messages(mymsgs,paste0("unexpected skill: ",skill),line_num,full_line,fatal=TRUE)
+        mymsgs <- collect_messages(mymsgs,paste0("unexpected skill: ",skill),line_num,full_line)
     if (!any(type==c("H","M","Q","T","U","F","O")))
         mymsgs <- collect_messages(mymsgs,paste0("unexpected skill type: ",type," for skill: ",skill),line_num,full_line)
     list(decoded=switch(skill,
