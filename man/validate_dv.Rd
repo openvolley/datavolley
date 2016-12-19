@@ -4,34 +4,34 @@
 \alias{validate_dv}
 \title{Additional validation checks on a DataVolley file}
 \usage{
-validate_dv(x, strict = FALSE)
+validate_dv(x, validation_level = 2)
 }
 \arguments{
 \item{x}{datavolley: datavolley object as returned by \code{read_dv}}
 
-\item{strict}{logical: be strict about the checking? If FALSE, only identify critical issues (likely to result in misinterpretation of the data). If TRUE, return all detected issues}
+\item{validation_level}{numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes.}
 }
 \value{
 data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).
 }
 \description{
-This function is automatically run as part of \code{read_dv} if \code{do_extra_validation} is TRUE.
+This function is automatically run as part of \code{read_dv} if \code{extra_validation} is greater than zero.
 The current validation messages/checks are:
 \itemize{
-  \item message "the listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
-  \item message "player making a front row attack is in the back row": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
-  \item message "point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
-  \item message "point awarded to incorrect team (or [winning play] evaluation incorrect)"
-  \item message "player lineup did not change after substitution: was the sub recorded incorrectly?"
-  \item message "player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
-  \item message "reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
-  \item message "reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
-  \item message "reception start zone does not match serve start zone"
-  \item message "reception end zone does not match serve end zone"
-  \item message "reception end sub-zone does not match serve end sub-zone"
-  \item message "attack type ([type]) does not match set type ([type])": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
-  \item message "block type ([type]) does not match attack type ([type])": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
-  \item message "dig type ([type]) does not match attack type ([type])": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
+  \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
+  \item message "Player making a front row attack is in the back row": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
+  \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
+  \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
+  \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
+  \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
+  \item message "Reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
+  \item message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
+  \item message "Reception start zone does not match serve start zone"
+  \item message "Reception end zone does not match serve end zone"
+  \item message "Reception end sub-zone does not match serve end sub-zone"
+  \item message "Attack type ([type]) does not match set type ([type])": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
+  \item message "Block type ([type]) does not match attack type ([type])": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
+  \item message "Dig type ([type]) does not match attack type ([type])": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
 }
 }
 \examples{
