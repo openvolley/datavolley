@@ -145,7 +145,7 @@ validate_dv <- function(x,validation_level=2) {
         
         if (all(new_rot==prev_rot)) {
             ## players did not change
-            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],message=paste0("player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],stringsAsFactors=FALSE)
+            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],message=paste0("player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
             next
         }
         sub_out <- as.numeric(sub(":.*$","",sub("^.c","",plays$code[k]))) ## outgoing player

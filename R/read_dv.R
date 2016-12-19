@@ -308,6 +308,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         if (nrow(cx$messages)>0) out$messages <- rbind.fill(out$messages,cx$messages)
     }
 
+    out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
     if (extra_validation>0) {
         moreval <- validate_dv(out,validation_level=extra_validation)
@@ -318,7 +319,6 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         }
     }
     if (nrow(out$messages)>0) out$messages <- arrange(out$messages,file_line_number)
-    out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
 
     if (do_warn) {
         ## spit the messages out
