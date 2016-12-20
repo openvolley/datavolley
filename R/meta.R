@@ -3,7 +3,7 @@
 ## match details
 read_match <- function(txt) {
     idx <- grep("[3MATCH]",txt,fixed=TRUE)
-    p <- read.table(text=txt[idx+1],sep=";",stringsAsFactors=FALSE,header=FALSE)
+    p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)
     names(p)[1] <- "date"
     names(p)[2] <- "time"
     names(p)[3] <- "season"
@@ -85,7 +85,7 @@ read_attacks <- function(txt) {
         NULL
     } else {
         ##tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
-        tryCatch({ p <- read.table(text=txt,sep=";",stringsAsFactors=FALSE) },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
+        tryCatch({ p <- read.table(text=txt,sep=";",quote="",stringsAsFactors=FALSE) },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         names(p)[1] <- "code"
         names(p)[3] <- "side"
