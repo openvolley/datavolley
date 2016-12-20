@@ -99,7 +99,7 @@ validate_dv <- function(x,validation_level=2) {
     chk <- attacks[attacks$start_zone %in% c(2,3,4) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
     if (nrow(chk)>0)
         out <- rbind(out,chk_df(chk,"Player making a front row attack is in the back row",severity=3))
-
+    
     ## player not in recorded rotation making a play (other than by libero)
     liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)] ##subset(x$meta$players_v,grepl("L",special_role))$number
     liberos_h <- x$meta$players_h$number[grepl("L",x$meta$players_h$special_role)] ##subset(x$meta$players_h,grepl("L",special_role))$number
@@ -156,6 +156,6 @@ validate_dv <- function(x,validation_level=2) {
         }
     }
     if (length(rot_errors)>0) out <- rbind(out,do.call(rbind,rot_errors))
-    out <- out[4-out$severity>=validation_level,]
+    out <- out[4-out$severity<=validation_level,]
     out[,setdiff(names(out),"severity")]
 }
