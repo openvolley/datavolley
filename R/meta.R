@@ -39,6 +39,7 @@ read_result <- function(txt) {
 read_teams <- function(txt) {
     txt <- text_chunk(txt,"[3TEAMS]")
     suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") }))
+    names(p)[1] <- "team_id"
     names(p)[2] <- "team"
     names(p)[3] <- "sets_won"
     names(p)[4] <- "coach"
