@@ -63,6 +63,7 @@ read_players <- function(txt,team,surname_case) {
     names(p)[6] <- "starting_position_set3"
     names(p)[7] <- "starting_position_set4"
     names(p)[8] <- "starting_position_set5"
+    names(p)[9] <- "player_id"
     names(p)[10] <- "lastname"
     names(p)[11] <- "firstname"
     names(p)[13] <- "special_role"
