@@ -48,11 +48,17 @@ text_chunk=function(txt,token1,token2) {
     } else {
         idx2=grep(token2,txt,fixed=TRUE)
     }
-    if (idx2==idx1+1) {
+    if (idx2==(idx1+1)) {
         ""
     } else {
-        paste(txt[(idx1+1):(idx2-1)],collapse="\n")
+        out <- txt[(idx1+1):(idx2-1)]
+        out <- out[sapply(out,is.notempty.string)]##!is.na(out)]
+        paste(out,collapse="\n")
     }
+}
+
+is.notempty.string <- function(x) {
+    (is.character(x) && length(x)==1) && !is.na(x) && nchar(x)>0
 }
 
 
