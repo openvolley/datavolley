@@ -61,12 +61,11 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
         ## surely there is a better way to do this
         badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso885913"),"\u008a","\u008e","\u009a","\u00b3"))
-        ## any unicode 0x0500 to 0x08ff is likely wrong
-        badchars <- c(badchars,0x500:0x8ff)
-        ## as are 0x2000 to 0x206f (general punctuation)
+        badchars <- c(badchars,1025:7499) ## cyrillic thorugh to music
+        ## 0x2000 to 0x206f (general punctuation) likely wrong
         badchars <- c(badchars,0x2000:0x206f)
         enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
-        encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars))## | utf8ToInt(z) > 0x2190))
+        encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars))
       ##cat(str(sort(encerrors)),"\n")
         idx <- encerrors==min(encerrors)
         if (!any(idx)) stop("error in guessing text encoding")
@@ -93,10 +92,11 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         } else {
             ## pick the first windows- encoding if there is one, else just pick first
             other_enc <- encoding
-            if (any(grepl("^windows",tolower(encoding))))
+            if (any(grepl("^windows",tolower(encoding)))) {
                 encoding <- encoding[grepl("^windows",tolower(encoding))][1]
-            else
+            } else {
                 encoding <- encoding[1]
+            }
             other_enc <- setdiff(other_enc,encoding)
         }
         if (verbose) {
