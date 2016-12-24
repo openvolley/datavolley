@@ -67,6 +67,7 @@ read_players <- function(txt,team,surname_case) {
     names(p)[10] <- "lastname"
     names(p)[11] <- "firstname"
     names(p)[13] <- "special_role"
+    names(p)[14] <- "role"
     if (is.character(surname_case)) {
         p$lastname <- switch(tolower(surname_case),
                              upper=toupper(p$lastname),
@@ -77,6 +78,7 @@ read_players <- function(txt,team,surname_case) {
         p$lastname <- surname_case(p$lastname)
     }
     p$name <- paste(p$firstname,p$lastname,sep=" ")
+    p$role <- plyr::mapvalues(p$role,from=1:5,to=c("libero","pass-hitter","opposite","middle","setter","unknown"),warn_missing=FALSE)
     p
 }
 
