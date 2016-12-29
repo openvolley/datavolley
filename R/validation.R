@@ -49,7 +49,7 @@ validate_dv <- function(x,validation_level=2) {
         out <- rbind(out,chk_df(plays[idx2,],"Reception was not preceded by a serve",severity=3))
         idx <- idx[plays$skill[idx-1] %eq% "Serve"]
     }
-    idx2 <- idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception")]
+    idx2 <- idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception") & (plays$skill_type[idx]!="Unknown serve reception type" & plays$skill_type[idx-1]!="Unknown serve type")]
     if (length(idx2)>0)
         out <- rbind(out,chk_df(plays[idx2,],paste0("Reception type (",plays$skill_type[idx2],") does not match serve type (",plays$skill_type[idx2-1],")")))
     if (validation_level>2) {
