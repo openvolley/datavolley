@@ -64,7 +64,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         badchars <- c(badchars,1025:7499) ## cyrillic thorugh to music
         ## 0x2000 to 0x206f (general punctuation) likely wrong
         badchars <- c(badchars,0x2000:0x206f)
-        badwords <- tolower(c("SŘRENSEN","Sřgaard","Sřren","MŘLLER","Ishřj","Vestsjćlland","KJĆR","Mřrk","Hjřrn","Ĺrhus")) ## these from windows-1252 (or ISO-8859-1) wrongly guessed as windows-1250
+        badwords <- tolower(c("S\u159RENSEN","S\u159gaard","S\u159ren","M\u159LLER","Ish\u159j","Vestsj\u107lland","KJ\u107R","M\u159rk","Hj\u159rn","\u139rhus")) ## these from windows-1252 (or ISO-8859-1) wrongly guessed as windows-1250
         enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
       ##cat(str(sort(encerrors)),"\n")
