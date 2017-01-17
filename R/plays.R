@@ -122,10 +122,9 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
         if (!is.logical(show_map)) show_map <- FALSE
         if (show_map) return(dtbl)
     
-        if (!is.character(skill) || nchar(skill)!=1) stop("requires 1-character skill input")
-        if (!is.character(evaluation_code) || nchar(evaluation_code)!=1) stop("requires 1-character evaluation_code input")
-        ##assert_that(is.string(skill),nchar(skill)==1)
-        ##assert_that(is.string(evaluation_code),nchar(evaluation_code)==1)
+        if (!is.character(skill) || nchar(skill)!=1) return(as.character(NA))
+        if (!is.character(evaluation_code) || nchar(evaluation_code)!=1) return(as.character(NA))
+
         if (!any(skill==dtbl_skill)) return(paste0("Unknown skill: ",skill))
         this_eval <- dtbl_evaluation[dtbl_skill==skill & dtbl_evaluation_code==evaluation_code]
         if (length(this_eval)<1) {
@@ -291,7 +290,6 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         if (tmp!=1) {
             msgs <- collect_messages(msgs,"Player number should start at the second character",code_line_num[ci],full_lines[ci],severity=2)
             player_number <- NA
-            ##stop("player number not as expected in code: ",code)
         } else {
             player_number <- as.numeric(substr(code,2,attr(tmp,"match.length")[1]))
             ##if (is.na(player_number)) {
@@ -313,7 +311,21 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         msgs <- join_messages(msgs,tmp$messages)
         skill_eval <- substr(code,3,3)
         out_evaluation_code[ci] <- skill_eval
-        out_evaluation[ci] <- evaluation_decoder(skill,skill_eval)
+        if (nchar(skill_eval)<1) {
+            msgs <- collect_messages(msgs,"Missing evaluation code",code_line_num[ci],full_lines[ci],severity=1)
+        } else {
+            out_evaluation[ci] <- evaluation_decoder(skill,skill_eval)
+            if (is.na(out_evaluation[ci])) {
+                msgs <- collect_messages(msgs,paste0("Unknown evaluation code: ",skill_eval),code_line_num[ci],full_lines[ci],severity=1)
+            }
+            if (grepl("unknown",out_evaluation[ci],ignore.case=TRUE)) {
+                ## out_evaluation[ci] will be something like "unknown dig evaluation"
+                ## make it more informative
+                temp <- paste0(out_evaluation[ci],": ",skill_eval)
+                temp <- paste0(toupper(substr(temp,1,1)),substr(temp,2,nchar(temp)))
+                msgs <- collect_messages(msgs,temp,code_line_num[ci],full_lines[ci],severity=1)
+            }
+        }
         ## extract the next few characters:
         ## for attacks, next 2 chars are the attack code from the metadata$attacks table, and similarly for sets
         ##attack_code <- substr(code,4,5)
@@ -365,7 +377,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         if (!any(start_zone==c("","~"))) {
             out_start_zone[ci] <- as.numeric(start_zone)
             if ((skill=="R" || skill=="S") && !any(start_zone==c(1,9,6,7,5))) {
-                msgs <- collect_messages(msgs,paste0("Unexpected serve/reception start zone: ",start_zone),code_line_num[ci],full_lines[ci],,severity=2)
+                msgs <- collect_messages(msgs,paste0("Unexpected serve/reception start zone: ",start_zone),code_line_num[ci],full_lines[ci],severity=2)
             }
         }
         end_zone <- some_codes[4]##substr(code,8,8)
