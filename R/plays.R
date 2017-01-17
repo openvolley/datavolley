@@ -292,9 +292,9 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
             player_number <- NA
         } else {
             player_number <- as.numeric(substr(code,2,attr(tmp,"match.length")[1]))
-            ##if (is.na(player_number)) {
-            ##    stop("unexpected player number in code: ",code)
-            ##}
+            if (is.na(player_number)) {
+                msgs <- collect_messages(msgs,"Could not read numeric player number",code_line_num[ci],full_lines[ci],severity=2)
+            }
         }
         out_player_number[ci] <- player_number
         ##player_name <- get_player_name(out_team[ci],player_number,meta)
