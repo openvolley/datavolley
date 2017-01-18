@@ -367,7 +367,6 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                 out_set_type[ci] <- set_type
                 if (!any(set_type==meta$attacks$set_type)) {
                     msgs <- collect_messages(msgs,paste0("Unmatched set type: ",set_type),code_line_num[ci],full_lines[ci],severity=1)
-                    ##stop("unmatched set type ",set_type," in code ",fullcode)
                 }
             } else {
                 msgs <- collect_messages(msgs,paste0("Unexpected set type: ",set_type),code_line_num[ci],full_lines[ci],severity=1)
