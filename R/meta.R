@@ -135,22 +135,21 @@ read_meta <- function(txt,surname_case) {
 
 
 get_player_name <- function(team,number,meta) {
-    if (!all(team=="*" | team=="a")) stop("team must be * or a")
     out <- rep(as.character(NA),length(number))
-    idx <- team=="*"
+    idx <- team %eq% "*"
     if (any(idx)) {
         out[idx] <- mapvalues(number[idx],from=meta$players_h$number,to=meta$players_h$name,warn_missing=FALSE)
-        invalid_number <- out[idx]==number[idx]
+        invalid_number <- idx & out==number
         out[invalid_number] <- "unknown player"
         ##if (any(invalid_number)) stop("invalid home team player number")
     }
-    idx <- team=="a"
+    idx <- team %eq% "a"
     if (any(idx)) {
         out[idx] <- mapvalues(number[idx],from=meta$players_v$number,to=meta$players_v$name,warn_missing=FALSE)
-        invalid_number <- out[idx]==number[idx]
+        invalid_number <- idx & out==number
         out[invalid_number] <- "unknown player"
         ##if (any(invalid_number)) stop("invalid visiting team player number")
-    }        
+    }
     out
 }
 
