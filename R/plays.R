@@ -121,9 +121,11 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
     function(skill,evaluation_code,show_map=FALSE) {  
         if (!is.logical(show_map)) show_map <- FALSE
         if (show_map) return(dtbl)
-    
-        if (!is.character(skill) || nchar(skill)!=1) return(as.character(NA))
-        if (!is.character(evaluation_code) || nchar(evaluation_code)!=1) return(as.character(NA))
+
+        skill <- as.character(skill)
+        evaluation_code <- as.character(evaluation_code)
+        if (nchar(skill)!=1) return(paste0("Unknown skill: ",skill))
+        if (nchar(evaluation_code)!=1) return(paste0("Unknown skill evaluation code: ",evaluation_code))
 
         if (!any(skill==dtbl_skill)) return(paste0("Unknown skill: ",skill))
         this_eval <- dtbl_evaluation[dtbl_skill==skill & dtbl_evaluation_code==evaluation_code]
@@ -136,7 +138,7 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
                                       D="dig",
                                       E="set",
                                       F="freeball")
-            paste0("unknown ",full_skill_name," evaluation")
+            paste0("Unknown ",full_skill_name," evaluation")
         } else {
             this_eval
         }
