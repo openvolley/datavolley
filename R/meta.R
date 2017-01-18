@@ -8,13 +8,13 @@ read_match <- function(txt) {
     names(p)[2] <- "time"
     names(p)[3] <- "season"
     names(p)[4] <- "league"
-    temp <- suppressWarnings(mdy_hms(paste(p$date,p$time,sep=" "),truncated=3))
+    suppressWarnings(temp <- mdy_hms(paste(p$date,p$time,sep=" "),truncated=3))
     if (is.na(temp)) {
         ## try dmy
-        temp <- suppressWarnings(dmy_hms(paste(p$date,p$time,sep=" "),truncated=3))
+        suppressWarnings(temp <- dmy_hms(paste(p$date,p$time,sep=" "),truncated=3))
     }
     p$date <- temp
-    p$time <- suppressWarnings(hms(p$time))
+    suppressWarnings(p$time <- hms(p$time))
     p
 }
 
