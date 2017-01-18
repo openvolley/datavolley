@@ -103,6 +103,7 @@ D^=^Error
 D^/^Ball directly back over net
 D^-^No structured attack possible
 D^#^Good dig
+D^+^Good dig
 D^!^OK, no first tempo possible
 E^=^Error
 E^-^Poor
@@ -318,14 +319,14 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         } else {
             out_evaluation[ci] <- evaluation_decoder(skill,skill_eval)
             if (is.na(out_evaluation[ci])) {
-                msgs <- collect_messages(msgs,paste0("Unknown evaluation code: ",skill_eval),code_line_num[ci],full_lines[ci],severity=1)
+                msgs <- collect_messages(msgs,paste0("Unknown evaluation code: ",skill_eval),code_line_num[ci],full_lines[ci],severity=2)
             }
             if (grepl("unknown",out_evaluation[ci],ignore.case=TRUE)) {
                 ## out_evaluation[ci] will be something like "unknown dig evaluation"
                 ## make it more informative
                 temp <- paste0(out_evaluation[ci],": ",skill_eval)
                 temp <- paste0(toupper(substr(temp,1,1)),substr(temp,2,nchar(temp)))
-                msgs <- collect_messages(msgs,temp,code_line_num[ci],full_lines[ci],severity=1)
+                msgs <- collect_messages(msgs,temp,code_line_num[ci],full_lines[ci],severity=2)
             }
         }
         ## extract the next few characters:
