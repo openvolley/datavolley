@@ -107,8 +107,10 @@ D^+^Good dig
 D^!^OK, no first tempo possible
 E^=^Error
 E^-^Poor
+E^/^Poor
 E^+^Positive
 E^#^Perfect
+E^!^OK
 F^=^Error
 F^/^Poor
 F^!^OK, no first tempo possible
