@@ -5,6 +5,7 @@
 #' \itemize{
 #'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
 #'   \item message "Player making a front row attack is in the back row": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
+#'   \item message "Repeated row with same skill and evaluation_code for the same player"
 #'   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
 #'   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
 #'   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
@@ -42,6 +43,7 @@ validate_dv <- function(x,validation_level=2) {
     if (validation_level<1) return(out)
 
     plays <- plays(x)
+    
     ## receive type must match serve type
     idx <- which(plays$skill %eq% "Reception")
     idx2 <- idx[!plays$skill[idx-1] %eq% "Serve"]
@@ -111,6 +113,15 @@ validate_dv <- function(x,validation_level=2) {
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
+    ## duplicate entries with same skill and evaluation code for the same player
+    idx <- which((plays$evaluation_code[-1] %eq% plays$evaluation_code[-nrow(plays)]) &
+                 (plays$skill[-1] %eq% plays$skill[-nrow(plays)]) &
+                 (plays$team[-1] %eq% plays$team[-nrow(plays)]) &
+                 (plays$player_number[-1] %eq% plays$player_number[-nrow(plays)])
+                 )+1
+    if (length(idx)>0)
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[idx],message="Repeated row with same skill and evaluation_code for the same player",file_line=x$raw[plays$file_line_number[idx]],severity=3,stringsAsFactors=FALSE))
+    
     ## point not awarded to right team following error
     chk <- (plays$evaluation_code %eq% "=" | (plays$skill %eq% "Block" & plays$evaluation_code %eq% "/")) &  ## error or block Invasion
             (plays$team %eq% plays$point_won_by)
