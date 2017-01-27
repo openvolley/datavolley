@@ -170,6 +170,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     out_team <- rep(as.character(NA),N)
     out_player_number <- rep(NA,N)
     out_player_name <- rep(as.character(NA),N)
+    out_player_id <- rep(as.character(NA),N)
     out_skill <- rep(as.character(NA),N)
     out_skill_type <- rep(as.character(NA),N)
     out_evaluation_code <- rep(as.character(NA),N)
@@ -302,8 +303,6 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
             }
         }
         out_player_number[ci] <- player_number
-        ##player_name <- get_player_name(out_team[ci],player_number,meta)
-        ##out_player_name[ci] <- player_name
         fullcode <- code
         code <- sub("^.\\d+","",code)
         skill <- substr(code,1,1)
@@ -599,11 +598,13 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
             }
         }
     }
-    ## fill in player_name from player_number
-    out_player_name[!done] <- get_player_name(out_team[!done],out_player_number[!done],meta)
+    ## fill in player_name and player_id from player_number
+    idx <- !is.na(out_player_number)
+    out_player_name[idx] <- get_player_name(out_team[idx],out_player_number[idx],meta)
+    out_player_id[idx] <- get_player_id(out_team[idx],out_player_number[idx],meta)
     dudidx <- (!is.na(out_player_number) & is.na(out_player_name)) | grepl("unknown player",out_player_name,ignore.case=TRUE)
     if (any(dudidx))
-        msgs <- collect_messages(msgs,paste0("Player number ",out_player_number[dudidx]," could not be resolved to a player name"),code_line_num[dudidx],full_lines[dudidx],severity=2)
+        msgs <- collect_messages(msgs,paste0("Player number ",out_player_number[dudidx]," could not be resolved to a player name/id"),code_line_num[dudidx],full_lines[dudidx],severity=2)
 
     ## order messages by line number
     #if (length(msgs$text)>0) {
@@ -617,7 +618,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         msgs <- data.frame(file_line_number=integer(),message=character(),file_line=character())
     }
 
-    list(plays=data.frame(code=in_code, team=out_team,player_number=out_player_number,player_name=out_player_name,skill=out_skill,skill_type=out_skill_type,evaluation_code=out_evaluation_code,evaluation=out_evaluation,attack_code=out_attack_code,attack_description=out_attack_description,set_code=out_set_code,set_description=out_set_description,set_type=out_set_type,start_zone=out_start_zone,end_zone=out_end_zone,end_subzone=out_end_subzone,skill_subtype=out_skill_subtype,num_players=out_num_players,special_code=out_special_code,timeout=out_timeout,end_of_set=out_end_of_set,substitution=out_substitution,point=out_point,home_team_score=out_home_team_score,visiting_team_score=out_visiting_team_score,home_setter_position=out_home_setter_position,visiting_setter_position=out_visiting_setter_position,custom_code=out_custom_code,file_line_number=as.integer(code_line_num),stringsAsFactors=FALSE),
+    list(plays=data.frame(code=in_code, team=out_team,player_number=out_player_number,player_name=out_player_name,player_id=out_player_id,skill=out_skill,skill_type=out_skill_type,evaluation_code=out_evaluation_code,evaluation=out_evaluation,attack_code=out_attack_code,attack_description=out_attack_description,set_code=out_set_code,set_description=out_set_description,set_type=out_set_type,start_zone=out_start_zone,end_zone=out_end_zone,end_subzone=out_end_subzone,skill_subtype=out_skill_subtype,num_players=out_num_players,special_code=out_special_code,timeout=out_timeout,end_of_set=out_end_of_set,substitution=out_substitution,point=out_point,home_team_score=out_home_team_score,visiting_team_score=out_visiting_team_score,home_setter_position=out_home_setter_position,visiting_setter_position=out_visiting_setter_position,custom_code=out_custom_code,file_line_number=as.integer(code_line_num),stringsAsFactors=FALSE),
          messages=msgs)
 }
 
