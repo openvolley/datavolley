@@ -79,6 +79,7 @@ read_players <- function(txt,team,surname_case) {
     }
     p$name <- paste(p$firstname,p$lastname,sep=" ")
     p$role <- plyr::mapvalues(p$role,from=1:6,to=c("libero","pass-hitter","opposite","middle","setter","unknown"),warn_missing=FALSE)
+    p$player_id <- as.character(p$player_id)
     p
 }
 
@@ -149,6 +150,23 @@ get_player_name <- function(team,number,meta) {
         invalid_number <- idx & out==number
         out[invalid_number] <- "unknown player"
         ##if (any(invalid_number)) stop("invalid visiting team player number")
+    }
+    out
+}
+
+get_player_id <- function(team,number,meta) {
+    out <- rep(as.character(NA),length(number))
+    idx <- team %eq% "*"
+    if (any(idx)) {
+        out[idx] <- mapvalues(number[idx],from=meta$players_h$number,to=meta$players_h$player_id,warn_missing=FALSE)
+        invalid_number <- idx & out==number
+        out[invalid_number] <- "unknown player"
+    }
+    idx <- team %eq% "a"
+    if (any(idx)) {
+        out[idx] <- mapvalues(number[idx],from=meta$players_v$number,to=meta$players_v$player_id,warn_missing=FALSE)
+        invalid_number <- idx & out==number
+        out[invalid_number] <- "unknown player"
     }
     out
 }
