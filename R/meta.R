@@ -251,7 +251,7 @@ PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 
 #' Get team names from datavolley object
 #'
-#' @param x datavolley: a datavolley object as returned by \code{read_dv}
+#' @param x datavolley or data.frame: a datavolley object as returned by \code{read_dv}, or the plays component of that object
 #'
 #' @return character vector of team names
 #'
@@ -264,5 +264,30 @@ PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 #'   teams(x)
 #' }
 #' @export
-teams <- function(x) x$meta$teams$team
+teams <- function(x) {
+    if ("meta" %in% names(x)) {
+        x$meta$teams$team
+    } else {
+        na.omit(unique(x$team))
+    }
+}
 
+#' @rdname teams
+#' @export
+home_team <- function(x) {
+    if ("meta" %in% names(x)) {
+        x$meta$teams$team[x$meta$teams$home_away_team=="*"]
+    } else {
+        na.omit(unique(x$home_team))
+    }
+}
+
+#' @rdname teams
+#' @export
+visiting_team <- function(x) {
+    if ("meta" %in% names(x)) {
+        x$meta$teams$team[x$meta$teams$home_away_team=="a"]
+    } else {
+        na.omit(unique(x$visiting_team))
+    }
+}
