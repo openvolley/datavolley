@@ -140,6 +140,12 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
     out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6")])
+    ## add player_id values for home_p1 etc    
+    for (thisp in 1:6)
+        out$plays[,paste0("home_player_id",thisp)] <- get_player_id(rep("*",nrow(out$plays)),out$plays[,paste0("home_p",thisp)],out$meta)
+    for (thisp in 1:6)
+        out$plays[,paste0("visiting_player_id",thisp)] <- get_player_id(rep("a",nrow(out$plays)),out$plays[,paste0("visiting_p",thisp)],out$meta)
+        
     ## add set number
     out$plays$set_number <- NA
     temp <- c(0,which(out$plays$end_of_set))
@@ -304,6 +310,9 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ints <- intersect(names(out$plays),c("player_number","start_zone","end_zone","home_team_score","visiting_team_score","home_setter_position","visiting_setter_position","set_number"))
     for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
 
+    ## add serving_team info
+    who_served <- ddply(out$plays,c("match_id","point_id"),function(z)data.frame(serving_team=na.omit(z$team[z$skill %eq% "Serve"])[1]))
+    out$plays <- plyr::join(out$plays,who_served,by=c("match_id","point_id"),match="first")
               
     class(out) <- c("datavolley",class(out))
     class(out$plays) <- c("datavolleyplays",class(out$plays))
