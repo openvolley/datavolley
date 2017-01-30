@@ -185,6 +185,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     out_end_subzone <- rep(as.character(NA),N)
     out_skill_subtype <- rep(as.character(NA),N)
     out_num_players <- rep(NA,N)
+    out_num_players_numeric <- rep(NA,N)
     out_special_code <- rep(as.character(NA),N)
     out_custom_code <- rep(as.character(NA),N)
     out_timeout <- rep(FALSE,N)
@@ -448,8 +449,9 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         ## number of people ("PLAYERS", p33)
         num_players <- some_codes[7]##substr(code,11,11)
         if (!any(num_players==c("","~"))) {
+            out_num_players_numeric[ci] <- as.numeric(num_players)
             if (skill=="A") {
-                if (!any(num_players==c("0","1","2","3"))) {
+                if (!any(num_players==c("0","1","2","3","4"))) {
                     msgs <- collect_messages(msgs,paste0("Unexpected number of players: ",num_players),code_line_num[ci],full_lines[ci],severity=2)
                 }
                 out_num_players[ci] <- switch(num_players,
@@ -457,6 +459,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                               "1"="1 player block",
                                               "2"="2 player block",
                                               "3"="3 player block",
+                                              "4"="Hole block",
                                               paste0("Unexpected ",num_players))
             } else if (skill=="B") {
                 if (!any(num_players==c("0","1","2","3","4"))) {
