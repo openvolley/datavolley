@@ -8,6 +8,9 @@ read_match <- function(txt) {
     names(p)[2] <- "time"
     names(p)[3] <- "season"
     names(p)[4] <- "league"
+    mymsgs <- list()
+    if (is.na(p$date))
+        mymsgs <- collect_messages(mymsgs,"Match information is missing the date",idx+1,txt[idx+1],severity=2)
     suppressWarnings(temp <- mdy_hms(paste(p$date,p$time,sep=" "),truncated=3))
     if (is.na(temp)) {
         ## try dmy
@@ -15,7 +18,7 @@ read_match <- function(txt) {
     }
     p$date <- temp
     suppressWarnings(p$time <- hms(p$time))
-    p
+    list(match=p,messages=mymsgs)
 }
 
 read_result <- function(txt) {
@@ -115,7 +118,10 @@ read_setter_calls <- function(txt) {
 
 read_meta <- function(txt,surname_case) {
     out <- list()
-    out$match <- read_match(txt)
+    msgs <- list()
+    temp <- read_match(txt)
+    out$match <- temp$match
+    msgs <- join_messages(msgs,temp$messages)
     out$result <- read_result(txt)
     out$teams <- read_teams(txt)
     if (diff(out$teams$sets_won)<0) {
@@ -131,7 +137,13 @@ read_meta <- function(txt,surname_case) {
     temp$home_team <- out$teams$team[out$teams$home_away_team=="*"]
     temp$visiting_team <- out$teams$team[out$teams$home_away_team=="a"]
     out$match_id <- digest(temp)
-    out
+    if (length(msgs)>0) {
+        msgs <- ldply(msgs,as.data.frame)
+        msgs <- arrange(msgs,file_line_number)
+    } else {
+        msgs <- data.frame(file_line_number=integer(),message=character(),file_line=character())
+    }
+    list(meta=out,messages=msgs)
 }
 
 
