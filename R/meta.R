@@ -26,6 +26,16 @@ read_match <- function(txt) {
     list(match=p,messages=msgs)
 }
 
+read_more <- function(txt) {
+    idx <- grep("[3MORE]",txt,fixed=TRUE)
+    p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)
+    for (k in 4:6) p[,k] <- as.character(p[,k])
+    names(p)[4] <- "city"
+    names(p)[5] <- "arena"
+    names(p)[6] <- "scout"
+    p
+}
+    
 read_result <- function(txt) {
     txt <- text_chunk(txt,"[3SET]")
     suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") }))
@@ -127,6 +137,7 @@ read_meta <- function(txt,surname_case) {
     temp <- read_match(txt)
     out$match <- temp$match
     msgs <- join_messages(msgs,temp$messages)
+    out$more <- read_more(txt)
     out$result <- read_result(txt)
     out$teams <- read_teams(txt)
     if (diff(out$teams$sets_won)<0) {
