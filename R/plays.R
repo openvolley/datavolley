@@ -547,7 +547,8 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                "P"="No jump",
                                                "Z"="Referee call",
                                                paste0("Unexpected ",special_code))
-            } else if (skill=="D") {
+            } else if (skill %in% c("D","R","F")) {
+                ## dig, reception, freeball all the same, see p16 of DV manual
                 if (!any(special_code==c("U","X","P","Z"))) {
                     msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
                 }
