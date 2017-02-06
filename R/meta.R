@@ -8,17 +8,22 @@ read_match <- function(txt) {
     names(p)[2] <- "time"
     names(p)[3] <- "season"
     names(p)[4] <- "league"
-    mymsgs <- list()
+    msgs <- list()
     if (is.na(p$date))
-        mymsgs <- collect_messages(mymsgs,"Match information is missing the date",idx+1,txt[idx+1],severity=2)
+        msgs <- collect_messages(msgs,"Match information is missing the date",idx+1,txt[idx+1],severity=2)
+    # don't warn on time, because the plays object has it anyway
+    ##if (is.na(p$time))
+    ##    msgs <- collect_messages(msgs,"Match information is missing the time",idx+1,txt[idx+1],severity=3)
     suppressWarnings(temp <- mdy_hms(paste(p$date,p$time,sep=" "),truncated=3))
     if (is.na(temp)) {
         ## try dmy
         suppressWarnings(temp <- dmy_hms(paste(p$date,p$time,sep=" "),truncated=3))
     }
     p$date <- temp
+    if (is.na(p$date) && length(msgs)<1)
+        msgs <- collect_messages(msgs,"Cannot parse the date/time in the match information",idx+1,txt[idx+1],severity=2)
     suppressWarnings(p$time <- hms(p$time))
-    list(match=p,messages=mymsgs)
+    list(match=p,messages=msgs)
 }
 
 read_result <- function(txt) {
@@ -139,7 +144,6 @@ read_meta <- function(txt,surname_case) {
     out$match_id <- digest(temp)
     if (length(msgs)>0) {
         msgs <- ldply(msgs,as.data.frame)
-        msgs <- arrange(msgs,file_line_number)
     } else {
         msgs <- data.frame(file_line_number=integer(),message=character(),file_line=character())
     }
