@@ -616,7 +616,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     #}
     if (length(msgs)>0) {
         msgs <- ldply(msgs,as.data.frame)
-        msgs <- arrange(msgs,file_line_number)
+        ##msgs <- arrange(msgs,file_line_number)
     } else {
         msgs <- data.frame(file_line_number=integer(),message=character(),file_line=character())
     }
