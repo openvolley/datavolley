@@ -340,8 +340,10 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
             ##out$messages <- c(out$messages,msg)
         }
     }
-    if (nrow(out$messages)>0) out$messages <- arrange(out$messages,file_line_number)
-
+    if (nrow(out$messages)>0) {
+        out$messages$file_line_number <- as.integer(out$messages$file_line_number)
+        out$messages <- arrange(out$messages,file_line_number)
+    }
     if (do_warn) {
         ## spit the messages out
         ##for (k in out$messages) message(k)
