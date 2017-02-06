@@ -23,6 +23,7 @@ attack_map <- function(type,skill) {
            T=paste0("Head ball ",skill),
            U=paste0("Super ball ",skill),
            F=paste0("Fast ball ",skill),
+           N=paste0("Slide ball ",skill),
            O=paste0("Other ",skill),
            paste0("Unknown ",skill," type"))
 }
@@ -37,7 +38,7 @@ serve_map <- function(type,skill) {
 
 skill_type_decode <- function(skill,type,full_line,line_num) {
     mymsgs <- list()
-    this_allowed_types <- if (skill %in% c("S","R")) c("H","M","Q") else c("H","M","Q","T","U","F","O")
+    this_allowed_types <- if (skill %in% c("S","R")) c("H","M","Q") else c("H","M","Q","T","U","F","O","N")
     if (!any(type==this_allowed_types))
         mymsgs <- collect_messages(mymsgs,paste0("Unexpected skill type: ",type," for skill: ",skill),line_num,full_line,severity=1)
     list(decoded=switch(skill,
