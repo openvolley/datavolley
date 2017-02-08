@@ -47,6 +47,7 @@ remap_team_names=function(x,remap,fixed=TRUE) {
                 x[[k]]$plays$point_won_by <- str_replace_all(x[[k]]$plays$point_won_by,fixed(this_team),team_should_be)
                 x[[k]]$plays$home_team <- str_replace_all(x[[k]]$plays$home_team,fixed(this_team),team_should_be)
                 x[[k]]$plays$visiting_team <- str_replace_all(x[[k]]$plays$visiting_team,fixed(this_team),team_should_be)
+                x[[k]]$plays$serving_team <- str_replace_all(x[[k]]$plays$serving_team,fixed(this_team),team_should_be)
             } else if (sum(idx)>1) {
                 stop(sprintf("ambiguous team name remapping: %s matches more than one 'from' entry",this_team))
             }
