@@ -317,9 +317,9 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
 
     ## add serving_team info
-    who_served <- ddply(out$plays,c("match_id","point_id"),function(z)data.frame(serving_team=na.omit(z$team[z$skill %eq% "Serve"])[1]))
+    who_served <- ddply(out$plays,c("match_id","point_id"),function(z)data.frame(serving_team=na.omit(z$team[z$skill %eq% "Serve"])[1],stringsAsFactors=FALSE))
     out$plays <- plyr::join(out$plays,who_served,by=c("match_id","point_id"),match="first")
-              
+    out$plays$serving_team <- as.character(out$plays$serving_team) ## to be sure is not factor
     class(out) <- c("datavolley",class(out))
     class(out$plays) <- c("datavolleyplays",class(out$plays))
 
