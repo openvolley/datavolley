@@ -79,7 +79,7 @@ check_player_names=function(x,distance_threshold=4) {
         stop("x must be a datavolley object or list of such objects")
     if (inherits(x,"datavolley")) x <- list(x)
 
-    names_ok <- ldply(x,function(z)rbind(data.frame(team=z$meta$teams$team[z$meta$teams$home_away_team=="*"],player_name=z$meta$players_h$name,stringsAsFactors=FALSE),data.frame(team=z$meta$teams$team[z$meta$teams$home_away_team=="a"],player_name=z$meta$players_v$name,stringsAsFactors=FALSE)))
+    names_ok <- ldply(x,function(z)rbind(data.frame(team=home_team(z),player_name=z$meta$players_h$name,stringsAsFactors=FALSE),data.frame(team=visiting_team(z),player_name=z$meta$players_v$name,stringsAsFactors=FALSE)))
     blah <- ddply(names_ok,c("team","player_name"),summarise,table(player_name))
     names(blah)[3] <- "count"
     blah$count <- as.integer(blah$count) ## else it inherits class 'table'
