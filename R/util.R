@@ -157,3 +157,8 @@ find_match <- function(match_id,x) {
     which(sapply(x,function(z)z$meta$match_id==match_id))
 }
 
+
+most_common_value <- function(x) {
+    ux <- unique(x)
+    ux[which.max(tabulate(match(x, ux)))]
+}
