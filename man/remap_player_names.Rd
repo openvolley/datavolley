@@ -15,18 +15,19 @@ remap_player_names(x, remap)
 datavolley object or list with corresponding player names changed
 }
 \description{
-A player name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A player matching the \code{team} and \code{from} entries in a row in \code{remap} is renamed to the corresponding \code{to} value.
+A player name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A player matching the \code{team} and \code{from} name entries in a row in \code{remap} is renamed to the corresponding \code{to} value. Alternatively, \code{remap} can be provided with the columns \code{player_id} and \code{player_name}: all player name entries associated with a given \code{player_id} will be changed to the associated \code{player_name}.
 }
 \examples{
 \dontrun{
   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
     insert_technical_timeouts=FALSE)
-  x <- remap_player_names(x,data.frame(team=c("Kamnik","Br.Maribor"),
-                            from=c("Ana Katarina HRIBAR","Marina CVETANOVIC"),
-                            to=c("Ana-Katarina HRIBAR","Marina CVETANOVIĆ")))
+  x <- remap_player_names(x,data.frame(team=c("Nova KBM Branik","Braslovče"),
+                            from=c("ELA PINTAR","KATJA MIHALINEC"),
+                            to=c("Ela PINTAR","Katja MIHALINEC"),stringsAsFactors=FALSE))
+
+  x <- remap_player_names(x,data.frame(player_id=c("id1","id2"),player_name=c("name to use 1","name to use 2"),stringsAsFactors=FALSE))
 }
 }
 \seealso{
 \code{\link{read_dv}}, \code{\link{check_player_names}}, \code{\link{find_player_name_remapping}}
 }
-

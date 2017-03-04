@@ -114,9 +114,9 @@ check_player_names=function(x,distance_threshold=4) {
 #' \dontrun{
 #'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
 #'     insert_technical_timeouts=FALSE)
-#'   x <- remap_player_names(x,data.frame(team=c("Kamnik","Br.Maribor"),
-#'                             from=c("Ana Katarina HRIBAR","Marina CVETANOVIC"),
-#'                             to=c("Ana-Katarina HRIBAR","Marina CVETANOVIĆ"),stringsAsFactors=FALSE))
+#'   x <- remap_player_names(x,data.frame(team=c("Nova KBM Branik","Braslovče"),
+#'                             from=c("ELA PINTAR","KATJA MIHALINEC"),
+#'                             to=c("Ela PINTAR","Katja MIHALINEC"),stringsAsFactors=FALSE))
 #'
 #'   x <- remap_player_names(x,data.frame(player_id=c("id1","id2"),player_name=c("name to use 1","name to use 2"),stringsAsFactors=FALSE))
 #' }
