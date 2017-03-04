@@ -17,4 +17,3 @@ Print method for summary.datavolleylist
 \seealso{
 \code{\link{dvlist_summary}}
 }
-

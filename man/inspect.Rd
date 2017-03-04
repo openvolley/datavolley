@@ -29,4 +29,3 @@ Convenience function for inspecting the plays component of a datavolley object
 \seealso{
 \code{\link{read_dv}} \code{\link{plays}}
 }
-

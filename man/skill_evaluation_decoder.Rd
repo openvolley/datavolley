@@ -22,4 +22,3 @@ sd(show_map=TRUE)
 \seealso{
 \code{\link{read_dv}}
 }
-

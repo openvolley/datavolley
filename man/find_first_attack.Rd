@@ -26,4 +26,3 @@ by(plays(x),plays(x)$team,function(z)find_first_attack(z)$win_rate)
 \seealso{
 \code{\link{read_dv}} \code{\link{plays}}
 }
-

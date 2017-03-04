@@ -21,4 +21,3 @@ Find each entry in y that follows each entry in x
 findnext(c(1,5,10),c(1,2,3,7,8,9))
 
 }
-

@@ -35,4 +35,3 @@ table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
 \seealso{
 \code{\link{read_dv}} \code{\link{plays}}
 }
-

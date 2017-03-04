@@ -31,4 +31,3 @@ A team name can sometimes be spelled incorrectly, particularly if there are char
 \seealso{
 \code{\link{read_dv}}
 }
-

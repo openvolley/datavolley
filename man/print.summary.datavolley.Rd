@@ -17,4 +17,3 @@ Print method for summary.datavolley
 \seealso{
 \code{\link{summary.datavolley}}
 }
-

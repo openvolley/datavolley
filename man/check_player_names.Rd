@@ -20,4 +20,3 @@ Player names can sometimes be spelled incorrectly, particularly if there are cha
 \seealso{
 \code{\link{read_dv}}, \code{\link{adist}}
 }
-

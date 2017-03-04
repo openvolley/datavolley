@@ -20,4 +20,3 @@ Find a particular match in a list of datavolley objects
 \seealso{
 \code{\link{read_dv}}
 }
-

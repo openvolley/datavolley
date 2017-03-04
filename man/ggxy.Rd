@@ -64,4 +64,3 @@ p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 \seealso{
 \code{\link{ggcourt}}
 }
-

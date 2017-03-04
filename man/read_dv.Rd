@@ -54,4 +54,3 @@ The \code{do_transliterate} option may be helpful when trying to work with multi
 \seealso{
 \code{\link{skill_evaluation_decoder}} \code{\link{validate_dv}}
 }
-

@@ -28,4 +28,3 @@ or "Transition" (play not associated with serve or reception)
 \seealso{
 \code{\link{read_dv}} \code{\link{plays}}
 }
-

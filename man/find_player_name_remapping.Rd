@@ -29,4 +29,3 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 \seealso{
 \code{\link{remap_player_names}}, \code{\link{check_player_names}}
 }
-

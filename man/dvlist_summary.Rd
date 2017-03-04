@@ -26,4 +26,3 @@ Summarize a list of volleyball matches
 \seealso{
 \code{\link{read_dv}}
 }
-

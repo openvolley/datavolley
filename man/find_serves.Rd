@@ -28,4 +28,3 @@ table(plays(x)$team[serve_idx])
 \seealso{
 \code{\link{read_dv}} \code{\link{plays}}
 }
-

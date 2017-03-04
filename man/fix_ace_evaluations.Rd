@@ -22,4 +22,3 @@ Some DataVolley files do not indicate serve aces with the skill evaluation "Ace"
 \seealso{
 \code{\link{read_dv}}
 }
-

@@ -28,4 +28,3 @@ A simple summary of a volleyball match
 \seealso{
 \code{\link{read_dv}}
 }
-

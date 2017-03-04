@@ -18,4 +18,3 @@ The example data files provided with the datavolley package came from \url{http:
 \author{
 Ben Raymond \email{ben@untan.gl}
 }
-

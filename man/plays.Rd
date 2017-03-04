@@ -25,4 +25,3 @@ Extract the plays component from a datavolley object
 \seealso{
 \code{\link{read_dv}}
 }
-
