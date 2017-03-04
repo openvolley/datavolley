@@ -101,7 +101,7 @@ check_player_names=function(x,distance_threshold=4) {
 
 #' Change player names
 #'
-#' A player name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A player matching the \code{team} and \code{from} entries in a row in \code{remap} is renamed to the corresponding \code{to} value.
+#' A player name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A player matching the \code{team} and \code{from} name entries in a row in \code{remap} is renamed to the corresponding \code{to} value. Alternatively, \code{remap} can be provided with the columns \code{player_id} and \code{player_name}: all player name entries associated with a given \code{player_id} will be changed to the associated \code{player_name}.
 #'
 #' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
 #' @param remap data.frame: data.frame of strings with columns team, from, and to
@@ -116,17 +116,19 @@ check_player_names=function(x,distance_threshold=4) {
 #'     insert_technical_timeouts=FALSE)
 #'   x <- remap_player_names(x,data.frame(team=c("Kamnik","Br.Maribor"),
 #'                             from=c("Ana Katarina HRIBAR","Marina CVETANOVIC"),
-#'                             to=c("Ana-Katarina HRIBAR","Marina CVETANOVIĆ")))
+#'                             to=c("Ana-Katarina HRIBAR","Marina CVETANOVIĆ"),stringsAsFactors=FALSE))
+#'
+#'   x <- remap_player_names(x,data.frame(player_id=c("id1","id2"),player_name=c("name to use 1","name to use 2"),stringsAsFactors=FALSE))
 #' }
 #' @export
 remap_player_names=function(x,remap) {
     if (!(inherits(x,"datavolley") | (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
         stop("x must be a datavolley object or list of such objects")
     assert_that(is.data.frame(remap))
-    assert_that(has_name(remap,"team"),has_name(remap,"from"),has_name(remap,"to"))
-    if (is.factor(remap$team)) remap$team <- as.character(remap$team)
-    if (is.factor(remap$from)) remap$from <- as.character(remap$from)
-    if (is.factor(remap$to)) remap$to <- as.character(remap$to)
+    if (!(identical(sort(names(remap)),c("from","team","to")) || identical(sort(names(remap)),c("player_id","player_name")))) {
+        stop("remap data.frame must either have column names \"team\", \"from\", \"to\" OR \"player_id\", \"player_name\"")
+    }
+    remap <- colwise(as.character)(remap) ## enforce all cols to be character
     was_list <- TRUE
     if (inherits(x,"datavolley")) {
         x <- list(x)
@@ -134,17 +136,33 @@ remap_player_names=function(x,remap) {
     }
     for (k in 1:length(x)) {
         ## apply to team lists
-        t <- "*"
-        this_team <- x[[k]]$meta$teams$team[x[[k]]$meta$teams$home_away_team==t]
-        this_to_change <- remap[remap$team==this_team,]
-        x[[k]]$meta$players_h$name <- mapvalues(x[[k]]$meta$players_h$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
-        t <- "a"
-        this_team <- x[[k]]$meta$teams$team[x[[k]]$meta$teams$home_away_team==t]
-        this_to_change <- remap[remap$team==this_team,]
-        x[[k]]$meta$players_v$name <- mapvalues(x[[k]]$meta$players_v$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
+        ##t <- "*"
+        if ("team" %in% names(remap)) {
+            this_team <- home_team(x[[k]])##x[[k]]$meta$teams$team[x[[k]]$meta$teams$home_away_team==t]
+            this_to_change <- remap[remap$team==this_team,]
+            x[[k]]$meta$players_h$name <- mapvalues(x[[k]]$meta$players_h$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
+        } else {
+            ## name by id
+            idx <- x[[k]]$meta$players_h$player_id %in% remap$player_id
+            x[[k]]$meta$players_h$name[idx] <- mapvalues(x[[k]]$meta$players_h$player_id[idx],from=remap$player_id,to=remap$player_name,warn_missing=FALSE)
+        }
+        ##t <- "a"
+        if ("team" %in% names(remap)) {
+            this_team <- visiting_team(x[[k]])##x[[k]]$meta$teams$team[x[[k]]$meta$teams$home_away_team==t]
+            this_to_change <- remap[remap$team==this_team,]
+            x[[k]]$meta$players_v$name <- mapvalues(x[[k]]$meta$players_v$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
+        } else {
+            idx <- x[[k]]$meta$players_v$player_id %in% remap$player_id
+            x[[k]]$meta$players_v$name[idx] <- mapvalues(x[[k]]$meta$players_v$player_id[idx],from=remap$player_id,to=remap$player_name,warn_missing=FALSE)
+        }            
         ## and to plays dataframe
-        for (ti in 1:nrow(remap)) {
-            x[[k]]$plays$player_name[x[[k]]$plays$team==remap$team[ti] & x[[k]]$plays$player_name==remap$from[ti]] <- remap$to[ti]
+        if ("team" %in% names(remap)) {
+            for (ti in 1:nrow(remap)) {
+                x[[k]]$plays$player_name[x[[k]]$plays$team==remap$team[ti] & x[[k]]$plays$player_name==remap$from[ti]] <- remap$to[ti]
+            } 
+        } else {
+            idx <- x[[k]]$plays$player_id %in% remap$player_id
+            x[[k]]$plays$player_name[idx] <- mapvalues(x[[k]]$plays$player_id[idx],from=remap$player_id,to=remap$player_name,warn_missing=FALSE)
         }
     }
     if (!was_list) {
