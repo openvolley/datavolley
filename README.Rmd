@@ -1,7 +1,18 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-datavolley
-==========
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README-"
+)
+```
+
+# datavolley
 
 [![Travis-CI Build Status](https://travis-ci.org/raymondben/datavolley.svg?branch=master)](https://travis-ci.org/raymondben/datavolley)
 
@@ -9,66 +20,41 @@ An R package for reading DataVolley scouting files.
 
 See also this [DataVolley file validator](https://untangl.shinyapps.io/dvalidate/), which is built on the datavolley package.
 
-Installation
-------------
+## Installation
 
-``` r
+```{r eval=FALSE}
 library(devtools)
 install_github("raymondben/datavolley")
 ```
 
-Example
--------
+## Example
 
 Read the example data file bundled with the package:
-
-``` r
+```{r}
 library(datavolley)
 x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
 summary(x)
-#> Match summary:
-#> Date: 2015-01-25
-#> League: Finale mladinke
-#> Teams: Braslovče (JERONČIČ ZORAN/MIHALINEC DAMIJANA)
-#>        vs
-#>        Nova KBM Branik (HAFNER MATJAŽ/)
-#> Result: 3-0 (25-16, 25-14, 25-22)
-#> Duration: 67 minutes
 ```
 
 Number of serves by team:
 
-``` r
+```{r}
 serve_idx <- find_serves(plays(x))
 table(plays(x)$team[serve_idx])
-#> 
-#>       Braslovče Nova KBM Branik 
-#>              74              54
 ```
 
 Distribution of serve run lengths:
 
-``` r
+```{r}
 serve_run_info <- find_runs(plays(x)[serve_idx,])
 table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
-#> 
-#>  1  2  3  4  5  7  8 
-#> 34 16  7  4  1  1  1
 ```
 
 Heatmap of attack rate by court position:
 
-``` r
+```{r}
 library(ggplot2)
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 ## calculate attack frequency by zone, per team
 attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>% group_by(team) %>%
     mutate(N_tm=n()) %>% group_by(team,start_zone) %>%
@@ -83,11 +69,9 @@ ggplot(attack_rate,aes(x,y,fill=rate))+geom_tile()+ggcourt(labels=x$meta$teams$t
     scale_fill_gradient2(name="Attack rate")
 ```
 
-![](README-unnamed-chunk-6-1.png)
-
 Or using arrows to show the starting and ending zones of attacks:
 
-``` r
+```{r}
 ## tabulate attacks by starting and ending zone
 attack_rate <- as.data.frame(xtabs(~start_zone+end_zone,data=subset(plays(x),skill=="Attack" &
   team==x$meta$teams$team[1])),stringsAsFactors=FALSE)
@@ -112,14 +96,12 @@ for (n in 1:nrow(attack_rate))
 p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 ```
 
-![](README-unnamed-chunk-7-1.png)
-
-Troubleshooting
----------------
+## Troubleshooting
 
 If you see unexpected behaviour, try `read_dv(...,do_warn=TRUE)` to obtain more diagnostic information during the process of reading and parsing the DataVolley file. Also check the text encoding specified to `read_dv` (did you specify one??)
 
-More
-----
 
-For more information about DataVolley, see <http://www.dataproject.com/IT/en/Volleyball>.
+## More
+
+For more information about DataVolley, see http://www.dataproject.com/IT/en/Volleyball.
+
