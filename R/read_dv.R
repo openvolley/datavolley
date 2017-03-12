@@ -122,11 +122,29 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$meta <- temp$meta
     mymsgs <- temp$messages
     out$meta$filename <- filename
-    if (!do_warn) {
-        suppressWarnings(this_main <- read_main(filename))
-    } else {
-        this_main <- read_main(filename)
-    }
+    tryCatch({
+        thismsg <- NULL
+        if (!do_warn) {
+            suppressWarnings(this_main <- read_main(filename))
+        } else {
+            this_main <- read_main(filename)
+        }},
+        error=function(e) {
+            ## if file ends with 0x00, fread from the file will fail
+            ## but already have the file contents as dv, so use that
+            if (grepl("Expected sep (';') but new line, EOF (or other non printing character) ends field 0",e$message,fixed=TRUE)) {
+                thismsg <<- data.frame(file_line_number=length(dv),message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
+                suppressWarnings(tmp <- dv[grep("[3SCOUT]",dv,fixed=TRUE):length(dv)])
+                if (!do_warn) {
+                    suppressWarnings(this_main <<- read_main(paste0(tmp,collapse="\n")))
+                } else {
+                    this_main <<- read_main(paste0(tmp,collapse="\n"))
+                }
+            }
+        })
+    ##if (!is.null(thismsg)) mymsgs <- rbind.fill(mymsgs,thismsg)
+    ## don't actually issue this warning, for now at least
+
     ## count line numbers: where do codes start from?
     suppressWarnings(cln <- grep("[3SCOUT]",dv,fixed=TRUE))
     if (length(cln)==1) {
