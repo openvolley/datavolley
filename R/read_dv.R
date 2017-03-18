@@ -58,16 +58,16 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
             ##if (length(encoding)<=1) encoding <- iconvlist()
         }
       ##cat(encoding,"\n")
-        ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
-        ## surely there is a better way to do this
-        badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso-8859-13"),"\u008a","\u008e","\u009a","\u00b3"))
-        badchars <- c(badchars,1025:7499) ## cyrillic through to music
+        ## badchars/badwords indicate characters/words that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
+        badchars <- c(1025:7499,utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3")) ## cyrillic through to music, then some isolated ones
+        ## not sure that next one should be considered bad char
+        ##badchars <- c(badchars,utf8ToInt("\uf9"))##iconv("\xf9",from="latin2")))
         ## 0x2000 to 0x206f (general punctuation) likely wrong
         badchars <- c(badchars,0x2000:0x206f)
         badwords <- tolower(c("S\u159RENSEN","S\u159gaard","S\u159ren","M\u159LLER","Ish\u159j","Vestsj\u107lland","KJ\u107R","M\u159rk","Hj\u159rn","\u139rhus")) ## these from windows-1252 (or ISO-8859-1) wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("\ud9ukas","Pawe\uf9","\ud9omacz",paste0("Mo\ufd","d\ufdonek"),"W\uf9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1252
         badwords <- c(badwords,tolower(c("\u3a9ukas","Pawe\u3c9","\u3a9omacz",paste0("Mo\u3cd","d\u3cdonek"),"W\u3c9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1253
-        ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char)) then convert to hex
+        ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
         enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
       ##cat(str(sort(encerrors)),"\n")
