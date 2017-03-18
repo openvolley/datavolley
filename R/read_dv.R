@@ -2,7 +2,7 @@
 
 #' Read a datavolley file
 #'
-#' The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso88591" (western Europe and Americas), "iso88592" (central/eastern Europe), "iso885913" (Baltic languages)
+#' The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)
 #' 
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
@@ -60,7 +60,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
       ##cat(encoding,"\n")
         ## badchars indicate characters that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
         ## surely there is a better way to do this
-        badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso885913"),"\u008a","\u008e","\u009a","\u00b3"))
+        badchars <- utf8ToInt(paste0(iconv("\xf9",from="latin2"),iconv("\xb3\xa3",from="iso-8859-13"),"\u008a","\u008e","\u009a","\u00b3"))
         badchars <- c(badchars,1025:7499) ## cyrillic through to music
         ## 0x2000 to 0x206f (general punctuation) likely wrong
         badchars <- c(badchars,0x2000:0x206f)
