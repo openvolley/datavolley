@@ -20,6 +20,8 @@ The current validation messages/checks are:
 \itemize{
   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
   \item message "Player making a front row attack is in the back row": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
+  \item message "Attack (which was blocked) does not have number of blockers recorded"
+  \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
   \item message "Repeated row with same skill and evaluation_code for the same player"
   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"

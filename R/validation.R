@@ -5,6 +5,8 @@
 #' \itemize{
 #'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
 #'   \item message "Player making a front row attack is in the back row": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
+#'   \item message "Attack (which was blocked) does not have number of blockers recorded"
+#'   \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
 #'   \item message "Repeated row with same skill and evaluation_code for the same player"
 #'   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
 #'   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
@@ -101,7 +103,17 @@ validate_dv <- function(x,validation_level=2) {
     chk <- attacks[attacks$start_zone %in% c(2,3,4) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
     if (nrow(chk)>0)
         out <- rbind(out,chk_df(chk,"Player making a front row attack is in the back row",severity=3))
-    
+
+    ## number of blockers (for an attack) should be >=1 if it is followed by a block
+    idx <- which(plays$skill %eq% "Block")-1 ## -1 to be on the attack
+    idx2 <- idx[plays$skill[idx] %eq% "Attack" & (!plays$team[idx] %eq% plays$team[idx+1]) & is.na(plays$num_players[idx])]
+    if (length(idx2)>0)
+        out <- rbind(out,chk_df(plays[idx2,],"Attack (which was blocked) does not have number of blockers recorded",severity=2))
+
+    idx2 <- idx[plays$skill[idx] %eq% "Attack" & (!plays$team[idx] %eq% plays$team[idx+1]) & (plays$num_players[idx] %eq% "No block")]
+    if (length(idx2)>0)
+        out <- rbind(out,chk_df(plays[idx2,],"Attack (which was followed by a block) has \"No block\" recorded for number of players",severity=3))
+
     ## player not in recorded rotation making a play (other than by libero)
     liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)] ##subset(x$meta$players_v,grepl("L",special_role))$number
     liberos_h <- x$meta$players_h$number[grepl("L",x$meta$players_h$special_role)] ##subset(x$meta$players_h,grepl("L",special_role))$number
