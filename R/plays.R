@@ -3,7 +3,7 @@ skill_decode <- function(skill,code,full_line,line_num) {
     mymsgs <- list()
     if (!skill %in% c("S","R","A","B","D","E","F"))
         mymsgs <- collect_messages(mymsgs,paste0("Unexpected skill: ",skill),line_num,full_line,severity=2)
-    list(decoded=switch(skill,
+    list(decoded=switch(EXPR=skill,
                       S="Serve",
                       R="Reception",
                       A="Attack",
@@ -41,7 +41,7 @@ skill_type_decode <- function(skill,type,full_line,line_num) {
     this_allowed_types <- if (skill %in% c("S","R")) c("H","M","Q") else c("H","M","Q","T","U","F","O","N")
     if (!any(type==this_allowed_types))
         mymsgs <- collect_messages(mymsgs,paste0("Unexpected skill type: ",type," for skill: ",skill),line_num,full_line,severity=1)
-    list(decoded=switch(skill,
+    list(decoded=switch(EXPR=skill,
              S=serve_map(type,"serve"),
              R=serve_map(type,"serve reception"),
              A=attack_map(type,"attack"),
@@ -134,7 +134,7 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
         if (!any(skill==dtbl_skill)) return(paste0("Unknown skill: ",skill))
         this_eval <- dtbl_evaluation[dtbl_skill==skill & dtbl_evaluation_code==evaluation_code]
         if (length(this_eval)<1) {
-            full_skill_name <- switch(skill,
+            full_skill_name <- switch(EXPR=skill,
                                       S="serve",
                                       R="pass",
                                       A="attack",
@@ -435,7 +435,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                 if (!any(skill_subtype==c("S","C","B","E","T","P"))) {
                     msgs <- collect_messages(msgs,paste0("Unexpected dig subtype: ",skill_subtype),code_line_num[ci],full_lines[ci],severity=1)
                 }
-                out_skill_subtype[ci] <- switch(skill_subtype,
+                out_skill_subtype[ci] <- switch(EXPR=skill_subtype,
                                                 S="On spike",
                                                 C="Spike cover",
                                                 B="After block",
