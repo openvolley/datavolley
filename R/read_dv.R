@@ -367,7 +367,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     }
     if (nrow(out$messages)>0) {
         out$messages$file_line_number <- as.integer(out$messages$file_line_number)
-        out$messages <- arrange(out$messages,file_line_number)
+        out$messages <- out$messages[order(out$messages$file_line_number),] ##out$messages <- arrange(out$messages,file_line_number)
     }
     if (do_warn) {
         ## spit the messages out
@@ -455,14 +455,14 @@ dvlist_summary=function(z) {
     teams <- suppressMessages(join(teams,ddply(temp,c("team"),function(q)data.frame(won=sum(q$won_match)))))
     teams$win_rate <- teams$won/teams$played
 
-    temp <- ddply(ldply(z,function(q){ temp <- q$meta$teams[,c("team","sets_won")]; temp$sets_played <- sum(q$meta$teams$sets_won); temp}),.(team),summarise,sets_played=sum(sets_played),sets_won=sum(sets_won))
+    temp <- ddply(ldply(z,function(q){ temp <- q$meta$teams[,c("team","sets_won")]; temp$sets_played <- sum(q$meta$teams$sets_won); temp}),c("team"),function(z)data.frame(sets_played=sum(z$sets_played),sets_won=sum(z$sets_won)))##summarise,sets_played=sum(sets_played),sets_won=sum(sets_won))
     temp$set_win_rate <- temp$sets_won/temp$sets_played
     teams <- suppressMessages(join(teams,temp))
     
     temp <- ldply(z,function(q){ s <- summary(q); s$sc <- colSums(s$set_scores); data.frame(team=s$teams$team,points_for=s$sc,points_against=s$sc[2:1])})
     teams <- suppressMessages(join(teams,ddply(temp,c("team"),function(q)data.frame(points_for=as.integer(sum(q$points_for)),points_against=as.integer(sum(q$points_against))))))
     teams$points_ratio <- teams$points_for/teams$points_against
-    teams <- arrange(teams,team)
+    teams <- teams[order(teams$team),] ##arrange(teams,team)
     out$ladder <- teams
     class(out) <- "summary.datavolleylist"
     out
