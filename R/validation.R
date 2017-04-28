@@ -108,7 +108,7 @@ validate_dv <- function(x,validation_level=2) {
     idx <- which(plays$skill %eq% "Block")-1 ## -1 to be on the attack
     idx2 <- idx[plays$skill[idx] %eq% "Attack" & (!plays$team[idx] %eq% plays$team[idx+1]) & is.na(plays$num_players[idx])]
     if (length(idx2)>0)
-        out <- rbind(out,chk_df(plays[idx2,],"Attack (which was blocked) does not have number of blockers recorded",severity=2))
+        out <- rbind(out,chk_df(plays[idx2,],"Attack (which was blocked) does not have number of blockers recorded",severity=1))
 
     idx2 <- idx[plays$skill[idx] %eq% "Attack" & (!plays$team[idx] %eq% plays$team[idx+1]) & (plays$num_players[idx] %eq% "No block")]
     if (length(idx2)>0)
