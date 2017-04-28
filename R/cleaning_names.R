@@ -80,9 +80,12 @@ check_player_names=function(x,distance_threshold=4) {
     if (inherits(x,"datavolley")) x <- list(x)
 
     names_ok <- ldply(x,function(z)rbind(data.frame(team=home_team(z),player_name=z$meta$players_h$name,stringsAsFactors=FALSE),data.frame(team=visiting_team(z),player_name=z$meta$players_v$name,stringsAsFactors=FALSE)))
-    blah <- ddply(names_ok,c("team","player_name"),summarise,table(player_name))
+    ##blah <- ddply(names_ok,c("team","player_name"),summarise,table(player_name))
+    ##names(blah)[3] <- "count"
+    ##blah$count <- as.integer(blah$count) ## else it inherits class 'table'
+    blah <- ddply(names_ok,c("team","player_name"),function(z)table(z$player_name))
     names(blah)[3] <- "count"
-    blah$count <- as.integer(blah$count) ## else it inherits class 'table'
+    blah$count <- as.integer(blah$count)
     ## similarity of adjacent names
     ndist <- adist(blah$player_name)
     mask <- lower.tri(ndist)
