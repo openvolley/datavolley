@@ -103,7 +103,7 @@ B^!^Poor, opposition to replay
 D^=^Error
 D^/^Ball directly back over net
 D^-^No structured attack possible
-D^#^Good dig
+D^#^Perfect dig
 D^+^Good dig
 D^!^OK, no first tempo possible
 E^=^Error
