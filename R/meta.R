@@ -63,6 +63,11 @@ read_teams <- function(txt) {
     names(p)[4] <- "coach"
     names(p)[5] <- "assistant"
     p$home_away_team <- c("*","a")
+    ## check for identical team names
+    if (p$team[1] %eq% p$team[2]) {
+        p$team[1] <- paste0(p$team[1]," (home)")
+        p$team[2] <- paste0(p$team[2]," (visiting)")
+    }
     p
 }
 
