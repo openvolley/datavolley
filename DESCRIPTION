@@ -16,7 +16,6 @@ Imports:
     plyr,
     digest
 Suggests:
-    sodium,
     testthat,
     ggplot2
 Encoding: UTF-8
