@@ -162,3 +162,7 @@ most_common_value <- function(x) {
     ux <- unique(x)
     ux[which.max(tabulate(match(x, ux)))]
 }
+
+readRDSc <- function(f) {
+    unserialize(sodium::simple_decrypt(readRDS(f),Sys.getenv("WINDVK")),NULL)
+}
