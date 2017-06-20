@@ -200,9 +200,24 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     ## vectorised end-of-set handling
     done <- grepl("\\*\\*\\dset",in_code) ## end-of-set markers
     out_end_of_set[done] <- TRUE
+
+    ## rotation errors
+    ## ">ROT<" ">ROTAZ" ">ROTAZIONE" ">ROT" ">FALLOROT" ">FORMAZIONE"
+    thisidx <- grepl("^.\\$\\$R",in_code) | grepl("^>(ROT|FALLOROT|FORMAZIONE)",in_code)
+    ## these lines are followed by a $$& line, so don't do anything here for the time being
+    out_skill[thisidx] <- "Rotation error"
+    out_evaluation[thisidx] <- "Error"
+    done[thisidx] <- TRUE
+    
     ## sanctions that look like ">RED"
-    idx <- !done & grepl("^>RED",in_code)
+    ## actually anything starting with ">", are sanctions, rotation errors (dealt with above), etc
+    ## from Italian league files:
+    ##">RED<"  ">RED"  ">ROSSO"
+    ## ">CHECK_RIPETE"    ">FALLO"   ">CONTESA"  ">CHECK_CONTESA" look like challenge notes
+    ## ">SECONDI"   ??
+    idx <- !done & grepl("^>",in_code)
     done[idx] <- TRUE
+
     ## team handling
     tm <- substr(in_code[!done],1,1)
     oktm <- tm=="a" | tm=="*"
@@ -252,13 +267,6 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     ## so don't set out_point here
     done[thisidx] <- TRUE
     
-    thisidx <- grepl("^.\\$\\$R",in_code) | grepl("^>ROT<",in_code)
-    ## rotation error? not entirely sure, not many of these 
-    ## these lines are followed by a $$& line, so don't do anything here for the time being
-    out_skill[thisidx] <- "Rotation error"
-    out_evaluation[thisidx] <- "Error"
-    done[thisidx] <- TRUE
-
     thisidx <- grepl("^.\\$\\$[SE]",in_code)
     ## sanction
     ## not handled yet
