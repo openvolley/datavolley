@@ -261,12 +261,12 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     done[thisidx] <- TRUE
     
     thisidx <- grepl("^.\\$\\$&",in_code)
-    ## win or loss of a point in an undefined way
+    ## green code: win or loss of a point in an undefined way
     ## team marker here says which team played the ball
     ## but doesn't say which team won the point
     ## so don't set out_point here
     done[thisidx] <- TRUE
-    
+
     thisidx <- grepl("^.\\$\\$[SE]",in_code)
     ## sanction
     ## not handled yet
@@ -280,6 +280,14 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     }
     done[thisidx] <- TRUE
 
+    ## occasionally see green codes but without the "&"
+    thisidx <- grepl("^.\\$\\$[^&]",in_code) & !done
+    if (any(thisidx)) {
+        thisidx <- which(thisidx)
+        msgs <- collect_messages(msgs,"Unrecognized code (if this is a green code (\"$$\") it should be \"$$&\")",code_line_num[thisidx],full_lines[thisidx],severity=2)
+        done[thisidx] <- TRUE
+    }
+    
     thisidx <- grepl("^.T",in_code)
     ## timeout by this team
     out_timeout[thisidx] <- TRUE
