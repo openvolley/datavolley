@@ -21,11 +21,15 @@
 #' @seealso \code{\link{skill_evaluation_decoder}} \code{\link{validate_dv}}
 #' @examples
 #' \dontrun{
+#'   ## to read the example file bundled with the package
 #'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
 #'     insert_technical_timeouts=FALSE)
 #'   summary(x)
 #'
-#' ## Insert a technical timeout at point 12 in sets 1 to 4:
+#'   ## or to read your own file, omit the system.file() part:
+#'   x <- read_dv("c:/some/path/myfile.dvw",insert_technical_timeouts=FALSE)
+#' 
+#'   ## Insert a technical timeout at point 12 in sets 1 to 4:
 #'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
 #'     insert_technical_timeouts=list(c(12),NULL))
 #' }
@@ -38,7 +42,11 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
     if (!missing(custom_code_parser)) assert_that(is.function(custom_code_parser) || is.null(custom_code_parser))
-    
+    assert_that(is.string(filename))
+    if (nchar(filename)<1)
+        stop("filename was specified as an empty string (\"\")")
+    if (!file.exists(filename))
+        stop("specified input file (",filename,") does not exist")
     out <- list()
     ## read raw lines in
     dv <- readLines(filename,warn=FALSE)

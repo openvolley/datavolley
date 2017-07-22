@@ -39,11 +39,15 @@ The \code{do_transliterate} option may be helpful when trying to work with multi
 }
 \examples{
 \dontrun{
+  ## to read the example file bundled with the package
   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
     insert_technical_timeouts=FALSE)
   summary(x)
 
-## Insert a technical timeout at point 12 in sets 1 to 4:
+  ## or to read your own file, omit the system.file() part:
+  x <- read_dv("c:/some/path/myfile.dvw",insert_technical_timeouts=FALSE)
+
+  ## Insert a technical timeout at point 12 in sets 1 to 4:
   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
     insert_technical_timeouts=list(c(12),NULL))
 }
