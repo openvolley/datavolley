@@ -3,7 +3,8 @@
 ## match details
 read_match <- function(txt) {
     idx <- grep("[3MATCH]",txt,fixed=TRUE)
-    p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)
+    tryCatch(p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE),
+             error=function(e) { stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") })
     names(p)[1] <- "date"
     names(p)[2] <- "time"
     names(p)[3] <- "season"
@@ -28,7 +29,8 @@ read_match <- function(txt) {
 
 read_more <- function(txt) {
     idx <- grep("[3MORE]",txt,fixed=TRUE)
-    p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)
+    tryCatch(p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE),
+             error=function(e){ stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") })
     for (k in 4:6) p[,k] <- as.character(p[,k])
     names(p)[4] <- "city"
     names(p)[5] <- "arena"
@@ -38,7 +40,7 @@ read_more <- function(txt) {
     
 read_result <- function(txt) {
     txt <- text_chunk(txt,"[3SET]")
-    suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") }))
+    suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
     names(p)[1] <- "played"
     names(p)[2] <- "score_intermediate1"
     names(p)[3] <- "score_intermediate2"
@@ -56,7 +58,7 @@ read_result <- function(txt) {
 ## teams
 read_teams <- function(txt) {
     txt <- text_chunk(txt,"[3TEAMS]")
-    suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") }))
+    suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
     names(p)[1] <- "team_id"
     names(p)[2] <- "team"
     names(p)[3] <- "sets_won"
@@ -75,11 +77,12 @@ read_teams <- function(txt) {
 read_players <- function(txt,team,surname_case) {
     if (missing(surname_case)) surname_case <- "asis"
     if (missing(team)) team <- "home"
-    txt <- switch(tolower(team),
-        home=text_chunk(txt,"[3PLAYERS-H]"),
-        text_chunk(txt,"[3PLAYERS-V]")
-                  )
-    suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") }))
+    chnkmarker <- if (tolower(team)=="home") "[3PLAYERS-H]" else "[3PLAYERS-V]"
+    txt <- text_chunk(txt,chnkmarker)##switch(tolower(team),
+        ##home=text_chunk(txt,"[3PLAYERS-H]"),
+        ##text_chunk(txt,"[3PLAYERS-V]")
+        ##          )
+    suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
     names(p)[2] <- "number"
     names(p)[4] <- "starting_position_set1"
     names(p)[5] <- "starting_position_set2"
@@ -113,7 +116,7 @@ read_attacks <- function(txt) {
         NULL
     } else {
         ##tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
-        tryCatch({ p <- read.table(text=txt,sep=";",quote="",stringsAsFactors=FALSE) },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") })
+        tryCatch({ p <- read.table(text=txt,sep=";",quote="",stringsAsFactors=FALSE) },error=function(e) { stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") })
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         names(p)[1] <- "code"
         names(p)[3] <- "side"
@@ -129,7 +132,7 @@ read_setter_calls <- function(txt) {
     if (str_trim(txt)=="") {
         NULL
     } else {
-        suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("input file could not be read: is the encoding argument supplied to read_dv correct?") }))
+        suppressWarnings(tryCatch({ p <- data.table::fread(txt,data.table=FALSE,sep=";") },error=function(e) { stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
         names(p)[1] <- "code"
         names(p)[3] <- "description"
         p
