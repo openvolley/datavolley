@@ -39,8 +39,9 @@ join_messages <- function(msgs1,msgs2) {
 # @param token2: ending token
 #
 # @return string
-text_chunk=function(txt,token1,token2) {
-    idx1=grep(token1,txt,fixed=TRUE)
+text_chunk <- function(txt,token1,token2) {
+    idx1 <- grep(token1,txt,fixed=TRUE)
+    if (length(idx1)<1) return("")
     if (missing(token2)) {
         ## find next section starting with "["
         idx2=grep("^\\[",txt)
