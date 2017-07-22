@@ -73,18 +73,14 @@ Or using arrows to show the starting and ending zones of attacks:
 
 ```{r}
 ## tabulate attacks by starting and ending zone
-attack_rate <- as.data.frame(xtabs(~start_zone+end_zone,data=subset(plays(x),skill=="Attack" &
-  team==x$meta$teams$team[1])),stringsAsFactors=FALSE)
-attack_rate$start_zone <- as.numeric(attack_rate$start_zone)
-attack_rate$end_zone <- as.numeric(attack_rate$end_zone)
-attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
-attack_rate <- attack_rate[attack_rate$Freq>0,]
-## starting x,y coordinates
-attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower",xynames=c("sx","sy")))
-## ending x,y coordinates
-attack_rate <- cbind(attack_rate,ggxy(attack_rate$end_zone,end="upper",xynames=c("ex","ey")))
-## plot in reverse order so largest arrows are on the bottom
-attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),]
+attack_rate <- plays(x) %>%
+    dplyr::filter(skill=="Attack" & team==x$meta$teams$team[1]) %>% ## attacks from team 1
+    group_by(start_zone,end_zone) %>% summarize(rate=n()) %>% ## count attacks by start, end zone
+    ungroup %>% mutate(rate=rate/sum(rate)) %>% ## convert counts to rates
+    dplyr::filter(!is.na(start_zone) & !is.na(end_zone)) %>% ## drop missing-zone-info-rows
+    bind_cols(ggxy(.$start_zone,end="lower",xynames=c("sx","sy"))) %>% ## start_zone x,y coords
+    bind_cols(ggxy(.$end_zone,end="upper",xynames=c("ex","ey"))) %>% ## end_zone x,y coords
+    arrange(desc(rate)) ## plot in reverse order so largest arrows are on the bottom
 
 p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt(labels=c(x$meta$teams$team[1],""))
 for (n in 1:nrow(attack_rate))
