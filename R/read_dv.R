@@ -49,8 +49,8 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         idx1 <- suppressWarnings(grep("[3TEAMS]",dv,fixed=TRUE))
         idx2 <- suppressWarnings(grep("[3ATTACKCOMBINATION]",dv,fixed=TRUE))+1
         ## fallback
-        if (is.na(idx1)) idx1 <- 15
-        if (is.na(idx2)) idx2 <- 80
+        if (length(idx1)<1 || is.na(idx1)) idx1 <- 15
+        if (length(idx2)<1 || is.na(idx2)) idx2 <- 80
         tst <- paste(dv[idx1:idx2],collapse="")
         if (identical(tolower(encoding),"guess")) {
             encoding <- stri_enc_detect2(tst)[[1]]$Encoding
