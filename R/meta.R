@@ -119,6 +119,7 @@ read_attacks <- function(txt) {
         tryCatch({ p <- read.table(text=txt,sep=";",quote="",stringsAsFactors=FALSE) },error=function(e) { stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") })
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         names(p)[1] <- "code"
+        names(p)[2] <- "attacker_position"
         names(p)[3] <- "side"
         names(p)[4] <- "type" ## tempo, codes match attack skill types Q,M,T, etc
         names(p)[5] <- "description"
