@@ -208,6 +208,9 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     out_skill[thisidx] <- "Rotation error"
     out_evaluation[thisidx] <- "Error"
     done[thisidx] <- TRUE
+    ## but do assign team here where possible
+    out_team[thisidx & grepl("^a",in_code)] <- "a"
+    out_team[thisidx & grepl("^\\*",in_code)] <- "*"
     
     ## sanctions that look like ">RED"
     ## actually anything starting with ">", are sanctions, rotation errors (dealt with above), etc
@@ -217,7 +220,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     ## ">SECONDI"   ??
     idx <- !done & grepl("^>",in_code)
     done[idx] <- TRUE
-
+    
     ## team handling
     tm <- substr(in_code[!done],1,1)
     oktm <- tm=="a" | tm=="*"
