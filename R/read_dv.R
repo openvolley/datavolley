@@ -14,6 +14,7 @@
 #' @param surname_case string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings
 #' @param skill_evaluation_decode function: function to use to convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}
 #' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}
+#' @param metadata_only logical: don't process the plays component of the file, just the match and player metadata
 #' @param verbose logical: if TRUE, show progress
 #'
 #' @return named list with several components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file
@@ -34,10 +35,12 @@
 #'     insert_technical_timeouts=list(c(12),NULL))
 #' }
 #' @export
-read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",extra_validation=2,surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,verbose=FALSE) {
+read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",extra_validation=2,surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,metadata_only=FALSE,verbose=FALSE) {
     assert_that(is.flag(insert_technical_timeouts) || is.list(insert_technical_timeouts))
     assert_that(is.flag(do_warn))
     assert_that(is.flag(do_transliterate))
+    assert_that(is.flag(metadata_only))
+    assert_that(is.flag(verbose))
     assert_that(is.numeric(extra_validation) && extra_validation %in% 0:3)
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
@@ -160,6 +163,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ##if (!is.null(thismsg)) mymsgs <- rbind.fill(mymsgs,thismsg)
     ## don't actually issue this warning, for now at least
 
+    if (metadata_only) return(out)
     ## count line numbers: where do codes start from?
     suppressWarnings(cln <- grep("[3SCOUT]",dv,fixed=TRUE))
     if (length(cln)==1) {
