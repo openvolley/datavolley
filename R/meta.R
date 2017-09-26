@@ -191,18 +191,25 @@ get_player_name <- function(team,number,meta) {
 }
 
 get_player_id <- function(team,number,meta) {
-    out <- rep(as.character(NA),length(number))
+    out <- rep("unknown player",length(number))
     idx <- team %eq% "*"
     if (any(idx)) {
-        out[idx] <- mapvalues(number[idx],from=meta$players_h$number,to=meta$players_h$player_id,warn_missing=FALSE)
-        invalid_number <- idx & out==number
-        out[invalid_number] <- "unknown player"
+        for (pn in which(meta$players_h$number %in% number[idx])) {
+            out[idx & number %eq% meta$players_h$number[pn]] <- meta$players_h$player_id[pn]
+        }
+        ## this does not work if player_id is same as player_number
+        ##out[idx] <- mapvalues(number[idx],from=meta$players_h$number,to=meta$players_h$player_id,warn_missing=FALSE)
+        ##invalid_number <- idx & out==number
+        ##out[invalid_number] <- "unknown player"
     }
     idx <- team %eq% "a"
     if (any(idx)) {
-        out[idx] <- mapvalues(number[idx],from=meta$players_v$number,to=meta$players_v$player_id,warn_missing=FALSE)
-        invalid_number <- idx & out==number
-        out[invalid_number] <- "unknown player"
+        for (pn in which(meta$players_v$number %in% number[idx])) {
+            out[idx & number %eq% meta$players_v$number[pn]] <- meta$players_v$player_id[pn]
+        }
+        ##out[idx] <- mapvalues(number[idx],from=meta$players_v$number,to=meta$players_v$player_id,warn_missing=FALSE)
+        ##invalid_number <- idx & out==number
+        ##out[invalid_number] <- "unknown player"
     }
     out
 }
