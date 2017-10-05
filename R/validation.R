@@ -149,9 +149,14 @@ validate_dv <- function(x,validation_level=2) {
 
     ## scores not in proper sequence
     ## a team's score should never increase by more than 1 at a time. May be negative (change of sets)
-    chk <- diff(plays$home_team_score)>1 | diff(plays$visiting_team_score)>1
-    if (any(chk))
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message="Scores do not follow proper sequence",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    temp <- plays[,c("home_team_score","visiting_team_score","set_number")]
+    temp <- apply(temp,2,diff)
+    ## either score increases by more than one, or (decreases and not end of set)
+    chk <- which((temp[,1]>1 | temp[,2]>1) | ((temp[,1]<0 | temp[,2]<0) & !(is.na(temp[,3]) | temp[,3]>0)))
+    ##chk <- diff(plays$home_team_score)>1 | diff(plays$visiting_team_score)>1
+    ##if (any(chk))
+    if (length(chk)>0)
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message="Scores do not follow proper sequence (note that the error may be in the point after this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
     ## check that players changed correctly on substitution
     ## e.g. *c02:01 means player 2 replaced by player 1
