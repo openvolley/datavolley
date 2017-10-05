@@ -10,6 +10,7 @@
 #'   \item message "Repeated row with same skill and evaluation_code for the same player"
 #'   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
 #'   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
+#'   \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
 #'   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
 #'   \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
 #'   \item message "Reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
@@ -145,6 +146,12 @@ validate_dv <- function(x,validation_level=2) {
             (!plays$team %eq% plays$point_won_by)
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message=paste0("Point awarded to incorrect team (or \"",plays$evaluation[chk],"\" evaluation incorrect)"),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+
+    ## scores not in proper sequence
+    ## a team's score should never increase by more than 1 at a time. May be negative (change of sets)
+    chk <- diff(plays$home_team_score)>1 | diff(plays$visiting_team_score)>1
+    if (any(chk))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message="Scores do not follow proper sequence",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
     ## check that players changed correctly on substitution
     ## e.g. *c02:01 means player 2 replaced by player 1

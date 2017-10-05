@@ -25,6 +25,7 @@ The current validation messages/checks are:
   \item message "Repeated row with same skill and evaluation_code for the same player"
   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
+  \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
   \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
   \item message "Reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
