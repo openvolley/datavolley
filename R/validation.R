@@ -11,6 +11,7 @@
 #'   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
 #'   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
 #'   \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
+#'   \item message "Visiting/Home team rotation has changed incorrectly"
 #'   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
 #'   \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
 #'   \item message "Reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
@@ -158,6 +159,22 @@ validate_dv <- function(x,validation_level=2) {
     if (length(chk)>0)
         out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message="Scores do not follow proper sequence (note that the error may be in the point after this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
+    ## check for incorrect rotation changes
+    rotleft <- function(x) if (is.data.frame(x)) {out <- cbind(x[,-1],x[,1]); names(out) <- names(x); out} else c(x[-1],x[1])
+    isrotleft <- function(x,y) all(as.numeric(rotleft(x))==as.numeric(y)) ## is y a left-rotated version of x?
+    for (tm in c("*","a")) {
+        rot_cols <- if (tm=="a") paste0("visiting_p",1:6) else paste0("home_p",1:6)
+        temp <- plays[!tolower(plays$skill) %eq% "technical timeout",]
+        rx <- temp[,rot_cols]
+        idx <- unname(c(FALSE,rowSums(abs(apply(rx,2,diff)))>0)) ## rows where rotation changed from previous
+        idx[is.na(idx)] <- FALSE ## end of set, etc, ignore
+        idx[temp$substitution] <- FALSE ## subs, ignore these here and they will be checked in the next section
+        for (k in which(idx)) {
+            if (!isrotleft(rx[k-1,],rx[k,]))
+                out <- rbind(out,data.frame(file_line_number=temp$file_line_number[k],message=paste0(if (tm=="a") "Visiting" else "Home"," team rotation has changed incorrectly"),file_line=x$raw[temp$file_line_number[k]],severity=3,stringsAsFactors=FALSE))
+        }
+    }
+    
     ## check that players changed correctly on substitution
     ## e.g. *c02:01 means player 2 replaced by player 1
     idx <- which(plays$substitution & grepl("^.c",plays$code))
