@@ -20,6 +20,10 @@ read_match <- function(txt) {
         ## try dmy
         suppressWarnings(temp <- dmy_hms(paste(p$date,p$time,sep=" "),truncated=3))
     }
+    if (is.na(temp)) {
+        ## try ymd
+        suppressWarnings(temp <- ymd_hms(paste(p$date,p$time,sep=" "),truncated=3))
+    }
     p$date <- temp
     if (is.na(p$date) && length(msgs)<1)
         msgs <- collect_messages(msgs,"Cannot parse the date/time in the match information",idx+1,txt[idx+1],severity=2)
