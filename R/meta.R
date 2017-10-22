@@ -27,6 +27,10 @@ read_match <- function(txt) {
     p$date <- temp
     if (is.na(p$date) && length(msgs)<1)
         msgs <- collect_messages(msgs,"Cannot parse the date/time in the match information",idx+1,txt[idx+1],severity=2)
+    if (!is.na(p$date) && p$date<(as.Date(lubridate::now())-365*10)) {
+        ## date is more than ten years ago!
+        msgs <- collect_messages(msgs,paste0("The date of the match (",format(p$date),") is more than 10 years ago, is it correct?"),idx+1,txt[idx+1],severity=2)
+    }
     suppressWarnings(p$time <- hms(p$time))
     list(match=p,messages=msgs)
 }
