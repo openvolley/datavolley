@@ -10,28 +10,32 @@ read_match <- function(txt) {
     names(p)[3] <- "season"
     names(p)[4] <- "league"
     msgs <- list()
-    if (is.na(p$date))
+    if (is.na(p$date)) {
         msgs <- collect_messages(msgs,"Match information is missing the date",idx+1,txt[idx+1],severity=2)
-    # don't warn on time, because the plays object has it anyway
-    ##if (is.na(p$time))
-    ##    msgs <- collect_messages(msgs,"Match information is missing the time",idx+1,txt[idx+1],severity=3)
-    suppressWarnings(temp <- mdy_hms(paste(p$date,p$time,sep=" "),truncated=3))
-    if (is.na(temp)) {
-        ## try dmy
-        suppressWarnings(temp <- dmy_hms(paste(p$date,p$time,sep=" "),truncated=3))
+        date_was_missing <- TRUE
+    } else {
+        ## date can be in various formats
+        suppressWarnings(temp <- mdy(p$date))
+        if (is.na(temp)) suppressWarnings(temp <- dmy(p$date))
+        if (is.na(temp)) suppressWarnings(temp <- ymd(p$date))
+        if (is.na(temp)) {
+            ## date was not recognized as a date
+            ## was it date-time?
+            suppressWarnings(temp <- mdy_hms(p$date))
+            if (is.na(temp)) suppressWarnings(temp <- dmy_hms(p$date)) ## try dmy
+            if (is.na(temp)) suppressWarnings(temp <- ymd_hms(p$date)) ## try ymd
+        }
+        p$date <- temp
+        if (is.na(p$date)) {
+            msgs <- collect_messages(msgs,"Cannot parse the date in the match information",idx+1,txt[idx+1],severity=2)
+        } else {
+            if (p$date<(as.Date(lubridate::now())-365*10)) {
+                ## date is more than ten years ago!
+                msgs <- collect_messages(msgs,paste0("The date of the match (",format(p$date),") is more than 10 years ago, is it correct?"),idx+1,txt[idx+1],severity=2)
+            }
+        }
     }
-    if (is.na(temp)) {
-        ## try ymd
-        suppressWarnings(temp <- ymd_hms(paste(p$date,p$time,sep=" "),truncated=3))
-    }
-    p$date <- temp
-    if (is.na(p$date) && length(msgs)<1)
-        msgs <- collect_messages(msgs,"Cannot parse the date/time in the match information",idx+1,txt[idx+1],severity=2)
-    if (!is.na(p$date) && p$date<(as.Date(lubridate::now())-365*10)) {
-        ## date is more than ten years ago!
-        msgs <- collect_messages(msgs,paste0("The date of the match (",format(p$date),") is more than 10 years ago, is it correct?"),idx+1,txt[idx+1],severity=2)
-    }
-    suppressWarnings(p$time <- hms(p$time))
+    suppressWarnings(p$time <- hms(p$time)) ## don't warn on time, because the plays object has it anyway
     list(match=p,messages=msgs)
 }
 
