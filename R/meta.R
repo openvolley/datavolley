@@ -15,15 +15,15 @@ read_match <- function(txt) {
         date_was_missing <- TRUE
     } else {
         ## date can be in various formats
-        suppressWarnings(temp <- mdy(p$date))
-        if (is.na(temp)) suppressWarnings(temp <- dmy(p$date))
-        if (is.na(temp)) suppressWarnings(temp <- ymd(p$date))
+        suppressWarnings(temp <- lubridate::mdy(p$date))
+        if (is.na(temp)) suppressWarnings(temp <- lubridate::dmy(p$date))
+        if (is.na(temp)) suppressWarnings(temp <- lubridate::ymd(p$date))
         if (is.na(temp)) {
             ## date was not recognized as a date
             ## was it date-time?
-            suppressWarnings(temp <- mdy_hms(p$date))
-            if (is.na(temp)) suppressWarnings(temp <- dmy_hms(p$date)) ## try dmy
-            if (is.na(temp)) suppressWarnings(temp <- ymd_hms(p$date)) ## try ymd
+            suppressWarnings(temp <- lubridate::mdy_hms(p$date))
+            if (is.na(temp)) suppressWarnings(temp <- lubridate::dmy_hms(p$date)) ## try dmy
+            if (is.na(temp)) suppressWarnings(temp <- lubridate::ymd_hms(p$date)) ## try ymd
         }
         p$date <- temp
         if (is.na(p$date)) {
@@ -35,7 +35,7 @@ read_match <- function(txt) {
             }
         }
     }
-    suppressWarnings(p$time <- hms(p$time)) ## don't warn on time, because the plays object has it anyway
+    suppressWarnings(p$time <- lubridate::hms(p$time)) ## don't warn on time, because the plays object has it anyway
     list(match=p,messages=msgs)
 }
 

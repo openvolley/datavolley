@@ -235,10 +235,10 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ## turn plays times (character) into POSIXct
     temp <- paste(format(as.Date(out$meta$match$date)),out$plays$time,sep=" ")
     temp[out$plays$time=="" | is.na(out$plays$time)] <- NA
-    suppressWarnings(out$plays$time <- ymd_hms(temp))
+    suppressWarnings(out$plays$time <- lubridate::ymd_hms(temp))
     ##if (all(is.na(out$plays$time))) {
     ##    ## maybe match date failed to parse? try
-    ##    suppressWarnings(out$plays$time <- hms(temp))
+    ##    suppressWarnings(out$plays$time <- lubridate::hms(temp))
     ## except this gives objects of class period, not POSIXct - hold off on this for now
     ##}        
     

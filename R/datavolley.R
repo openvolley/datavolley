@@ -12,7 +12,6 @@
 #' @author Ben Raymond \email{ben@@untan.gl}
 #' @docType package
 #' @import plyr assertthat
-#' @importFrom lubridate dmy_hms mdy_hms hms ymd_hms now
 #' @importFrom digest digest
 #' @importFrom stringi stri_trans_general stri_enc_detect2
 #' @importFrom stringr str_match str_trim regex fixed str_replace_all str_to_title str_locate str_sub
