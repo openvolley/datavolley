@@ -17,7 +17,7 @@
 #' @importFrom stringr str_match str_trim regex fixed str_replace_all str_to_title str_locate str_sub
 #' @importFrom data.table fread
 #' @importFrom stats na.omit
-#' @importFrom utils adist read.table
+#' @importFrom utils adist read.csv read.table
 
 NULL
 

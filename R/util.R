@@ -5,28 +5,25 @@ collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FA
     if (missing(line_nums)) line_nums <- NA
     if (missing(raw_lines)) raw_lines <- "[unknown]"
     if (missing(severity)) severity <- NA
+    vt <- rep(NA_integer_,length(line_nums))
+    if (!missing(raw_lines)) vt <- video_time_from_raw(raw_lines)
     if (fatal) {
         lnt <- as.character(line_nums)
         lnt[is.na(lnt)] <- "[unknown]"
         txt <- paste0("line ",lnt,": ",msg_text," (line in file is: \"",raw_lines,"\")")
         if (fatal) stop(paste(txt,collapse=" / "))
     } else {
-        msgs[[length(msgs)+1]] <- list(file_line_number=line_nums,message=msg_text,file_line=raw_lines,severity=severity)
+        msgs[[length(msgs)+1]] <- list(file_line_number=line_nums,video_time=vt,message=msg_text,file_line=raw_lines,severity=severity)
     }
-    #lnt <- as.character(line_nums)
-    #lnt[is.na(lnt)] <- "[unknown]"
-    #msgs$line <- c(msgs$line,line_nums)
-    #txt <- paste0("line ",lnt,": ",msg_text," (line in file is: \"",raw_lines,"\")")
-    #if (fatal) stop(paste(txt,collapse=" / "))
-    #msgs$text <- c(msgs$text,txt)
     msgs
 }
 
+video_time_from_raw <- function(raw_lines) {
+    vapply(raw_lines,function(z)tryCatch(if (!is.null(z) && nzchar(z)) read.csv(text=z,sep=";",header=FALSE,stringsAsFactors=FALSE)[1,13] else NA_integer_,error=function(e)NA_integer_),FUN.VALUE=1L,USE.NAMES=FALSE)
+}    
+
 join_messages <- function(msgs1,msgs2) {
     if (length(msgs2)>0) {
-        ##if (length(msgs2$text)>0) {
-        ##msgs1$text <- c(msgs1$text,msgs2$text)
-        ##msgs1$line <- c(msgs1$line,msgs2$line)
         msgs1 <- c(msgs1,msgs2)
     }
     msgs1

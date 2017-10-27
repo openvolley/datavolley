@@ -177,7 +177,7 @@ read_meta <- function(txt,surname_case) {
     if (length(msgs)>0) {
         msgs <- ldply(msgs,as.data.frame)
     } else {
-        msgs <- data.frame(file_line_number=integer(),message=character(),file_line=character())
+        msgs <- data.frame(file_line_number=integer(),video_time=integer(),message=character(),file_line=character())
     }
     list(meta=out,messages=msgs)
 }

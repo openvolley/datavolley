@@ -42,8 +42,11 @@
 validate_dv <- function(x,validation_level=2) {
     assert_that(is.numeric(validation_level) && validation_level %in% 0:3)
     
-    out <- data.frame(file_line_number=integer(),message=character(),file_line=character(),severity=numeric(),stringsAsFactors=FALSE)
-    chk_df <- function(chk,msg,severity=2) data.frame(file_line_number=chk$file_line_number,message=msg,file_line=x$raw[chk$file_line_number],severity=severity,stringsAsFactors=FALSE)
+    out <- data.frame(file_line_number=integer(),video_time=integer(),message=character(),file_line=character(),severity=numeric(),stringsAsFactors=FALSE)
+    chk_df <- function(chk,msg,severity=2) {
+        vt <- video_time_from_raw(x$raw[chk$file_line_number])
+        data.frame(file_line_number=chk$file_line_number,video_time=vt,message=msg,file_line=x$raw[chk$file_line_number],severity=severity,stringsAsFactors=FALSE)
+    }
     if (validation_level<1) return(out)
 
     plays <- plays(x)
@@ -125,7 +128,7 @@ validate_dv <- function(x,validation_level=2) {
     temp <- ldply(1:nrow(pp),function(z) {fcols <- if (pp$home_team[z] %eq% pp$team[z]) c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","labelh") else c("visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6","labelv"); out <- pp[z,fcols]; names(out) <- c(paste0("player",1:6),"which_team"); out })
     chk <- sapply(1:nrow(pp),function(z) !pp$player_number[z] %in% (if (temp$which_team[z]=="home_team") liberos_h else liberos_v) & (!pp$player_number[z] %in% temp[z,]))
     if (any(chk))
-        out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],video_time=video_time_from_raw(x$raw[pp$file_line_number[chk]]),message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
     ## duplicate entries with same skill and evaluation code for the same player
     idx <- which((plays$evaluation_code[-1] %eq% plays$evaluation_code[-nrow(plays)]) &
@@ -134,19 +137,19 @@ validate_dv <- function(x,validation_level=2) {
                  (plays$player_number[-1] %eq% plays$player_number[-nrow(plays)])
                  )+1
     if (length(idx)>0)
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[idx],message="Repeated row with same skill and evaluation_code for the same player",file_line=x$raw[plays$file_line_number[idx]],severity=3,stringsAsFactors=FALSE))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[idx],video_time=video_time_from_raw(x$raw[plays$file_line_number[idx]]),message="Repeated row with same skill and evaluation_code for the same player",file_line=x$raw[plays$file_line_number[idx]],severity=3,stringsAsFactors=FALSE))
     
     ## point not awarded to right team following error
     chk <- (plays$evaluation_code %eq% "=" | (plays$skill %eq% "Block" & plays$evaluation_code %eq% "/")) &  ## error or block Invasion
             (plays$team %eq% plays$point_won_by)
     if (any(chk))
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message="Point awarded to incorrect team following error (or \"error\" evaluation incorrect)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Point awarded to incorrect team following error (or \"error\" evaluation incorrect)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
     
     ## point not awarded to right team following win
     chk <- (plays$skill %in% c("Serve","Attack","Block") & plays$evaluation_code %eq% "#") &  ## ace or winning attack or block
             (!plays$team %eq% plays$point_won_by)
     if (any(chk))
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message=paste0("Point awarded to incorrect team (or \"",plays$evaluation[chk],"\" evaluation incorrect)"),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Point awarded to incorrect team (or \"",plays$evaluation[chk],"\" evaluation incorrect)"),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
     ## scores not in proper sequence
     ## a team's score should never increase by more than 1 at a time. May be negative (change of sets)
@@ -157,7 +160,7 @@ validate_dv <- function(x,validation_level=2) {
     ##chk <- diff(plays$home_team_score)>1 | diff(plays$visiting_team_score)>1
     ##if (any(chk))
     if (length(chk)>0)
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],message="Scores do not follow proper sequence (note that the error may be in the point after this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Scores do not follow proper sequence (note that the error may be in the point after this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
     ## check for incorrect rotation changes
     rotleft <- function(x) if (is.data.frame(x)) {out <- cbind(x[,-1],x[,1]); names(out) <- names(x); out} else c(x[-1],x[1])
@@ -171,7 +174,7 @@ validate_dv <- function(x,validation_level=2) {
         idx[temp$substitution] <- FALSE ## subs, ignore these here and they will be checked in the next section
         for (k in which(idx)) {
             if (!isrotleft(rx[k-1,],rx[k,]))
-                out <- rbind(out,data.frame(file_line_number=temp$file_line_number[k],message=paste0(if (tm=="a") "Visiting" else "Home"," team rotation has changed incorrectly"),file_line=x$raw[temp$file_line_number[k]],severity=3,stringsAsFactors=FALSE))
+                out <- rbind(out,data.frame(file_line_number=temp$file_line_number[k],video_time=video_time_from_raw(x$raw[temp$file_line_number[k]]),message=paste0(if (tm=="a") "Visiting" else "Home"," team rotation has changed incorrectly"),file_line=x$raw[temp$file_line_number[k]],severity=3,stringsAsFactors=FALSE))
         }
     }
     
@@ -203,7 +206,7 @@ validate_dv <- function(x,validation_level=2) {
         sub_out <- as.numeric(sub(":.*$","",sub("^.c","",plays$code[k]))) ## outgoing player
         sub_in <- as.numeric(sub("^.*:","",plays$code[k])) ## incoming player
         if (!sub_out %in% prev_rot || !sub_in %in% new_rot || sub_in %in% prev_rot || sub_out %in% new_rot) {
-            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],message=paste0("Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
+            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
             next
         }
     }

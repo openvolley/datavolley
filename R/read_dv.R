@@ -151,7 +151,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
             ## if file ends with 0x00, fread from the file will fail
             ## but already have the file contents as dv, so use that
             if (grepl("Expected sep (';') but new line, EOF (or other non printing character) ends field 0",e$message,fixed=TRUE)) {
-                thismsg <<- data.frame(file_line_number=length(dv),message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
+                thismsg <<- data.frame(file_line_number=length(dv),video_time=NA_integer_,message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
                 suppressWarnings(tmp <- dv[grep("[3SCOUT]",dv,fixed=TRUE):length(dv)])
                 if (!do_warn) {
                     suppressWarnings(this_main <<- read_main(paste0(tmp,collapse="\n")))
@@ -373,21 +373,19 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         moreval <- validate_dv(out,validation_level=extra_validation)
         if (nrow(moreval)>0) {
             out$messages <- rbind.fill(out$messages,moreval)
-            ##msg <- paste0("line ",moreval$file_line_number,": ",moreval$message," (line in file is: \"",moreval$file_line,"\")")
-            ##out$messages <- c(out$messages,msg)
         }
     }
     if (nrow(out$messages)>0) {
         out$messages$file_line_number <- as.integer(out$messages$file_line_number)
-        out$messages <- out$messages[order(out$messages$file_line_number),] ##out$messages <- arrange(out$messages,file_line_number)
+        out$messages <- out$messages[order(out$messages$file_line_number),]
     }
     if (do_warn) {
         ## spit the messages out
-        ##for (k in out$messages) message(k)
-        for (k in 1:nrow(out$messages))
-            cat(paste0("line ",out$messages$file_line_number[k],": ",out$messages$message[k]," (line in file is: \"",out$messages$file_line[k],"\")"),"\n")
+        for (k in 1:nrow(out$messages)) {
+            vt <- if (is.na(out$messages$video_time[k])) "" else paste0(" (video time ",out$messages$video_time[k],")")
+            cat(paste0("line ",out$messages$file_line_number[k],vt,": ",out$messages$message[k]," (line in file is: \"",out$messages$file_line[k],"\")"),"\n")
+        }
     }
-    
     out
 }
 
