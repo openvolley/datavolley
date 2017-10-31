@@ -195,8 +195,10 @@ validate_dv <- function(x,validation_level=2) {
     chk <- which((temp[,1]>1 | temp[,2]>1) | ((temp[,1]<0 | temp[,2]<0) & !(is.na(temp[,3]) | temp[,3]>0)))
     ##chk <- diff(plays$home_team_score)>1 | diff(plays$visiting_team_score)>1
     ##if (any(chk))
-    if (length(chk)>0)
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Scores do not follow proper sequence (note that the error may be in the point after this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    if (length(chk)>0) {
+        chk <- chk+1
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Scores do not follow proper sequence (note that the error may be in the point before this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    }
 
     ## check for incorrect rotation changes
     rotleft <- function(x) if (is.data.frame(x)) {out <- cbind(x[,-1],x[,1]); names(out) <- names(x); out} else c(x[-1],x[1])
@@ -236,7 +238,7 @@ validate_dv <- function(x,validation_level=2) {
         
         if (all(new_rot==prev_rot)) {
             ## players did not change
-            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],message=paste0("player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
+            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
             next
         }
         sub_out <- as.numeric(sub(":.*$","",sub("^.c","",plays$code[k]))) ## outgoing player
