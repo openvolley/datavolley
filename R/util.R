@@ -19,7 +19,7 @@ collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FA
 }
 
 video_time_from_raw <- function(raw_lines) {
-    vapply(raw_lines,function(z)tryCatch(if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) read.csv(text=z,sep=";",header=FALSE,stringsAsFactors=FALSE)[1,13] else NA_integer_,error=function(e)NA_integer_),FUN.VALUE=1L,USE.NAMES=FALSE)
+    tryCatch(vapply(raw_lines,function(z)tryCatch(if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) as.numeric(read.csv(text=z,sep=";",header=FALSE,stringsAsFactors=FALSE)[1,13]) else NA_integer_,error=function(e)NA_integer_),FUN.VALUE=1,USE.NAMES=FALSE),error=function(e)rep(NA_integer,length(raw_lines)))
 }
 
 join_messages <- function(msgs1,msgs2) {
