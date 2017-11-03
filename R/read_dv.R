@@ -41,7 +41,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     assert_that(is.flag(do_transliterate))
     assert_that(is.flag(metadata_only))
     assert_that(is.flag(verbose))
-    assert_that(is.numeric(extra_validation) && extra_validation %in% 0:3)
+    assert_that(is.numeric(extra_validation),extra_validation %in% 0:3)
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
     if (!missing(custom_code_parser)) assert_that(is.function(custom_code_parser) || is.null(custom_code_parser))
