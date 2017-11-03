@@ -566,16 +566,40 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                "P"="No jump",
                                                "Z"="Referee call",
                                                paste0("Unexpected ",special_code))
-            } else if (skill %in% c("D","R","F")) {
-                ## dig, reception, freeball all the same, see p16 of DV manual
-                if (!any(special_code==c("U","X","P","Z"))) {
+            } else if (skill=="R") {
+                ## dig, reception, freeball NOT all the same in dv4, but were in dv3 (see p16 of DV v3 manual)
+                if (!any(special_code==c("U","X","P","Z","E"))) {
                     msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
                 }
-                out_special_code[ci] <- switch(special_code,
+                out_special_code[ci] <- switch(EXPR=special_code,
                                                "U"="Unplayable",
                                                "X"="Body error",
                                                "P"="Position error",
                                                "Z"="Referee call",
+                                               "E"="Lack of effort",
+                                               paste0("Unexpected ",special_code))
+            } else if (skill=="F") {
+                if (!any(special_code==c("U","X","P","Z"))) {
+                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                }
+                out_special_code[ci] <- switch(EXPR=special_code,
+                                               "U"="Unplayable",
+                                               "X"="Body error",
+                                               "P"="Position error",
+                                               "Z"="Referee call",
+                                               paste0("Unexpected ",special_code))
+            } else if (skill=="D") {
+                if (!any(special_code==c("U","X","P","Z","F","O","E"))) {
+                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                }
+                out_special_code[ci] <- switch(EXPR=special_code,
+                                               "U"="Unplayable",
+                                               "X"="Body error",
+                                               "P"="Position error",
+                                               "Z"="Referee call",
+                                               "F"="Ball on floor",
+                                               "O"="Ball out",
+                                               "E"="Lack of effort",
                                                paste0("Unexpected ",special_code))
             } else if (skill=="E") {
                 if (!any(special_code==c("U","I","Z"))) {
