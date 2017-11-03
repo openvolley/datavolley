@@ -159,17 +159,24 @@ read_meta <- function(txt,surname_case) {
     out$match <- temp$match
     msgs <- join_messages(msgs,temp$messages)
     out$more <- read_more(txt)
-    out$result <- read_result(txt)
-    out$teams <- read_teams(txt)
+    tryCatch(out$result <- read_result(txt),
+        error=function(e) warning("could not read the [3SET] section of the input file")) ## not fatal: summary method will fail if this is not parsed, but we will have issued a warning message
+    tryCatch(out$teams <- read_teams(txt),
+        error=function(e) stop("could not read the [3TEAMS] section of the input file")) ## fatal, because we need this info later
     if (diff(out$teams$sets_won)<0) {
         out$teams$won_match <- c(TRUE,FALSE)
     } else {
         out$teams$won_match <- c(FALSE,TRUE)
     }
-    out$players_h <- read_players(txt,"home",surname_case)
-    out$players_v <- read_players(txt,"visiting",surname_case)
-    out$attacks <- read_attacks(txt)
-    out$sets <- read_setter_calls(txt)
+
+    tryCatch(out$players_h <- read_players(txt,"home",surname_case),
+             error=function(e) stop("could not read the [3PLAYERS-H] section of the input file")) ## fatal
+    tryCatch(out$players_v <- read_players(txt,"visiting",surname_case),
+             error=function(e) stop("could not read the [3PLAYERS-V] section of the input file")) ## fatal
+    tryCatch(out$attacks <- read_attacks(txt),
+             error=function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
+    tryCatch(out$sets <- read_setter_calls(txt),
+             error=function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     temp <- out$match
     temp$home_team <- out$teams$team[out$teams$home_away_team=="*"]
     temp$visiting_team <- out$teams$team[out$teams$home_away_team=="a"]

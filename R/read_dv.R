@@ -190,6 +190,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         out$plays[,paste0("visiting_player_id",thisp)] <- get_player_id(rep("a",nrow(out$plays)),out$plays[,paste0("visiting_p",thisp)],out$meta)
         
     ## add set number
+    if (!any(out$plays$end_of_set)) stop("could not find any end-of-set markers (e.g. \"**1set\") in the input file")
     out$plays$set_number <- NA
     temp <- c(0,which(out$plays$end_of_set))
     for (si in 2:length(temp)) {
