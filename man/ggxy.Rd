@@ -4,7 +4,7 @@
 \alias{ggxy}
 \title{Create x and y coordinates for plotting, from DataVolley numbered zones}
 \usage{
-ggxy(zones, end = "lower", xynames = c("x", "y"))
+ggxy(zones, end = "lower", xynames = c("x", "y"), as_for_serve = FALSE)
 }
 \arguments{
 \item{zones}{numeric: zones numbers 1-9 to convert to x and y coordinates}
@@ -12,6 +12,8 @@ ggxy(zones, end = "lower", xynames = c("x", "y"))
 \item{end}{string: use the "lower" or "upper" part of the figure}
 
 \item{xynames}{character: names to use for the x and y columns of the returned data.frame}
+
+\item{as_for_serve}{logical: if TRUE, treat positions as for serving. Only zones 1,5,6,7,9 are meaningful in this case}
 }
 \value{
 data.frame with x and y components

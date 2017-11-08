@@ -99,6 +99,7 @@ ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Rece
 #' @param zones numeric: zones numbers 1-9 to convert to x and y coordinates
 #' @param end string: use the "lower" or "upper" part of the figure
 #' @param xynames character: names to use for the x and y columns of the returned data.frame
+#' @param as_for_serve logical: if TRUE, treat positions as for serving. Only zones 1,5,6,7,9 are meaningful in this case
 #'
 #' @return data.frame with x and y components
 #'
@@ -146,12 +147,12 @@ ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Rece
 #' p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 #' }
 #' @export
-ggxy <- function(zones,end="lower",xynames=c("x","y")) {
+ggxy <- function(zones,end="lower",xynames=c("x","y"),as_for_serve=FALSE) {
     end <- match.arg(tolower(end),c("lower","upper"))
     ## define zones and their corresponding coordinates
     start_zones <- 1:9 ## lower part of figure
-    szx <- c(3,3,2,1,1,2,1,2,3)
-    szy <- c(1,3,3,3,1,1,2,2,2)
+    szx <- if (as_for_serve) c(3,NA,NA,NA,1,2,1.5,NA,2.5) else c(3,3,2,1,1,2,1,2,3)
+    szy <- if (as_for_serve) c(1,NA,NA,NA,1,1,1,NA,1)-0.5 else c(1,3,3,3,1,1,2,2,2)
     end_zones <- 1:9 ## upper part of figure
     ezx <- 4-szx
     ezy <- 3+4-szy
