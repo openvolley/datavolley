@@ -131,7 +131,7 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
         if (nchar(skill)!=1) return(paste0("Unknown skill: ",skill))
         if (nchar(evaluation_code)!=1) return(paste0("Unknown skill evaluation code: ",evaluation_code))
 
-        if (!any(skill==dtbl_skill)) return(paste0("Unknown skill: ",skill))
+        if (!any(skill==dtbl_skill)) return(paste0("Cannot decode evaluation for unknown skill ",skill))
         this_eval <- dtbl_evaluation[dtbl_skill==skill & dtbl_evaluation_code==evaluation_code]
         if (length(this_eval)<1) {
             full_skill_name <- switch(EXPR=skill,
@@ -515,10 +515,10 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         special_code <- some_codes[8]##substr(code,12,12)
         if (!any(special_code==c("","~"))) {
             if (skill=="A") {
-                if (out_evaluation[ci]==evaluation_decoder("A","=")) {
+                if (out_evaluation_code[ci] %eq% "=") { ##if (out_evaluation[ci]==evaluation_decoder("A","=")) {
                     ## error
-                    if (!any(special_code==c("S","O","N","I","Z"))) {
-                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                    if (!any(special_code==c("S","O","N","I","Z","A"))) {
+                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for attack evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci],severity=1)
                     }
                     out_special_code[ci] <- switch(special_code,
                                                    "S"="Attack out - side",
@@ -526,11 +526,12 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                    "N"="Attack in net",
                                                    "I"="Net contact",
                                                    "Z"="Referee call",
+                                                   "A"="Antenna",
                                                    paste0("Unexpected ",special_code))
-                } else if (out_evaluation[ci]==evaluation_decoder("A","#")) {
+                } else if (out_evaluation_code[ci] %eq% "#") { ##} else if (out_evaluation[ci]==evaluation_decoder("A","#")) {
                     ## point ("Winning attack")
                     if (!any(special_code==c("S","O","F","X","N"))) {
-                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for attack evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci],severity=1)
                     }
                     out_special_code[ci] <- switch(special_code,
                                                    "S"="Block out - side",
@@ -539,10 +540,12 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                    "X"="Direct on floor",
                                                    "N"="Let",
                                                    paste0("Unexpected ",special_code))
-                } else if (any(out_evaluation[ci]==c(evaluation_decoder("A","+"),evaluation_decoder("A","-"),evaluation_decoder("A","!")))) {
+                } else if (out_evaluation_code[ci] %in% c("+","-","!","/")) {
+                ##} else if (any(out_evaluation[ci]==c(evaluation_decoder("A","+"),evaluation_decoder("A","-"),evaluation_decoder("A","!"),evaluation_decoder("A","/")))) {
                     ## continue
+                    ## for A/ - continue codes applied to blocked attack - DV4 allows this
                     if (!any(special_code==c("C","N"))) {
-                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for attack evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci],severity=1)
                     }
                     out_special_code[ci] <- switch(special_code,
                                                    "C"="Block control",
@@ -554,7 +557,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                 }
             } else if (skill=="B") {
                 if (!any(special_code==c("S","O","F","X","N","I","P","Z"))) {
-                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for block"),code_line_num[ci],full_lines[ci],severity=1)
                 }
                 out_special_code[ci] <- switch(special_code,
                                                "S"="Ball out - side",
@@ -569,7 +572,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
             } else if (skill=="R") {
                 ## dig, reception, freeball NOT all the same in dv4, but were in dv3 (see p16 of DV v3 manual)
                 if (!any(special_code==c("U","X","P","Z","E"))) {
-                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for reception"),code_line_num[ci],full_lines[ci],severity=1)
                 }
                 out_special_code[ci] <- switch(EXPR=special_code,
                                                "U"="Unplayable",
@@ -580,7 +583,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                paste0("Unexpected ",special_code))
             } else if (skill=="F") {
                 if (!any(special_code==c("U","X","P","Z"))) {
-                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for freeball"),code_line_num[ci],full_lines[ci],severity=1)
                 }
                 out_special_code[ci] <- switch(EXPR=special_code,
                                                "U"="Unplayable",
@@ -590,7 +593,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                paste0("Unexpected ",special_code))
             } else if (skill=="D") {
                 if (!any(special_code==c("U","X","P","Z","F","O","E"))) {
-                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for dig"),code_line_num[ci],full_lines[ci],severity=1)
                 }
                 out_special_code[ci] <- switch(EXPR=special_code,
                                                "U"="Unplayable",
@@ -603,7 +606,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                paste0("Unexpected ",special_code))
             } else if (skill=="E") {
                 if (!any(special_code==c("U","I","Z"))) {
-                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for set"),code_line_num[ci],full_lines[ci],severity=1)
                 }
                 out_special_code[ci] <- switch(special_code,
                                                "U"="Cannot be hit",
@@ -611,10 +614,10 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                "Z"="Referee call",
                                                paste0("Unexpected ",special_code))
             } else if (skill=="S") {
-                if (out_evaluation[ci]==evaluation_decoder("S","=")) {
+                if (out_evaluation_code[ci] %eq% "=") { ##if (out_evaluation[ci]==evaluation_decoder("S","=")) {
                     ## error
                     if (!any(special_code==c("O","L","R","N","Z"))) {
-                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for serve evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci],severity=1)
                     }
                     out_special_code[ci] <- switch(special_code,
                                                    "O"="Ball out - long",
@@ -623,18 +626,18 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                    "N"="Ball in net",
                                                    "Z"="Referee call",
                                                    paste0("Unexpected ",special_code))
-                } else if (out_evaluation[ci]==evaluation_decoder("S","#")) {
+                } else if (out_evaluation_code[ci] %eq% "#") { ##} else if (out_evaluation[ci]==evaluation_decoder("S","#")) {
                     ## point (ace)
                     if (special_code!="N") {
-                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for serve evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci],severity=1)
                     }
                     out_special_code[ci] <- switch(special_code,
                                                    "N"="Let",
                                                    paste0("Unexpected ",special_code))
-                } else if (any(out_evaluation[ci]==c(evaluation_decoder("S","/"),evaluation_decoder("S","-"),evaluation_decoder("S","+"),evaluation_decoder("S","!")))) {
+                } else if (out_evaluation_code[ci] %in% c("/","-","+","!")) { ##} else if (any(out_evaluation[ci]==c(evaluation_decoder("S","/"),evaluation_decoder("S","-"),evaluation_decoder("S","+"),evaluation_decoder("S","!")))) {
                     ## continue
                     if (special_code!="N") {
-                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code),code_line_num[ci],full_lines[ci],severity=1)
+                        msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for serve evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci],severity=1)
                     }
                     out_special_code[ci] <- switch(special_code,
                                                    "N"="Let",
