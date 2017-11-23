@@ -1,8 +1,9 @@
 #' Add volleyball court schematic to a ggplot
 #'
-#' @param court string: "full" (show full court) or "attack" or "defence" (show only the attacking or defending half of the court)
+#' @param court string: "full" (show full court) or "lower" or "upper" (show only the lower or upper half of the court)
 #' @param show_zones logical: add numbers indicating the court zones?
 #' @param labels string: labels for the lower and upper court halves (pass NULL for no labels)
+#' @param as_for_serve logical: if TRUE and \code{show_zones} is TRUE, show zones as for serving. Only zones 1,5,6,7,9 are meaningful in this case
 #'
 #' @return ggplot layer
 #'
@@ -50,22 +51,24 @@
 #' p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 #' }
 #' @export
-ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Receiving team")) {
+ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Receiving team"),as_for_serve=FALSE) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }    
-    court <- match.arg(tolower(court),c("full","attack","defence"))
+    court <- match.arg(tolower(court),c("full","lower","upper"))
+    assert_that(is.flag(show_zones),!is.na(show_zones))
+    assert_that(is.flag(as_for_serve),!is.na(as_for_serve))
     ## horizontal grid lines
     hl <- data.frame(x=c(0.5,3.5),y=c(0.5,0.5,1.5,1.5,2.5,2.5,3.5,3.5,4.5,4.5,5.5,5.5,6.5,6.5),id=c(1,1,2,2,3,3,4,4,5,5,6,6,7,7))
     hl <- switch(court,
-                 attack=hl[hl$y<4,],
-                 defence=hl[hl$y>3,],
+                 lower=hl[hl$y<4,],
+                 upper=hl[hl$y>3,],
                  hl)
     ## vertical grid lines
     vl <- data.frame(y=c(0.5,6.5),x=c(0.5,0.5,1.5,1.5,2.5,2.5,3.5,3.5),id=c(1,1,2,2,3,3,4,4))
     vl$y <- switch(court,
-                   attack=mapvalues(vl$y,6.5,3.5),
-                   defence=mapvalues(vl$y,0.5,3.5),
+                   lower=mapvalues(vl$y,6.5,3.5),
+                   upper=mapvalues(vl$y,0.5,3.5),
                    vl$y)
     hl <- ggplot2::geom_path(data=hl,ggplot2::aes_string(x="x",y="y",group="id"),colour="black",inherit.aes=FALSE)
     vl <- ggplot2::geom_path(data=vl,ggplot2::aes_string(x="x",y="y",group="id"),colour="black",inherit.aes=FALSE) 
@@ -75,20 +78,31 @@ ggcourt <- function(court="full",show_zones=TRUE,labels=c("Attacking team","Rece
     thm2 <- ggplot2::theme(axis.line=ggplot2::element_blank(),axis.text.x=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank(),axis.ticks=ggplot2::element_blank(), axis.title.x=ggplot2::element_blank(), axis.title.y=ggplot2::element_blank())
     out <- list(hl,vl,net,thm,thm2)
     if (!is.null(labels)) {
-        if (court %in% c("full","attack"))
-            out <- c(out,ggplot2::annotate("text",x=2,y=0.4,label=labels[1]))
-        if (court %in% c("full","defence"))
-            out <- c(out,ggplot2::annotate("text",x=2,y=6.6,label=labels[2]))
+        if (court %in% c("full","lower")) {
+            ly <- if (as_for_serve) 0.1 else 0.4
+            out <- c(out,ggplot2::annotate("text",x=2,y=ly,label=labels[1]))
+        }
+        if (court %in% c("full","upper")) {
+            lb <- if (court=="full") {
+                     labels[2]
+                 } else {
+                     if (length(labels)==2) labels[2] else labels[1]
+                 }
+            ly <- if (as_for_serve) 6.9 else 6.6
+            out <- c(out,ggplot2::annotate("text",x=2,y=ly,label=lb))
+        }
     }
     if (show_zones) {
-        szx <- c(3,3,2,1,1,2,1,2,3)
-        szy <- c(1,3,3,3,1,1,2,2,2)
+        xoff <- if (as_for_serve) 0.5 else 0.4
+        szx <- if (as_for_serve) c(3,1,2,1.5,2.5)+0.5 else c(3,3,2,1,1,2,1,2,3)
+        szy <- if (as_for_serve) c(1,1,1,1,1)-0.25 else c(1,3,3,3,1,1,2,2,2)
         ezx <- 4-szx
         ezy <- 3+4-szy
-        if (court %in% c("full","attack"))        
-            out <- c(out,ggplot2::annotate("text",x=szx+0.4*rep(-1,9),y=szy+0.4*rep(-1,9),label=1:9,vjust="center",hjust="middle",fontface="italic"))
-        if (court %in% c("full","defence"))
-            out <- c(out,ggplot2::annotate("text",x=ezx+0.4*rep(1,9),y=ezy+0.4*rep(1,9),label=1:9,vjust="center",hjust="middle",fontface="italic"))
+        lb <- if (as_for_serve) c(1,5,6,7,9) else 1:9
+        if (court %in% c("full","lower"))        
+            out <- c(out,ggplot2::annotate("text",x=szx+xoff*rep(-1,length(lb)),y=szy+0.4*rep(-1,length(lb)),label=lb,vjust="center",hjust="middle",fontface="italic"))
+        if (court %in% c("full","upper"))
+            out <- c(out,ggplot2::annotate("text",x=ezx+xoff*rep(1,length(lb)),y=ezy+0.4*rep(1,length(lb)),label=lb,vjust="center",hjust="middle",fontface="italic"))
     }
     out
 }

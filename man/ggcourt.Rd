@@ -5,14 +5,16 @@
 \title{Add volleyball court schematic to a ggplot}
 \usage{
 ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
-  "Receiving team"))
+  "Receiving team"), as_for_serve = FALSE)
 }
 \arguments{
-\item{court}{string: "full" (show full court) or "attack" or "defence" (show only the attacking or defending half of the court)}
+\item{court}{string: "full" (show full court) or "lower" or "upper" (show only the lower or upper half of the court)}
 
 \item{show_zones}{logical: add numbers indicating the court zones?}
 
 \item{labels}{string: labels for the lower and upper court halves (pass NULL for no labels)}
+
+\item{as_for_serve}{logical: if TRUE and \code{show_zones} is TRUE, show zones as for serving. Only zones 1,5,6,7,9 are meaningful in this case}
 }
 \value{
 ggplot layer
