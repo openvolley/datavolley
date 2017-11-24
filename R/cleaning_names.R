@@ -87,7 +87,7 @@ check_player_names=function(x,distance_threshold=4) {
     names(blah)[3] <- "count"
     blah$count <- as.integer(blah$count)
     ## similarity of adjacent names
-    ndist <- adist(blah$player_name)
+    ndist <- adist(tolower(blah$player_name))
     mask <- lower.tri(ndist)
     mask[!mask] <- NA
     ndist <- ndist*mask
