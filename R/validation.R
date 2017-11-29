@@ -113,8 +113,20 @@ validate_dv <- function(x,validation_level=2) {
     ## and vice-versa: attack starting from back row by a front-row player
     chk <- attacks[attacks$start_zone %in% c(5,6,7,8,9,1) & (attacks$player_number==attacks$attacker_2 | attacks$player_number==attacks$attacker_3 | attacks$player_number==attacks$attacker_4),]
     if (nrow(chk)>0)
-        out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone - is the start zone correct?",severity=2))
+        out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone - is the start zone correct? (Legal, but possibly a scouting error)",severity=2))
     ## those are probably less of an issue than a back-row player making a front row attack. A front-row player making a back row attack is not illegal, just inconsistent
+
+    ## back row player blocking
+    chk <- (plays$skill %eq% "Block") &
+        (((plays$team %eq% plays$home_team) & (plays$player_number %eq% plays$home_p5 | plays$player_number %eq% plays$home_p6 | plays$player_number %eq% plays$home_p1)) |
+         ((plays$team %eq% plays$visiting_team) & (plays$player_number %eq% plays$visiting_p5 | plays$player_number %eq% plays$visiting_p6 | plays$player_number %eq% plays$visiting_p1)))
+    if (any(chk))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Block by a back-row player",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    
+    ## server not in position 1
+    chk <- (plays$skill %eq% "Serve") & (((plays$team %eq% plays$home_team) & (!plays$player_number %eq% plays$home_p1)) | ((plays$team %eq% plays$visiting_team) & (!plays$player_number %eq% plays$visiting_p1)))
+    if (any(chk))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Serving player not in position 1",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
     
     ## number of blockers (for an attack) should be >=1 if it is followed by a block
     idx <- which(plays$skill %eq% "Block")-1 ## -1 to be on the attack
@@ -127,8 +139,8 @@ validate_dv <- function(x,validation_level=2) {
         out <- rbind(out,chk_df(plays[idx2,],"Attack (which was followed by a block) has \"No block\" recorded for number of players",severity=3))
 
     ## player not in recorded rotation making a play (other than by libero)
-    liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)] ##subset(x$meta$players_v,grepl("L",special_role))$number
-    liberos_h <- x$meta$players_h$number[grepl("L",x$meta$players_h$special_role)] ##subset(x$meta$players_h,grepl("L",special_role))$number
+    liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)]
+    liberos_h <- x$meta$players_h$number[grepl("L",x$meta$players_h$special_role)]
     pp <- plays[plays$skill %in% c("Serve","Attack","Block","Dig","Freeball","Reception","Set"),]
     pp$labelh <- "home_team"
     pp$labelv <- "visiting_team"
@@ -137,6 +149,19 @@ validate_dv <- function(x,validation_level=2) {
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],video_time=video_time_from_raw(x$raw[pp$file_line_number[chk]]),message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
+    ## liberos doing stuff they oughn't to be doing
+    if (length(liberos_h)>0) {
+        chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$home_team %eq% plays$team) & (plays$player_number %in% liberos_h)
+        if (any(chk))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Player designated as libero was recorded making a ",tolower(plays$skill[chk])),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    }
+    if (length(liberos_v)>0) {
+        chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$visiting_team %eq% plays$team) & (plays$player_number %in% liberos_v)
+        if (any(chk))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Player designated as libero was recorded making a ",tolower(plays$skill[chk])),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    }
+    ## TO DO, perhaps: check for liberos making a front-court set that is then attacked
+    
     ## duplicate entries with same skill and evaluation code for the same player
     idx <- which((plays$evaluation_code[-1] %eq% plays$evaluation_code[-nrow(plays)]) &
                  (plays$skill[-1] %eq% plays$skill[-nrow(plays)]) &
