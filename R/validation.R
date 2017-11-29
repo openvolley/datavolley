@@ -5,7 +5,7 @@
 #' \itemize{
 #'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
 #'   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
-#'   \item message "Front-row player made an attack from a back-row zone - is the start zone correct?": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
+#'   \item message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
 #'   \item message "Block by a back-row player"
 #'   \item message "Serving player not in position 1"
 #'   \item message "Player designated as libero was recorded making a [serve|attack|block]"
@@ -116,7 +116,7 @@ validate_dv <- function(x,validation_level=2) {
     ## and vice-versa: attack starting from back row by a front-row player
     chk <- attacks[attacks$start_zone %in% c(5,6,7,8,9,1) & (attacks$player_number==attacks$attacker_2 | attacks$player_number==attacks$attacker_3 | attacks$player_number==attacks$attacker_4),]
     if (nrow(chk)>0)
-        out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone - is the start zone correct? (Legal, but possibly a scouting error)",severity=2))
+        out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)",severity=2))
     ## those are probably less of an issue than a back-row player making a front row attack. A front-row player making a back row attack is not illegal, just inconsistent
 
     ## back row player blocking
