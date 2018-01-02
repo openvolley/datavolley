@@ -57,10 +57,10 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     if (length(encoding)>1 || identical(tolower(encoding),"guess")) {
         ## try to guess encoding based on the first few lines of the file
         ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
-        idx1 <- suppressWarnings(grep("[3TEAMS]",dv,fixed=TRUE))
+        idx1 <- suppressWarnings(grep("[3MATCH]",dv,fixed=TRUE))
         idx2 <- suppressWarnings(grep("[3ATTACKCOMBINATION]",dv,fixed=TRUE))+1
         ## fallback
-        if (length(idx1)<1 || is.na(idx1)) idx1 <- 15
+        if (length(idx1)<1 || is.na(idx1)) idx1 <- 10
         if (length(idx2)<1 || is.na(idx2)) idx2 <- 80
         tst <- paste(dv[idx1:idx2],collapse="")
         if (identical(tolower(encoding),"guess")) {
@@ -86,9 +86,12 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         badwords <- c(badwords,tolower(c("\u3a9ukas","Pawe\u3c9","\u3a9omacz",paste0("Mo\u3cd","d\u3cdonek"),"W\u3c9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1253
         ##badwords <- c(badwords,tolower(c("\uc4\u15a\u49\uc4\u15a","SOR\uc4\u15a"))) ## utf-8 wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("\uc4\u15a","\u139\u2dd"))) ## utf-8 wrongly guessed as windows-1250
+        badwords <- c(badwords,tolower(c("Nicol\u148"))) ## windows-1252/iso-8859-1 wrongly guessed as windows-1250
         ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
         enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
+        encerr2 <- vapply(encoding,function(tryenc)tryCatch({blah <- read_match(iconv(dv[idx1:idx2],from=tryenc)); TRUE},error=function(e) FALSE),FUN.VALUE=TRUE)
+        encerrors[!encerr2] <- 999e3
       ##cat(str(sort(encerrors)),"\n")
         idx <- encerrors==min(encerrors)
         if (!any(idx)) stop("error in guessing text encoding")
