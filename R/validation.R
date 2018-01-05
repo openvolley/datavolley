@@ -7,6 +7,8 @@
 #'   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
 #'   \item message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
 #'   \item message "Block by a back-row player"
+#'   \item message "Winning serve not coded as an ace"
+#'   \item message "Non-winning serve was coded as an ace"
 #'   \item message "Serving player not in position 1"
 #'   \item message "Player designated as libero was recorded making a [serve|attack|block]"
 #'   \item message "Attack (which was blocked) does not have number of blockers recorded"
@@ -18,6 +20,7 @@
 #'   \item message "Visiting/Home team rotation has changed incorrectly"
 #'   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
 #'   \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
+#'   \item message "Serve was not followed by reception": a serve (that was not an error) was followed by a skill that was not a reception
 #'   \item message "Reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
 #'   \item message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
 #'   \item message "Reception start zone does not match serve start zone"
@@ -54,7 +57,15 @@ validate_dv <- function(x,validation_level=2) {
     if (validation_level<1) return(out)
 
     plays <- plays(x)
-    
+
+    ## reception to follow serve
+    idx <- which(plays$skill %eq% "Serve" & !plays$evaluation %in% c("Error"))##,"Ace"))
+    idx2 <- idx[!is.na(plays$skill[idx+1]) & !plays$skill[idx+1] %eq% "Reception"]##plays$evaluation[idx] %eq% "Ace" & 
+    ##idx2 <- idx[!plays$skill[idx+1] %eq% "Reception"]
+    if (length(idx2)>0) {
+        out <- rbind(out,chk_df(plays[idx2,],"Serve was not followed by a reception",severity=3))
+    }
+
     ## receive type must match serve type
     idx <- which(plays$skill %eq% "Reception")
     idx2 <- idx[!plays$skill[idx-1] %eq% "Serve"]
@@ -125,7 +136,46 @@ validate_dv <- function(x,validation_level=2) {
          ((plays$team %eq% plays$visiting_team) & (plays$player_number %eq% plays$visiting_p5 | plays$player_number %eq% plays$visiting_p6 | plays$player_number %eq% plays$visiting_p1)))
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Block by a back-row player",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
-    
+
+    ## serves that should be coded as aces, but were not
+    find_should_be_aces <- function(rally,rotation_error_is_ace=FALSE) {
+        sv <- which(rally$skill=="Serve")
+        if (length(sv)==1) {
+            was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
+            if (was_ace & !identical(rally$evaluation[sv], "Ace")) {
+                TRUE
+            } else {
+                FALSE
+            }
+        } else {
+            NA
+        }
+    }
+    pid <- ddply(plays,"point_id",find_should_be_aces)
+    pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+    chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
+    if (any(chk))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Winning serve not coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    ## and vice-versa: serves that were coded as aces, but should not have been
+    find_should_not_be_aces <- function(rally,rotation_error_is_ace=FALSE) {
+        sv <- which(rally$skill=="Serve")
+        if (length(sv)==1) {
+            was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")        
+            if (!was_ace & identical(rally$evaluation[sv],"Ace")) {
+                TRUE
+            } else {
+                FALSE
+            }
+        } else {
+            NA
+        }
+    }
+    pid <- ddply(plays,"point_id",find_should_not_be_aces)
+    pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+    chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
+    if (any(chk))
+        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Non-winning serve was coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+
     ## server not in position 1
     chk <- (plays$skill %eq% "Serve") & (((plays$team %eq% plays$home_team) & (!plays$player_number %eq% plays$home_p1)) | ((plays$team %eq% plays$visiting_team) & (!plays$player_number %eq% plays$visiting_p1)))
     if (any(chk))

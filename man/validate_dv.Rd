@@ -22,6 +22,8 @@ The current validation messages/checks are:
   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
   \item message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
   \item message "Block by a back-row player"
+  \item message "Winning serve not coded as an ace"
+  \item message "Non-winning serve was coded as an ace"
   \item message "Serving player not in position 1"
   \item message "Player designated as libero was recorded making a [serve|attack|block]"
   \item message "Attack (which was blocked) does not have number of blockers recorded"
@@ -33,6 +35,7 @@ The current validation messages/checks are:
   \item message "Visiting/Home team rotation has changed incorrectly"
   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
   \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
+  \item message "Serve was not followed by reception": a serve (that was not an error) was followed by a skill that was not a reception
   \item message "Reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
   \item message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
   \item message "Reception start zone does not match serve start zone"
