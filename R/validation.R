@@ -60,7 +60,7 @@ validate_dv <- function(x,validation_level=2) {
 
     ## reception to follow serve
     idx <- which(plays$skill %eq% "Serve" & !plays$evaluation %in% c("Error"))##,"Ace"))
-    idx2 <- idx[!is.na(plays$skill[idx+1]) & !plays$skill[idx+1] %eq% "Reception"]##plays$evaluation[idx] %eq% "Ace" & 
+    idx2 <- idx[!is.na(plays$skill[idx+1]) & !plays$skill[idx+1] %in% c("Reception","Rotation error")]##plays$evaluation[idx] %eq% "Ace" & 
     ##idx2 <- idx[!plays$skill[idx+1] %eq% "Reception"]
     if (length(idx2)>0) {
         out <- rbind(out,chk_df(plays[idx2,],"Serve was not followed by a reception",severity=3))
