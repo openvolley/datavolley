@@ -201,9 +201,16 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     done <- grepl("\\*\\*\\dset",in_code) ## end-of-set markers
     out_end_of_set[done] <- TRUE
 
+    ## custom codes
+    ## not sure if numbers are always 2 digits??
+    ##out_custom_code <- substr(in_code,16,9999)
+    temp <- sub("^.\\d+","",in_code) ## drop leading [a*] and digits
+    out_custom_code <- substr(temp,13,9999)
+
     ## rotation errors
     ## ">ROT<" ">ROTAZ" ">ROTAZIONE" ">ROT" ">FALLOROT" ">FORMAZIONE"
-    thisidx <- grepl("^.\\$\\$R",in_code) | grepl("^>(ROT|FALLOROT|FORMAZIONE)",in_code)
+    ## plusliga files: ROTE in custom notes
+    thisidx <- grepl("^.\\$\\$R",in_code) | grepl("^>(ROT|FALLOROT|FORMAZIONE)",in_code) | grepl("ROT",out_custom_code)
     ## these lines are followed by a $$& line, so don't do anything here for the time being
     out_skill[thisidx] <- "Rotation error"
     out_evaluation[thisidx] <- "Error"
@@ -218,7 +225,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     ##">RED<"  ">RED"  ">ROSSO"
     ## ">CHECK_RIPETE"    ">FALLO"   ">CONTESA"  ">CHECK_CONTESA" look like challenge notes
     ## ">SECONDI"   ??
-    idx <- !done & grepl("^>",in_code)
+    idx <- !done & (grepl("^>",in_code) | grepl("RED",out_custom_code))
     done[idx] <- TRUE
     
     ## team handling
@@ -302,11 +309,12 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
     out_substitution[thisidx] <- TRUE
     done[thisidx] <- TRUE    
 
-    ## custom codes
-    ## not sure if numbers are always 2 digits??
-    ##out_custom_code <- substr(in_code,16,9999)
-    temp <- sub("^.\\d+","",in_code) ## drop leading [a*] and digits
-    out_custom_code <- substr(temp,13,9999)
+## moved earlier    
+##    ## custom codes
+##    ## not sure if numbers are always 2 digits??
+##    ##out_custom_code <- substr(in_code,16,9999)
+##    temp <- sub("^.\\d+","",in_code) ## drop leading [a*] and digits
+##    out_custom_code <- substr(temp,13,9999)
             
     notdone <- which(!done)
     for (ci in notdone) {
