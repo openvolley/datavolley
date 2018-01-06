@@ -13,7 +13,9 @@
 #'   \item message "Player designated as libero was recorded making a [serve|attack|block]"
 #'   \item message "Attack (which was blocked) does not have number of blockers recorded"
 #'   \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
+#'   \item message "Winning attack was not recorded as such"
 #'   \item message "Repeated row with same skill and evaluation_code for the same player"
+#'   \item message "Consecutive actions by the same player"
 #'   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
 #'   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
 #'   \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
@@ -229,6 +231,16 @@ validate_dv <- function(x,validation_level=2) {
                  )+1
     if (length(idx)>0)
         out <- rbind(out,data.frame(file_line_number=plays$file_line_number[idx],video_time=video_time_from_raw(x$raw[plays$file_line_number[idx]]),message="Repeated row with same skill and evaluation_code for the same player",file_line=x$raw[plays$file_line_number[idx]],severity=3,stringsAsFactors=FALSE))
+
+    ## consecutive actions by the same player
+    ## be selective about which skill sequences count here, because some scouts might record duplicate skills for the same player (e.g. reception and set) for one physical action
+    ## also don't bother picking up illegal skill sequences, they will be picked up elsewhere
+    idx0 <- 1:(nrow(plays)-1); idx0_next <- 2:nrow(plays)
+    idx <- which(plays$player_id[idx0] %eq% plays$player_id[idx0_next] &
+        ((plays$skill[idx0] %eq% "Reception" & plays$skill[idx0_next] %in% c("Attack")) |
+         (plays$skill[idx0] %eq% "Set" & plays$skill[idx0_next] %eq% "Block")))
+    if (length(idx)>0)
+        out <- rbind(out,chk_df(plays[idx+1,],"Consecutive actions by the same player",severity=3))
     
     ## point not awarded to right team following error
     chk <- (plays$evaluation_code %eq% "=" | (plays$skill %eq% "Block" & plays$evaluation_code %eq% "/")) &  ## error or block Invasion

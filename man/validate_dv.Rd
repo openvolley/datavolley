@@ -28,7 +28,9 @@ The current validation messages/checks are:
   \item message "Player designated as libero was recorded making a [serve|attack|block]"
   \item message "Attack (which was blocked) does not have number of blockers recorded"
   \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
+  \item message "Winning attack was not recorded as such"
   \item message "Repeated row with same skill and evaluation_code for the same player"
+  \item message "Consecutive actions by the same player"
   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
   \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
