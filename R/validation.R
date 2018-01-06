@@ -191,6 +191,12 @@ validate_dv <- function(x,validation_level=2) {
     if (length(idx2)>0)
         out <- rbind(out,chk_df(plays[idx2,],"Attack (which was followed by a block) has \"No block\" recorded for number of players",severity=3))
 
+    ## winning attack not coded as such
+    idx <- which(plays$skill %eq% "Attack") ## +1 to be on the next skill
+    idx2 <- idx[!plays$evaluation[idx] %eq% "Winning attack" & !plays$team[idx] %eq% plays$team[idx+1] & plays$evaluation[idx+1] %eq% "Error" & !is.na(plays$skill[idx+1])]
+    if (length(idx2)>0)
+        out <- rbind(out,chk_df(plays[idx2,],"Winning attack was not recorded as such",severity=3))
+
     ## player not in recorded rotation making a play (other than by libero)
     liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)]
     liberos_h <- x$meta$players_h$number[grepl("L",x$meta$players_h$special_role)]
@@ -323,7 +329,7 @@ validate_dv <- function(x,validation_level=2) {
         
         if (all(new_rot==prev_rot)) {
             ## players did not change
-            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
+            rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
             next
         }
         sub_out <- as.numeric(sub(":.*$","",sub("^.c","",plays$code[k]))) ## outgoing player
