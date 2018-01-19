@@ -13,7 +13,6 @@
 #'   \item message "Player designated as libero was recorded making a [serve|attack|block]"
 #'   \item message "Attack (which was blocked) does not have number of blockers recorded"
 #'   \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
-#'   \item message "Winning attack was not recorded as such"
 #'   \item message "Repeated row with same skill and evaluation_code for the same player"
 #'   \item message "Consecutive actions by the same player"
 #'   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
@@ -67,7 +66,11 @@ validate_dv <- function(x,validation_level=2) {
     if (length(idx2)>0) {
         out <- rbind(out,chk_df(plays[idx2,],"Serve was not followed by a reception",severity=3))
     }
-
+    ## multiple serves or receptions per point
+    #idx <- which(plays$skill %eq% "Serve")
+    #idx <- idx[duplicated(x$point_id[idx])]
+    ##x %>% group_by(point_id,match_id) %>% dplyr::summarize(r2=sum(skill %eq% "Reception")>1,s2=sum(skill %eq% "Serve")>1) %>% filter(r2|s2)
+    
     ## receive type must match serve type
     idx <- which(plays$skill %eq% "Reception")
     idx2 <- idx[!plays$skill[idx-1] %eq% "Serve"]
@@ -194,10 +197,11 @@ validate_dv <- function(x,validation_level=2) {
         out <- rbind(out,chk_df(plays[idx2,],"Attack (which was followed by a block) has \"No block\" recorded for number of players",severity=3))
 
     ## winning attack not coded as such
-    idx <- which(plays$skill %eq% "Attack") ## +1 to be on the next skill
-    idx2 <- idx[!plays$evaluation[idx] %eq% "Winning attack" & !plays$team[idx] %eq% plays$team[idx+1] & plays$evaluation[idx+1] %eq% "Error" & !is.na(plays$skill[idx+1])]
-    if (length(idx2)>0)
-        out <- rbind(out,chk_df(plays[idx2,],"Winning attack was not recorded as such",severity=3))
+    ## this one seems to be too problematic: e.g. can have attack that was hit out, but block net touch, so attack should NOT be coded as winning attack
+    #idx <- which(plays$skill %eq% "Attack") ## +1 to be on the next skill
+    #idx2 <- idx[!plays$evaluation[idx] %eq% "Winning attack" & !plays$team[idx] %eq% plays$team[idx+1] & plays$evaluation[idx+1] %eq% "Error" & !is.na(plays$skill[idx+1])]
+    #if (length(idx2)>0)
+    #    out <- rbind(out,chk_df(plays[idx2,],"Winning attack was not recorded as such",severity=3))
 
     ## player not in recorded rotation making a play (other than by libero)
     liberos_v <- x$meta$players_v$number[grepl("L",x$meta$players_v$special_role)]
