@@ -6,7 +6,7 @@
 \usage{
 read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
   do_transliterate = FALSE, encoding = "guess", extra_validation = 2,
-  surname_case = "asis",
+  validation_options = list(), surname_case = "asis",
   skill_evaluation_decode = skill_evaluation_decoder(), custom_code_parser,
   metadata_only = FALSE, verbose = FALSE)
 }
@@ -21,7 +21,9 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 
 \item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)}
 
-\item{extra_validation}{numeric: should we run some extra validation checks on the file? (Will be slower). 0=no extra validation, 1=check for major errors, 2=somewhat more extensive, 3=the most extra checking.}
+\item{extra_validation}{numeric: should we run some extra validation checks on the file? (Will be slower). 0=no extra validation, 1=check for major errors, 2=somewhat more extensive, 3=the most extra checking}
+
+\item{validation_options}{list: additional options to pass to the validation step. See \code{help('validate_dv')} for details}
 
 \item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 

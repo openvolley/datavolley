@@ -33,7 +33,11 @@
 #' }
 #' 
 #' @param x datavolley: datavolley object as returned by \code{read_dv}
-#' @param validation_level numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes.
+#' @param validation_level numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes
+#' @param options list: named list of options that control optional validation behaviour. Valid entries are:
+#' \itemize{
+#'   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP"))}
+#' }
 #'
 #' @return data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).
 #'
@@ -44,11 +48,16 @@
 #'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
 #'     insert_technical_timeouts=FALSE)
 #'   xv <- validate_dv(x)
+#'
+#'   ## specifying "PP" as the setter tip code
+#'   ## front-row attacks (using this code) by a back-row player won't be flagged as errors
+#'   xv <- validate_dv(x,options=list(setter_tip_codes=c("PP"))) 
 #' }
 #'
 #' @export
-validate_dv <- function(x,validation_level=2) {
+validate_dv <- function(x,validation_level=2,options=list()) {
     assert_that(is.numeric(validation_level) && validation_level %in% 0:3)
+    assert_that(is.list(options))
     
     out <- data.frame(file_line_number=integer(),video_time=integer(),message=character(),file_line=character(),severity=numeric(),stringsAsFactors=FALSE)
     chk_df <- function(chk,msg,severity=2) {
@@ -120,12 +129,17 @@ validate_dv <- function(x,validation_level=2) {
     
     ## front-row attacking player isn't actually in front row
     ## find front-row players for each attack
+    ignore_codes <- options$setter_tip_codes
+    if (!is.null(ignore_codes)) {
+        if (!is.character(ignore_codes)) ignore_codes <- NULL
+    }
+    if (!is.null(ignore_codes)) ignore_codes <- na.omit(ignore_codes)
     attacks <- plays[plays$skill %eq% "Attack",]
     for (p in 1:6) attacks[,paste0("attacker_",p)] <- NA
     idx <- attacks$home_team==attacks$team
     attacks[idx,paste0("attacker_",1:6)] <- attacks[idx,paste0("home_p",1:6)]
     attacks[!idx,paste0("attacker_",1:6)] <- attacks[!idx,paste0("visiting_p",1:6)]
-    chk <- attacks[attacks$start_zone %in% c(2,3,4) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
+    chk <- attacks[attacks$start_zone %in% c(2,3,4) & (!attacks$attack_code %in% ignore_codes) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
     if (nrow(chk)>0)
         out <- rbind(out,chk_df(chk,"Back-row player made an attack from a front-row zone",severity=3))
 

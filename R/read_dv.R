@@ -8,7 +8,8 @@
 #' @param filename string: file name to read
 #' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4. Otherwise a two-element list can be supplied, giving the point-scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
-#' @param extra_validation numeric: should we run some extra validation checks on the file? (Will be slower). 0=no extra validation, 1=check for major errors, 2=somewhat more extensive, 3=the most extra checking.
+#' @param extra_validation numeric: should we run some extra validation checks on the file? (Will be slower). 0=no extra validation, 1=check for major errors, 2=somewhat more extensive, 3=the most extra checking
+#' @param validation_options list: additional options to pass to the validation step. See \code{help('validate_dv')} for details
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)
 #' @param surname_case string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings
@@ -35,13 +36,14 @@
 #'     insert_technical_timeouts=list(c(12),NULL))
 #' }
 #' @export
-read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",extra_validation=2,surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,metadata_only=FALSE,verbose=FALSE) {
+read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",extra_validation=2,validation_options=list(),surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,metadata_only=FALSE,verbose=FALSE) {
     assert_that(is.flag(insert_technical_timeouts) || is.list(insert_technical_timeouts))
     assert_that(is.flag(do_warn))
     assert_that(is.flag(do_transliterate))
     assert_that(is.flag(metadata_only))
     assert_that(is.flag(verbose))
     assert_that(is.numeric(extra_validation),extra_validation %in% 0:3)
+    assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
     if (!missing(custom_code_parser)) assert_that(is.function(custom_code_parser) || is.null(custom_code_parser))
@@ -382,7 +384,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
     if (extra_validation>0) {
-        moreval <- validate_dv(out,validation_level=extra_validation)
+        moreval <- validate_dv(out,validation_level=extra_validation,options=validation_options)
         if (nrow(moreval)>0) {
             out$messages <- rbind.fill(out$messages,moreval)
         }
@@ -390,6 +392,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     if (nrow(out$messages)>0) {
         out$messages$file_line_number <- as.integer(out$messages$file_line_number)
         out$messages <- out$messages[order(out$messages$file_line_number),]
+        row.names(out$messages) <- NULL
     }
     if (do_warn) {
         ## spit the messages out

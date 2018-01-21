@@ -4,12 +4,17 @@
 \alias{validate_dv}
 \title{Additional validation checks on a DataVolley file}
 \usage{
-validate_dv(x, validation_level = 2)
+validate_dv(x, validation_level = 2, options = list())
 }
 \arguments{
 \item{x}{datavolley: datavolley object as returned by \code{read_dv}}
 
-\item{validation_level}{numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes.}
+\item{validation_level}{numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes}
+
+\item{options}{list: named list of options that control optional validation behaviour. Valid entries are:
+\itemize{
+  \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP"))}
+}}
 }
 \value{
 data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).
@@ -28,7 +33,6 @@ The current validation messages/checks are:
   \item message "Player designated as libero was recorded making a [serve|attack|block]"
   \item message "Attack (which was blocked) does not have number of blockers recorded"
   \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
-  \item message "Winning attack was not recorded as such"
   \item message "Repeated row with same skill and evaluation_code for the same player"
   \item message "Consecutive actions by the same player"
   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
@@ -53,6 +57,10 @@ The current validation messages/checks are:
   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
     insert_technical_timeouts=FALSE)
   xv <- validate_dv(x)
+
+  ## specifying "PP" as the setter tip code
+  ## front-row attacks (using this code) by a back-row player won't be flagged as errors
+  xv <- validate_dv(x,options=list(setter_tip_codes=c("PP"))) 
 }
 
 }
