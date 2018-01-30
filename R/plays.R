@@ -33,6 +33,7 @@ serve_map <- function(type,skill) {
                H=paste0("Float ",skill),
                M=paste0("Jump-float ",skill),
                Q=paste0("Jump ",skill),
+               T=paste0("Topspin ",skill),
                paste0("Unknown ",skill," type"))
     }
 
