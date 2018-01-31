@@ -21,8 +21,6 @@
 #'   \item message "Visiting/Home team rotation has changed incorrectly"
 #'   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
 #'   \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
-#'   \item message "Serve was not followed by reception": a serve (that was not an error) was followed by a skill that was not a reception
-#'   \item message "Reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
 #'   \item message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
 #'   \item message "Reception start zone does not match serve start zone"
 #'   \item message "Reception end zone does not match serve end zone"
@@ -36,7 +34,7 @@
 #' @param validation_level numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes
 #' @param options list: named list of options that control optional validation behaviour. Valid entries are:
 #' \itemize{
-#'   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP"))}
+#'   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP","XY"))}
 #' }
 #'
 #' @return data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).
@@ -69,12 +67,13 @@ validate_dv <- function(x,validation_level=2,options=list()) {
     plays <- plays(x)
 
     ## reception to follow serve
-    idx <- which(plays$skill %eq% "Serve" & !plays$evaluation %in% c("Error"))##,"Ace"))
-    idx2 <- idx[!is.na(plays$skill[idx+1]) & !plays$skill[idx+1] %in% c("Reception","Rotation error")]##plays$evaluation[idx] %eq% "Ace" & 
-    ##idx2 <- idx[!plays$skill[idx+1] %eq% "Reception"]
-    if (length(idx2)>0) {
-        out <- rbind(out,chk_df(plays[idx2,],"Serve was not followed by a reception",severity=3))
-    }
+    ## commented out, have the same check elsewhere
+    ##idx <- which(plays$skill %eq% "Serve" & !plays$evaluation %in% c("Error"))##,"Ace"))
+    ##idx2 <- idx[!is.na(plays$skill[idx+1]) & !plays$skill[idx+1] %in% c("Reception","Rotation error")]##plays$evaluation[idx] %eq% "Ace" & 
+    ####idx2 <- idx[!plays$skill[idx+1] %eq% "Reception"]
+    ##if (length(idx2)>0) {
+    ##    out <- rbind(out,chk_df(plays[idx2,],"Serve was not followed by a reception",severity=3))
+    ##}
     ## multiple serves or receptions per point
     #idx <- which(plays$skill %eq% "Serve")
     #idx <- idx[duplicated(x$point_id[idx])]
@@ -82,11 +81,7 @@ validate_dv <- function(x,validation_level=2,options=list()) {
     
     ## receive type must match serve type
     idx <- which(plays$skill %eq% "Reception")
-    idx2 <- idx[!plays$skill[idx-1] %eq% "Serve"]
-    if (length(idx2)>0) {
-        out <- rbind(out,chk_df(plays[idx2,],"Reception was not preceded by a serve",severity=3))
-        idx <- idx[plays$skill[idx-1] %eq% "Serve"]
-    }
+    idx <- idx[plays$skill[idx-1] %eq% "Serve"] ## just in case have reception not preceded by serve
     idx2 <- idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception") & (plays$skill_type[idx]!="Unknown serve reception type" & plays$skill_type[idx-1]!="Unknown serve type")]
     if (length(idx2)>0)
         out <- rbind(out,chk_df(plays[idx2,],paste0("Reception type (",plays$skill_type[idx2],") does not match serve type (",plays$skill_type[idx2-1],")")))
@@ -156,11 +151,14 @@ validate_dv <- function(x,validation_level=2,options=list()) {
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Block by a back-row player",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
+    ## for the next two, not sure if we should assume rotation errors should be aces or not
+    ##  so the default rotation_error_is_ace for each is set to not warn when rotation errors are present
     ## serves that should be coded as aces, but were not
     find_should_be_aces <- function(rally,rotation_error_is_ace=FALSE) {
         sv <- which(rally$skill=="Serve")
         if (length(sv)==1) {
             was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
+            if (!rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- FALSE ## to avoid warnings
             if (was_ace & !identical(rally$evaluation[sv], "Ace")) {
                 TRUE
             } else {
@@ -176,10 +174,13 @@ validate_dv <- function(x,validation_level=2,options=list()) {
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Winning serve not coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
     ## and vice-versa: serves that were coded as aces, but should not have been
-    find_should_not_be_aces <- function(rally,rotation_error_is_ace=FALSE) {
+    find_should_not_be_aces <- function(rally,rotation_error_is_ace=TRUE) {
+        ## by default assume rotation errors should be aces here (opposite to above)
+        ## so that warnings won't be issued when rotation errors present
         sv <- which(rally$skill=="Serve")
         if (length(sv)==1) {
-            was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")        
+            was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
+            if (rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- TRUE ## to avoid warnings
             if (!was_ace & identical(rally$evaluation[sv],"Ace")) {
                 TRUE
             } else {
