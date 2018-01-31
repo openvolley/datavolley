@@ -159,6 +159,8 @@ validate_dv <- function(x,validation_level=2,options=list()) {
         if (length(sv)==1) {
             was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
             if (!rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- FALSE ## to avoid warnings
+            ## also skip this check if the next skill not reception (or rotation error), since that's likely to affect this
+            if (!is.na(rally$skill[sv + 1]) && (!rally$skill[sv + 1] %in% c("Rotation error","Reception"))) was_ace <- FALSE
             if (was_ace & !identical(rally$evaluation[sv], "Ace")) {
                 TRUE
             } else {
