@@ -13,7 +13,7 @@ validate_dv(x, validation_level = 2, options = list())
 
 \item{options}{list: named list of options that control optional validation behaviour. Valid entries are:
 \itemize{
-  \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP"))}
+  \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP","XY"))}
 }}
 }
 \value{
@@ -41,8 +41,6 @@ The current validation messages/checks are:
   \item message "Visiting/Home team rotation has changed incorrectly"
   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
   \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
-  \item message "Serve was not followed by reception": a serve (that was not an error) was followed by a skill that was not a reception
-  \item message "Reception was not preceded by a serve": a recorded reception was not immediately preceded by a serve
   \item message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
   \item message "Reception start zone does not match serve start zone"
   \item message "Reception end zone does not match serve end zone"
