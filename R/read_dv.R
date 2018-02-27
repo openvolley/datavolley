@@ -153,6 +153,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$meta <- temp$meta
     mymsgs <- temp$messages
     out$meta$filename <- filename
+    this_main <- NULL
     tryCatch({
         thismsg <- NULL
         if (!do_warn) {
@@ -171,8 +172,11 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
                 } else {
                     this_main <<- read_main(paste0(tmp,collapse="\n"))
                 }
+            } else {
+                stop("could not read file (error message was: ",e$message,")")
             }
         })
+    if (is.null(this_main)) stop("could not read dv file (unspecified error)")
     ##if (!is.null(thismsg)) mymsgs <- rbind.fill(mymsgs,thismsg)
     ## don't actually issue this warning, for now at least
 
