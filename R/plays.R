@@ -175,6 +175,7 @@ read_with_readr <- function(filename) {
         out <- suppressWarnings(suppressMessages(readr::read_csv2(filename, skip = skip, progress = FALSE, col_names = FALSE, locale = locale(encoding = "UTF-8"))))
         attr(out,"problems") <- NULL
         attr(out,"spec") <- NULL
+        out <- as.data.frame(out,stringsAsFactors=FALSE) ## so that we don't get caught by e.g. tibble column indexing differences to data.frames
         out
     } else {
         stop("could not read main [3SCOUT] section of file")
