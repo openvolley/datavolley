@@ -130,6 +130,12 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
         dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="-"] <- "Poor block" 
         ## B+ is used for positive block touch, either to our defense or difficult for opposition
         dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="+"] <- "Positive block"
+        ## D/ is block cover that gives blocking team a chance to attack
+        dtbl$evaluation[dtbl$skill=="D" & dtbl$evaluation_code=="/"] <- "Positive block cover"
+        ## D! is block cover that does not give blocking team a chance to attack or is an error
+        dtbl$evaluation[dtbl$skill=="D" & dtbl$evaluation_code=="!"] <- "Poor block cover"
+        ## E/ is a reach
+        dtbl$evaluation[dtbl$skill=="E" & dtbl$evaluation_code=="/"] <- "Error (reach over net)"
     }
     ## extract the columns as vectors: faster
     dtbl_evaluation <- dtbl$evaluation
