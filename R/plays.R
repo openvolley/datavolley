@@ -61,6 +61,7 @@ skill_type_decode <- function(skill,type,full_line,line_num) {
 #' If your DataVolley files use evaluation codes differently to those coded here, you will need to supply a custom
 #' skill_evaluation_decode function to \code{\link{read_dv}}
 #'
+#' @param style string: currently only "default" (following the standard definitions described in the DataVolley manual)
 #' @return function. This function takes arguments skill, evaluation_code, and show_map and returns a string giving the interpretation of that skill evaluation code
 #'
 #' @seealso \code{\link{read_dv}}
@@ -74,7 +75,8 @@ skill_type_decode <- function(skill,type,full_line,line_num) {
 # @param evaluation_code string: one-character evaluation code, generally one of =/-+#!
 # @param show_map logical: if TRUE, return the whole table being used to map evaluation codes to summary phrases
 
-skill_evaluation_decoder <- function() {
+skill_evaluation_decoder <- function(style="default") {
+    style <- match.arg(tolower(style),c("default","volleymetrics"))
     ## reading this table is slow, so do it once and return the function
     dtbl <- read.table(text="skill^evaluation_code^evaluation
 S^=^Error
@@ -119,6 +121,16 @@ F^!^OK, no first tempo possible
 F^-^OK, only high set possible
 F^+^Good
 F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
+    ## customizations, currently not documented
+    if (style=="volleymetrics") {
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="/"] <- "Poor, opposition to replay"
+        ## B! is used for negative block, unplayable to our side
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="!"] <- "Poor, blocking team cannot recover" 
+        ## B- is negative block touch, either back to opposition or poor on our side
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="-"] <- "Poor block" 
+        ## B+ is used for positive block touch, either to our defense or difficult for opposition
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="+"] <- "Positive block"
+    }
     ## extract the columns as vectors: faster
     dtbl_evaluation <- dtbl$evaluation
     dtbl_skill <- dtbl$skill
