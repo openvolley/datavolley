@@ -132,7 +132,8 @@ remap_player_names=function(x,remap) {
     if (!(identical(sort(names(remap)),c("from","team","to")) || identical(sort(names(remap)),c("player_id","player_name")))) {
         stop("remap data.frame must either have column names \"team\", \"from\", \"to\" OR \"player_id\", \"player_name\"")
     }
-    remap <- colwise(as.character)(remap) ## enforce all cols to be character
+    ##remap <- colwise(as.character)(remap) ## enforce all cols to be character
+    for (k in seq_len(ncol(remap))) remap[,k] <- as.character(remap[,k]) ## enforce all cols to be character
     was_list <- TRUE
     if (inherits(x,"datavolley")) {
         x <- list(x)

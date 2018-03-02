@@ -475,7 +475,7 @@ print.summary.datavolley <- function(x,...) {
 #'
 #' @export
 dvlist_summary=function(z) {
-    out <- list(number_of_matches=length(z),number_of_sets=sum(laply(z,function(z)sum(z$meta$teams$sets_won))))
+    out <- list(number_of_matches=length(z),number_of_sets=sum(vapply(z,function(z)sum(z$meta$teams$sets_won),FUN.VALUE=as.integer(1),USE.NAMES=FALSE)))
     out$date_range <- range(ldply(z,function(q)as.Date(q$meta$match$date))$V1)
     temp <- as.character(sapply(z,function(q) q$meta$teams$team))
     teams <- as.data.frame(table(temp))

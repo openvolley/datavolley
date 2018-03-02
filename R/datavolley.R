@@ -11,7 +11,8 @@
 #' @name datavolley
 #' @author Ben Raymond \email{ben@@untan.gl}
 #' @docType package
-#' @import plyr assertthat
+#' @import assertthat
+#' @importFrom plyr ddply join ldply mapvalues rbind.fill
 #' @importFrom digest digest
 #' @importFrom readr read_csv2 locale
 #' @importFrom stringi stri_trans_general stri_enc_detect2
