@@ -264,7 +264,7 @@ validate_dv <- function(x,validation_level=2,options=list()) {
         out <- rbind(out,chk_df(plays[idx+1,],"Consecutive actions by the same player",severity=3))
     
     ## point not awarded to right team following error
-    chk <- (plays$evaluation_code %eq% "=" | (plays$skill %eq% "Block" & plays$evaluation_code %eq% "/")) &  ## error or block Invasion
+    chk <- (plays$evaluation_code %eq% "=" | (plays$skill %eq% "Block" & grepl("invasion", plays$evaluation, ignore.case=TRUE))) &  ## error or block Invasion
             (plays$team %eq% plays$point_won_by)
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Point awarded to incorrect team following error (or \"error\" evaluation incorrect)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
