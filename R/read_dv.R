@@ -199,7 +199,32 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     }
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
-    out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6")])
+    out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6","start_coordinate","end_coordinate")]) ##"mid_coordinate",
+    ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
+    ##cxy <- expand.grid(x=1:100, y=1:51) ## grid of cells
+    ##cxy <- expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(51-10.5)/40.5+0.5, length.out=51)) ## grid of coords in our ggcourt space
+    cxy <- expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101)) ## grid of coords in our ggcourt space
+    temp <- out$plays$start_coordinate
+    temp[temp %in% c("-1-1", "")] <- NA_real_
+    temp <- as.numeric(temp)
+    temp[temp<1] <- NA_real_
+    out$plays$start_coordinate <- temp
+    out$plays$start_coordinate_x <- cxy[out$plays$start_coordinate, 1]
+    out$plays$start_coordinate_y <- cxy[out$plays$start_coordinate, 2]
+    #temp <- out$plays$mid_coordinate
+    #temp[temp %in% c("-1-1", "")] <- NA_real_
+    #temp <- as.numeric(temp)
+    #temp[temp<1] <- NA_real_
+    #out$plays$mid_coordinate <- temp
+    #out$plays$mid_coordinate_x <- cxy[out$plays$mid_coordinate, 1]
+    #out$plays$mid_coordinate_y <- cxy[out$plays$mid_coordinate, 2]
+    temp <- out$plays$end_coordinate
+    temp[temp %in% c("-1-1", "")] <- NA_real_
+    temp <- as.numeric(temp)
+    temp[temp<1] <- NA_real_
+    out$plays$end_coordinate <- temp
+    out$plays$end_coordinate_x <- cxy[out$plays$end_coordinate, 1]
+    out$plays$end_coordinate_y <- cxy[out$plays$end_coordinate, 2]
     ## add player_id values for home_p1 etc    
     for (thisp in 1:6)
         out$plays[,paste0("home_player_id",thisp)] <- get_player_id(rep("*",nrow(out$plays)),out$plays[,paste0("home_p",thisp)],out$meta)

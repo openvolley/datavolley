@@ -185,6 +185,9 @@ read_with_readr <- function(filename) {
 read_main <- function(filename) {
     x <- tryCatch(suppressWarnings(data.table::fread(filename,skip="[3SCOUT]",data.table=FALSE)), error = function(e) read_with_readr(filename)) ## fall back to readr
     names(x)[1] <- "code"
+    names(x)[5] <- "start_coordinate"
+    ##names(x)[6] <- "mid_coordinate"
+    names(x)[7] <- "end_coordinate"
     names(x)[8] <- "time"
     names(x)[13] <- "video_time"
     names(x)[15:20] <- paste("home_p",1:6,sep="") ## home team, court positons 1-6, entries are player numbers
