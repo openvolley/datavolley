@@ -5,8 +5,9 @@
 \title{Add volleyball court schematic to a ggplot}
 \usage{
 ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
-  "Receiving team"), as_for_serve = FALSE, show_minor_zones = FALSE,
-  grid_colour = "black", minor_grid_colour = "grey70")
+  "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE,
+  show_minor_zones = FALSE, grid_colour = "black", zone_colour = "grey70",
+  minor_zone_colour = "grey80")
 }
 \arguments{
 \item{court}{string: "full" (show full court) or "lower" or "upper" (show only the lower or upper half of the court)}
@@ -17,11 +18,15 @@ ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
 
 \item{as_for_serve}{logical: if TRUE and \code{show_zones} is TRUE, show zones as for serving. Only zones 1,5,6,7,9 are meaningful in this case}
 
+\item{show_zone_lines}{logical: if FALSE, just show the 3m line. If TRUE, also show the 3m x 3m zones}
+
 \item{show_minor_zones}{logical: add lines for the subzones (1.5m squares)?}
 
-\item{grid_colour}{string: colour to use for grid lines, court sidelines, and net}
+\item{grid_colour}{string: colour to use for court sidelines, 3m line, and net}
 
-\item{minor_grid_colour}{string: colour to use for minor zone grid lines}
+\item{zone_colour}{string: colour to use for zone lines and labels}
+
+\item{minor_zone_colour}{string: colour to use for minor zone grid lines}
 }
 \value{
 ggplot layer
