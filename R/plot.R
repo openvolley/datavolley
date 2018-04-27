@@ -9,6 +9,7 @@
 #' @param grid_colour string: colour to use for court sidelines, 3m line, and net
 #' @param zone_colour string: colour to use for zone lines and labels
 #' @param minor_zone_colour string: colour to use for minor zone grid lines
+#' @param ... : additional parameters passed to \code{ggplot2::theme_classic(...)}
 #'
 #' @return ggplot layer
 #'
@@ -56,7 +57,7 @@
 #' p+scale_fill_gradient(name="Attack rate")+guides(size="none")
 #' }
 #' @export
-ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80") {
+ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }    
@@ -106,7 +107,7 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
         vlm <- ggplot2::geom_path(data=vlm,ggplot2::aes_string(x="x",y="y",group="id"),colour=minor_zone_colour,inherit.aes=FALSE)
     }
     net <- ggplot2::geom_path(data=data.frame(x=c(0.25,3.75),y=c(3.5,3.5)),ggplot2::aes_string(x="x",y="y"),colour=grid_colour,size=2,inherit.aes=FALSE) ## net
-    thm <- ggplot2::theme_classic()
+    thm <- ggplot2::theme_classic(...)
     thm2 <- ggplot2::theme(axis.line=ggplot2::element_blank(),axis.text.x=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank(),axis.ticks=ggplot2::element_blank(), axis.title.x=ggplot2::element_blank(), axis.title.y=ggplot2::element_blank())
     out <- list(net,thm,thm2)
     if (show_minor_zones) out <- c(out, list(hlm, vlm))
