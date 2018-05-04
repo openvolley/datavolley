@@ -183,7 +183,7 @@ read_with_readr <- function(filename) {
 }
 
 read_main <- function(filename) {
-    x <- tryCatch(suppressWarnings(data.table::fread(filename,skip="[3SCOUT]",data.table=FALSE)), error = function(e) read_with_readr(filename)) ## fall back to readr
+    x <- tryCatch(suppressWarnings(data.table::fread(filename, skip="[3SCOUT]", data.table=FALSE, header=FALSE)), error = function(e) read_with_readr(filename)) ## fall back to readr
     names(x)[1] <- "code"
     names(x)[5] <- "start_coordinate"
     names(x)[6] <- "mid_coordinate"
