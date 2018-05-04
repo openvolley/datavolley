@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 An R package for reading DataVolley scouting files.
 
-See also this [DataVolley file validator](https://untangl.shinyapps.io/dvalidate/), which is built on the datavolley package.
+See also this [DataVolley file validator](https://apps.untan.gl/dvalidate/), which is built on the datavolley package.
 
 ## Installation
 

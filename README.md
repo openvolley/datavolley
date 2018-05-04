@@ -9,7 +9,7 @@ Status](https://travis-ci.org/raymondben/datavolley.svg?branch=master)](https://
 An R package for reading DataVolley scouting files.
 
 See also this [DataVolley file
-validator](https://untangl.shinyapps.io/dvalidate/), which is built on
+validator](https://apps.untan.gl/dvalidate/), which is built on
 the datavolley package.
 
 ## Installation
