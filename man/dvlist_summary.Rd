@@ -17,8 +17,7 @@ Summarize a list of volleyball matches
 }
 \examples{
 \dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-    insert_technical_timeouts=FALSE)
+  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
   dvlist_summary(list(x,x)) ## same match duplicated twice, just for illustration purposes
 }
 

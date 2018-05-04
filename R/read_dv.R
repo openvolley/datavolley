@@ -24,16 +24,15 @@
 #' @examples
 #' \dontrun{
 #'   ## to read the example file bundled with the package
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'     insert_technical_timeouts=FALSE)
+#'   myfile <- example_dv_file()
+#'   x <- read_dv(myfile, insert_technical_timeouts=FALSE)
 #'   summary(x)
 #'
-#'   ## or to read your own file, omit the system.file() part:
-#'   x <- read_dv("c:/some/path/myfile.dvw",insert_technical_timeouts=FALSE)
+#'   ## or to read your own file:
+#'   x <- read_dv("c:/some/path/myfile.dvw", insert_technical_timeouts=FALSE)
 #' 
 #'   ## Insert a technical timeout at point 12 in sets 1 to 4:
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'     insert_technical_timeouts=list(c(12),NULL))
+#'   x <- read_dv(myfile, insert_technical_timeouts=list(c(12),NULL))
 #' }
 #' @export
 read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",extra_validation=2,validation_options=list(),surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,metadata_only=FALSE,verbose=FALSE) {
@@ -199,10 +198,8 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     }
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
-    out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6","start_coordinate","end_coordinate")]) ##"mid_coordinate",
+    out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6","start_coordinate","mid_coordinate","end_coordinate")])
     ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
-    ##cxy <- expand.grid(x=1:100, y=1:51) ## grid of cells
-    ##cxy <- expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(51-10.5)/40.5+0.5, length.out=51)) ## grid of coords in our ggcourt space
     cxy <- expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101)) ## grid of coords in our ggcourt space
     temp <- out$plays$start_coordinate
     temp[temp %in% c("-1-1", "")] <- NA_real_
@@ -211,13 +208,13 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     out$plays$start_coordinate <- temp
     out$plays$start_coordinate_x <- cxy[out$plays$start_coordinate, 1]
     out$plays$start_coordinate_y <- cxy[out$plays$start_coordinate, 2]
-    #temp <- out$plays$mid_coordinate
-    #temp[temp %in% c("-1-1", "")] <- NA_real_
-    #temp <- as.numeric(temp)
-    #temp[temp<1] <- NA_real_
-    #out$plays$mid_coordinate <- temp
-    #out$plays$mid_coordinate_x <- cxy[out$plays$mid_coordinate, 1]
-    #out$plays$mid_coordinate_y <- cxy[out$plays$mid_coordinate, 2]
+    temp <- out$plays$mid_coordinate
+    temp[temp %in% c("-1-1", "")] <- NA_real_
+    temp <- as.numeric(temp)
+    temp[temp<1] <- NA_real_
+    out$plays$mid_coordinate <- temp
+    out$plays$mid_coordinate_x <- cxy[out$plays$mid_coordinate, 1]
+    out$plays$mid_coordinate_y <- cxy[out$plays$mid_coordinate, 2]
     temp <- out$plays$end_coordinate
     temp[temp %in% c("-1-1", "")] <- NA_real_
     temp <- as.numeric(temp)
@@ -443,11 +440,8 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
 #'
 #' @seealso \code{\link{read_dv}}
 #' @examples
-#' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'     insert_technical_timeouts=FALSE)
-#'   summary(x)
-#' }
+#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' summary(x)
 #'
 #' @method summary datavolley
 #' @export
@@ -493,8 +487,7 @@ print.summary.datavolley <- function(x,...) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'     insert_technical_timeouts=FALSE)
+#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   dvlist_summary(list(x,x)) ## same match duplicated twice, just for illustration purposes
 #' }
 #'
@@ -548,8 +541,7 @@ print.summary.datavolleylist <- function(x,...) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'     insert_technical_timeouts=FALSE)
+#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   inspect(plays(x))
 #' }
 #' @export
@@ -570,8 +562,7 @@ plays=function(x) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'     insert_technical_timeouts=FALSE)
+#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   inspect(plays(x))
 #' }
 #'

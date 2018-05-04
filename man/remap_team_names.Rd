@@ -21,8 +21,7 @@ A team name can sometimes be spelled incorrectly, particularly if there are char
 }
 \examples{
 \dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-    insert_technical_timeouts=FALSE)
+  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
   summary(x)
   x <- remap_team_names(x,data.frame(from="Nova KBM Branik",to="NKBM Branik"))
   summary(x)

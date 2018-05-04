@@ -9,8 +9,7 @@
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'     insert_technical_timeouts=FALSE)
+#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   px <- plays(x)
 #'   px$phase <- play_phase(px)
 #' }

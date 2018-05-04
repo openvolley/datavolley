@@ -52,8 +52,7 @@ The current validation messages/checks are:
 }
 \examples{
 \dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-    insert_technical_timeouts=FALSE)
+  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
   xv <- validate_dv(x)
 
   ## specifying "PP" as the setter tip code

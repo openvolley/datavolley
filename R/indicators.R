@@ -8,8 +8,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'   insert_technical_timeouts=FALSE)
+#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #' serve_idx <- find_serves(plays(x))
 #' ## number of serves by team
 #' table(plays(x)$team[serve_idx])
@@ -34,8 +33,7 @@ find_serves=function(x) {
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'   insert_technical_timeouts=FALSE)
+#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #' serve_idx <- find_serves(plays(x))
 #' swp <- serve_win_points(plays(x))
 #' ## number of serves by team
@@ -72,8 +70,7 @@ serve_win_points=function(x,return_id=FALSE) {
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'   insert_technical_timeouts=FALSE)
+#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #' ## first attack win rate, by team
 #' by(plays(x),plays(x)$team,function(z)find_first_attack(z)$win_rate)
 #' }
@@ -117,8 +114,7 @@ find_first_attack=function(x) {
 #' @examples
 #' \dontrun{
 #' ## find runs of serves
-#' x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-#'   insert_technical_timeouts=FALSE)
+#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #' serve_idx <- find_serves(plays(x))
 #' serve_run_info <- find_runs(plays(x)[serve_idx,])
 #' ## distribution of serve run lengths

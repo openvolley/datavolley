@@ -20,11 +20,11 @@ install_github("raymondben/datavolley")
 Example
 -------
 
-Read the example data file bundled with the package:
+Read one of the example data files bundled with the package:
 
 ``` r
 library(datavolley)
-x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),insert_technical_timeouts=FALSE)
+x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 summary(x)
 #> Match summary:
 #> Date: 2015-01-25

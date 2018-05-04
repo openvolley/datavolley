@@ -18,11 +18,8 @@ list of summary items
 A simple summary of a volleyball match
 }
 \examples{
-\dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-    insert_technical_timeouts=FALSE)
-  summary(x)
-}
+x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+summary(x)
 
 }
 \seealso{

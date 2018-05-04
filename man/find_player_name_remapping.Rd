@@ -21,8 +21,7 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 }
 \examples{
 \dontrun{
-  x <- read_dv(system.file("extdata/example_data.dvw",package="datavolley"),
-    insert_technical_timeouts=FALSE)
+  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
   remap <- find_player_name_remapping(x)
 }
 }
