@@ -26,40 +26,54 @@ Create x and y coordinates for plotting, from DataVolley numbered zones
 x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 
 library(ggplot2)
-## calculate attack frequency by zone, per team
-attack_rate <- ddply(subset(plays(x),skill=="Attack"),.(team),
-  function(z)ddply(z,.(start_zone),function(w)data.frame(rate=nrow(w)/nrow(z))))
-## add x,y coordinates associated with the zones
-attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower"))
+library(dplyr)
+
+## Example 1: attack frequency by zone, per team
+
+attack_rate <- plays(x) \%>\% dplyr::filter(skill=="Attack") \%>\%
+  group_by(team, start_zone) \%>\% dplyr::summarize(n_attacks=n()) \%>\%
+  mutate(rate=n_attacks/sum(n_attacks)) \%>\% ungroup
+
+## add columns "x" and "y" for the x,y coordinates associated with the zones
+attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower"))
+
 ## for team 2, these need to be on the top half of the diagram
-tm2 <- attack_rate$team==x$meta$teams$team[2]
-attack_rate[tm2,c("x","y")] <- ggxy(attack_rate$start_zone,end="upper")[tm2,]
-ggplot(attack_rate,aes(x,y,fill=rate))+geom_tile()+ggcourt(labels=x$meta$teams$team)+
+tm2 <- attack_rate$team==teams(x)[2]
+attack_rate[tm2, c("x", "y")] <- ggxy(attack_rate$start_zone, end="upper")[tm2, ]
+
+## plot this
+ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
   scale_fill_gradient2(name="Attack rate")
 
-## show map of starting and ending zones of attacks using arrows
-## tabulate attacks by starting and ending zone
-attack_rate <- as.data.frame(xtabs(~start_zone+end_zone,
-  data=subset(plays(x),skill=="Attack" & team==x$meta$teams$team[1],
-  stringsAsFactors=FALSE)
-attack_rate$start_zone <- as.numeric(attack_rate$start_zone)
-attack_rate$end_zone <- as.numeric(attack_rate$end_zone)
-attack_rate$rate <- attack_rate$Freq/sum(attack_rate$Freq)
-attack_rate <- attack_rate[attack_rate$Freq>0,]
-## starting x,y coordinates
-attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower",xynames=c("sx","sy")))
-## ending x,y coordinates
-attack_rate <- cbind(attack_rate,ggxy(attack_rate$end_zone,end="upper",xynames=c("ex","ey")))
+
+## Example 2: map of starting and ending zones of attacks using arrows
+
+## first tabulate attacks by starting and ending zone
+attack_rate <- plays(x) \%>\% dplyr::filter(team==teams(x)[1] & skill=="Attack") \%>\%
+  group_by(start_zone, end_zone) \%>\% tally() \%>\% ungroup
+
+## convert counts to rates
+attack_rate$rate <- attack_rate$n/sum(attack_rate$n)
+
+## discard zones with zero attacks or missing location information
+attack_rate <- attack_rate \%>\% dplyr::filter(rate>0 & !is.na(start_zone) & !is.na(end_zone))
+
+## add starting x,y coordinates
+attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
+
+## and ending x,y coordinates
+attack_rate <- cbind(attack_rate, ggxy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
+
 ## plot in reverse order so largest arrows are on the bottom
-attack_rate <- attack_rate[order(attack_rate$rate,decreasing=TRUE),]
-p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt(labels=c(x$meta$teams$team[1],""))
+attack_rate <- attack_rate \%>\% dplyr::arrange(desc(rate))
+
+p <- ggplot(attack_rate,aes(x,y,col=rate)) + ggcourt(labels=c(teams(x)[1],""))
 for (n in 1:nrow(attack_rate))
-    p <- p+geom_path(data=data.frame(
-            x=c(attack_rate$sx[n],attack_rate$ex[n]),
-            y=c(attack_rate$sy[n],attack_rate$ey[n]),
-            rate=attack_rate$rate[n]),
-        aes(size=rate),lineend="round",arrow=arrow(ends="last",type="closed"))
-p+scale_fill_gradient(name="Attack rate")+guides(size="none")
+    p <- p + geom_path(data=data.frame(x=c(attack_rate$sx[n], attack_rate$ex[n]),
+                                       y=c(attack_rate$sy[n],attack_rate$ey[n]),
+                                       rate=attack_rate$rate[n]),
+        aes(size=rate), lineend="round", arrow=arrow(ends="last", type="closed"))
+p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 }
 }
 \seealso{

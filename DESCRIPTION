@@ -17,6 +17,7 @@ Imports:
     plyr,
     digest
 Suggests:
+    dplyr,
     testthat,
     ggplot2
 Encoding: UTF-8

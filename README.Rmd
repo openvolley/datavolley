@@ -8,7 +8,7 @@ output: github_document
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.path = "README-"
+  fig.path = "tools/README-"
 )
 ```
 
@@ -56,40 +56,50 @@ Heatmap of attack rate by court position:
 library(ggplot2)
 library(dplyr)
 ## calculate attack frequency by zone, per team
-attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>% group_by(team) %>%
-    mutate(N_tm=n()) %>% group_by(team,start_zone) %>%
-    summarize(rate=n()/N_tm[1]) %>% ungroup()
+attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
+    group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
+    mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
+
 ## add x,y coordinates associated with the zones
 attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower"))
 
 ## for team 2, these need to be on the top half of the diagram
-tm2 <- attack_rate$team==x$meta$teams$team[2]
-attack_rate[tm2,c("x","y")] <- ggxy(attack_rate$start_zone,end="upper")[tm2,]
-ggplot(attack_rate,aes(x,y,fill=rate))+geom_tile()+ggcourt(labels=x$meta$teams$team)+
+tm2 <- attack_rate$team==teams(x)[2]
+attack_rate[tm2, c("x", "y")] <- ggxy(attack_rate$start_zone, end="upper")[tm2, ]
+
+ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
     scale_fill_gradient2(name="Attack rate")
 ```
 
 Or using arrows to show the starting and ending zones of attacks:
 
 ```{r}
-## tabulate attacks by starting and ending zone
-attack_rate <- plays(x) %>%
-    dplyr::filter(skill=="Attack" & team==x$meta$teams$team[1]) %>% ## attacks from team 1
-    group_by(start_zone,end_zone) %>% summarize(rate=n()) %>% ## count attacks by start, end zone
-    ungroup %>% mutate(rate=rate/sum(rate)) %>% ## convert counts to rates
-    dplyr::filter(!is.na(start_zone) & !is.na(end_zone)) %>% ## drop missing-zone-info-rows
-    bind_cols(ggxy(.$start_zone,end="lower",xynames=c("sx","sy"))) %>% ## start_zone x,y coords
-    bind_cols(ggxy(.$end_zone,end="upper",xynames=c("ex","ey"))) %>% ## end_zone x,y coords
-    arrange(desc(rate)) ## plot in reverse order so largest arrows are on the bottom
+## first tabulate attacks by starting and ending zone
+attack_rate <- plays(x) %>% dplyr::filter(team==teams(x)[1] & skill=="Attack") %>%
+  group_by(start_zone, end_zone) %>% tally() %>% ungroup
 
-p <- ggplot(attack_rate,aes(x,y,col=rate))+ggcourt(labels=c(x$meta$teams$team[1],""))
+## convert counts to rates
+attack_rate$rate <- attack_rate$n/sum(attack_rate$n)
+
+## discard zones with zero attacks or missing location information
+attack_rate <- attack_rate %>% dplyr::filter(rate>0 & !is.na(start_zone) & !is.na(end_zone))
+
+## add starting x,y coordinates
+attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
+
+## and ending x,y coordinates
+attack_rate <- cbind(attack_rate, ggxy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
+
+## plot in reverse order so largest arrows are on the bottom
+attack_rate <- attack_rate %>% dplyr::arrange(desc(rate))
+
+p <- ggplot(attack_rate,aes(x,y,col=rate)) + ggcourt(labels=c(teams(x)[1],""))
 for (n in 1:nrow(attack_rate))
-  p <- p+geom_path(data=data.frame(
-      x=c(attack_rate$sx[n],attack_rate$ex[n]),
-      y=c(attack_rate$sy[n],attack_rate$ey[n]),
-      rate=attack_rate$rate[n]),
-    aes(size=rate),lineend="round",arrow=arrow(ends="last",type="closed"))
-p+scale_fill_gradient(name="Attack rate")+guides(size="none")
+    p <- p + geom_path(data=data.frame(x=c(attack_rate$sx[n], attack_rate$ex[n]),
+                                       y=c(attack_rate$sy[n],attack_rate$ey[n]),
+                                       rate=attack_rate$rate[n]),
+        aes(size=rate), lineend="round", arrow=arrow(ends="last", type="closed"))
+p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 ```
 
 ## Troubleshooting
