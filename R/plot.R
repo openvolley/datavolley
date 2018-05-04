@@ -1,4 +1,40 @@
-#' Add volleyball court schematic to a ggplot
+#' ggplot volleyball court
+#' 
+#' Volleyball court schematic suitable for adding to a ggplot
+#'
+#' The datavolley package uses the following dimensions and coordinates for plotting:
+#' \itemize{
+#'   \item the court is shown such that the sidelines are oriented vertically and the net is oriented horizontally
+#'   \item the intersection of the left-hand sideline and the bottom baseline is at (0.5, 0.5)
+#'   \item the intersection of the right-hand sideline and the top baseline is at (3.5, 6.5)
+#'   \item the net intersects the sidelines at (0.5, 3.5) and (3.5, 3.5)
+#'   \item the zones 1-9 (as defined in the DataVolley manual) on the lower half of the court are located at:
+#'     \enumerate{
+#'       \item (3, 1)
+#'       \item (3, 3)
+#'       \item (2, 3)
+#'       \item (1, 3)
+#'       \item (1, 1)
+#'       \item (2, 1)
+#'       \item (1, 2)
+#'       \item (2, 2)
+#'       \item (3, 2)
+#'     }
+#'   \item the zones 1-9 (as defined in the DataVolley manual) on the upper half of the court are located at:
+#'     \enumerate{
+#'       \item (1, 6)
+#'       \item (1, 4)
+#'       \item (2, 4)
+#'       \item (3, 4)
+#'       \item (3, 6)
+#'       \item (2, 6)
+#'       \item (3, 5)
+#'       \item (2, 5)
+#'       \item (1, 5)
+#'     }
+#' }
+#'
+#' To get a visual depiction of this, try: \code{ ggplot() + ggcourt() + theme_bw()}
 #'
 #' @param court string: "full" (show full court) or "lower" or "upper" (show only the lower or upper half of the court)
 #' @param show_zones logical: add numbers indicating the court zones (3m squares)?
@@ -13,7 +49,7 @@
 #'
 #' @return ggplot layer
 #'
-#' @seealso \code{\link{ggxy}}
+#' @seealso \code{\link{dv_xy}}
 #'
 #' @examples
 #' \dontrun{
@@ -29,11 +65,11 @@
 #'   mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
 #' 
 #' ## add columns "x" and "y" for the x,y coordinates associated with the zones
-#' attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower"))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
 #'
 #' ## for team 2, these need to be on the top half of the diagram
 #' tm2 <- attack_rate$team==teams(x)[2]
-#' attack_rate[tm2, c("x", "y")] <- ggxy(attack_rate$start_zone, end="upper")[tm2, ]
+#' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
 #'
 #' ## plot this
 #' ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
@@ -53,10 +89,10 @@
 #' attack_rate <- attack_rate %>% dplyr::filter(rate>0 & !is.na(start_zone) & !is.na(end_zone))
 #'
 #' ## add starting x,y coordinates
-#' attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
 #'
 #' ## and ending x,y coordinates
-#' attack_rate <- cbind(attack_rate, ggxy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
 #'
 #' ## plot in reverse order so largest arrows are on the bottom
 #' attack_rate <- attack_rate %>% dplyr::arrange(desc(rate))
@@ -157,14 +193,25 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
 }
 
 
-#' Create x and y coordinates for plotting, from DataVolley numbered zones 
+## internal function: grid of coords in our ggcourt space
+## the row-index into this matrix is the dv coordinate value given in the start_coordinate, mid_coordinate, end_coordinate cols
+dvcoord2xy <- function() {
+    expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101))
+}
+
+
+#' Court zones to x, y coordinates
+#' 
+#' Generate x and y coordinates for plotting, from DataVolley numbered zones 
 #'
+#' For a description of the court dimensions and coordinates used for plotting, see \code{\link{ggcourt}}
+#' 
 #' @param zones numeric: zones numbers 1-9 to convert to x and y coordinates
 #' @param end string: use the "lower" or "upper" part of the figure
 #' @param xynames character: names to use for the x and y columns of the returned data.frame
 #' @param as_for_serve logical: if TRUE, treat positions as for serving. Only zones 1,5,6,7,9 are meaningful in this case
 #'
-#' @return data.frame with x and y components
+#' @return data.frame with columns "x" and "y" (or other names if specified in \code{xynames})
 #'
 #' @seealso \code{\link{ggcourt}}
 #'
@@ -182,11 +229,11 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
 #'   mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
 #' 
 #' ## add columns "x" and "y" for the x,y coordinates associated with the zones
-#' attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower"))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
 #'
 #' ## for team 2, these need to be on the top half of the diagram
 #' tm2 <- attack_rate$team==teams(x)[2]
-#' attack_rate[tm2, c("x", "y")] <- ggxy(attack_rate$start_zone, end="upper")[tm2, ]
+#' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
 #'
 #' ## plot this
 #' ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
@@ -206,10 +253,10 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
 #' attack_rate <- attack_rate %>% dplyr::filter(rate>0 & !is.na(start_zone) & !is.na(end_zone))
 #'
 #' ## add starting x,y coordinates
-#' attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
 #'
 #' ## and ending x,y coordinates
-#' attack_rate <- cbind(attack_rate, ggxy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
 #'
 #' ## plot in reverse order so largest arrows are on the bottom
 #' attack_rate <- attack_rate %>% dplyr::arrange(desc(rate))
@@ -223,8 +270,8 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
 #' p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 #' }
 #' @export
-ggxy <- function(zones, end="lower", xynames=c("x", "y"), as_for_serve=FALSE) {
-    end <- match.arg(tolower(end),c("lower","upper"))
+dv_xy <- function(zones, end="lower", xynames=c("x", "y"), as_for_serve=FALSE) {
+    end <- match.arg(tolower(end), c("lower", "upper"))
     ## define zones and their corresponding coordinates
     start_zones <- 1:9 ## lower part of figure
     szx <- if (as_for_serve) c(3,NA,NA,NA,1,2,1.5,NA,2.5) else c(3,3,2,1,1,2,1,2,3)
@@ -242,3 +289,77 @@ ggxy <- function(zones, end="lower", xynames=c("x", "y"), as_for_serve=FALSE) {
     names(out) <- xynames
     out
 }
+
+
+#' @title Court zones to x, y coordinates
+#' @description Generate x and y coordinates for plotting, from DataVolley numbered zones 
+#' @param zones numeric: zones numbers 1-9 to convert to x and y coordinates
+#' @param end string: use the "lower" or "upper" part of the figure
+#' @param xynames character: names to use for the x and y columns of the returned data.frame
+#' @param as_for_serve logical: if TRUE, treat positions as for serving. Only zones 1,5,6,7,9 are meaningful in this case
+#' @return data.frame with columns "x" and "y" (or other names if specified in \code{xynames})
+#' @name ggxy-deprecated
+#' @usage ggxy(zones, end="lower", xynames=c("x", "y"), as_for_serve=FALSE)
+#' @keywords internal
+#' @seealso \code{\link{datavolley-deprecated}}
+NULL
+
+
+
+#' @rdname datavolley-deprecated
+#' @section \code{ggxy}:
+#' For \code{ggxy}, use \code{\link{dv_xy}}.
+#'
+#' @export
+ggxy <- function(zones, end="lower", xynames=c("x", "y"), as_for_serve=FALSE) {
+    .Deprecated("dv_xy", package="datavolley")
+    dv_xy(zones, end=end, xynames=xynames, as_for_serve=as_for_serve)
+}
+
+#' Flip the x,y court coordinates
+#'
+#' This is a convenience function that will transform coordinates from the top half of the court to the bottom, or vice-verse.
+#' 
+#' @param x numeric: x-coordinate
+#' @param y numeric: y-coordinate
+#'
+#' @return transformed coordinates
+#'
+#' @seealso \code{\link{dv_xy}}
+#'
+#' @examples
+#' \dontrun{
+#'  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'  library(ggplot2)
+#'  library(dplyr)
+#'
+#' ## attack rate by zone (both teams combined)
+#' attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
+#'    group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
+#'    mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
+#'
+#' ## add columns "x" and "y" for the x,y coordinates associated with the zones
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
+#'
+#' ## plot this
+#' ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
+#'      scale_fill_gradient2(name="Attack rate")
+#'
+#' ## or, plot at the other end of the court
+#' attack_rate <- attack_rate %>% mutate(x=dv_flip_x(x), y=dv_flip_y(y))
+#'
+#' ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
+#'      scale_fill_gradient2(name="Attack rate")
+#' }
+#'
+#' @export
+dv_flip_xy <- function(x, y) list(x=4-x, y=7-y)
+
+#' @rdname dv_flip_xy
+#' @export
+dv_flip_x <- function(x) 4-x
+
+#' @rdname dv_flip_xy
+#' @export
+dv_flip_y <- function(y) 7-y
+

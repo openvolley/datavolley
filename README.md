@@ -68,11 +68,11 @@ attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
     mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
 
 ## add x,y coordinates associated with the zones
-attack_rate <- cbind(attack_rate,ggxy(attack_rate$start_zone,end="lower"))
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
 
 ## for team 2, these need to be on the top half of the diagram
 tm2 <- attack_rate$team==teams(x)[2]
-attack_rate[tm2, c("x", "y")] <- ggxy(attack_rate$start_zone, end="upper")[tm2, ]
+attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
 
 ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
     scale_fill_gradient2(name="Attack rate")
@@ -94,10 +94,10 @@ attack_rate$rate <- attack_rate$n/sum(attack_rate$n)
 attack_rate <- attack_rate %>% dplyr::filter(rate>0 & !is.na(start_zone) & !is.na(end_zone))
 
 ## add starting x,y coordinates
-attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
 
 ## and ending x,y coordinates
-attack_rate <- cbind(attack_rate, ggxy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
 
 ## plot in reverse order so largest arrows are on the bottom
 attack_rate <- attack_rate %>% dplyr::arrange(desc(rate))

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.R
 \name{ggcourt}
 \alias{ggcourt}
-\title{Add volleyball court schematic to a ggplot}
+\title{ggplot volleyball court}
 \usage{
 ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
   "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE,
@@ -34,7 +34,42 @@ ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
 ggplot layer
 }
 \description{
-Add volleyball court schematic to a ggplot
+Volleyball court schematic suitable for adding to a ggplot
+}
+\details{
+The datavolley package uses the following dimensions and coordinates for plotting:
+\itemize{
+  \item the court is shown such that the sidelines are oriented vertically and the net is oriented horizontally
+  \item the intersection of the left-hand sideline and the bottom baseline is at (0.5, 0.5)
+  \item the intersection of the right-hand sideline and the top baseline is at (3.5, 6.5)
+  \item the net intersects the sidelines at (0.5, 3.5) and (3.5, 3.5)
+  \item the zones 1-9 (as defined in the DataVolley manual) on the lower half of the court are located at:
+    \enumerate{
+      \item (3, 1)
+      \item (3, 3)
+      \item (2, 3)
+      \item (1, 3)
+      \item (1, 1)
+      \item (2, 1)
+      \item (1, 2)
+      \item (2, 2)
+      \item (3, 2)
+    }
+  \item the zones 1-9 (as defined in the DataVolley manual) on the upper half of the court are located at:
+    \enumerate{
+      \item (1, 6)
+      \item (1, 4)
+      \item (2, 4)
+      \item (3, 4)
+      \item (3, 6)
+      \item (2, 6)
+      \item (3, 5)
+      \item (2, 5)
+      \item (1, 5)
+    }
+}
+
+To get a visual depiction of this, try: \code{ ggplot() + ggcourt() + theme_bw()}
 }
 \examples{
 \dontrun{
@@ -50,11 +85,11 @@ attack_rate <- plays(x) \%>\% dplyr::filter(skill=="Attack") \%>\%
   mutate(rate=n_attacks/sum(n_attacks)) \%>\% ungroup
 
 ## add columns "x" and "y" for the x,y coordinates associated with the zones
-attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower"))
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
 
 ## for team 2, these need to be on the top half of the diagram
 tm2 <- attack_rate$team==teams(x)[2]
-attack_rate[tm2, c("x", "y")] <- ggxy(attack_rate$start_zone, end="upper")[tm2, ]
+attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
 
 ## plot this
 ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
@@ -74,10 +109,10 @@ attack_rate$rate <- attack_rate$n/sum(attack_rate$n)
 attack_rate <- attack_rate \%>\% dplyr::filter(rate>0 & !is.na(start_zone) & !is.na(end_zone))
 
 ## add starting x,y coordinates
-attack_rate <- cbind(attack_rate, ggxy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
 
 ## and ending x,y coordinates
-attack_rate <- cbind(attack_rate, ggxy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
 
 ## plot in reverse order so largest arrows are on the bottom
 attack_rate <- attack_rate \%>\% dplyr::arrange(desc(rate))
@@ -92,5 +127,5 @@ p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 }
 }
 \seealso{
-\code{\link{ggxy}}
+\code{\link{dv_xy}}
 }
