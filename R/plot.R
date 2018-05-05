@@ -49,7 +49,7 @@
 #'
 #' @return ggplot layer
 #'
-#' @seealso \code{\link{dv_xy}}
+#' @seealso \code{\link{dv_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_flip_xy}}
 #'
 #' @examples
 #' \dontrun{
@@ -192,21 +192,46 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
     out
 }
 
-
-## internal function: grid of coords in our ggcourt space
-## the row-index into this matrix is the dv coordinate value given in the start_coordinate, mid_coordinate, end_coordinate cols
-dvcoord2xy <- function(idx) {
+#' Grid index to x,y coordinate and vice-versa
+#'
+#' DataVolley uses a grid to represent positions on court (values in columns "start_coordinate", "mid_coordinate", and "end_coordinate" in the play-by-play data frame). These functions convert grid index values to x, y coordinates suitable for plotting, and vice-versa. For a description of the court dimensons and coordinates see \code{\link{ggcourt}}.
+#' 
+#' @param index integer: vector of grid indices. If missing, the entire grid will be returned. The row numbers match the grid indices
+#' @param x numeric: x-coordinate. For \code{dv_index2xy} this can be a two-column matrix or data.frame containing x and y
+#' @param y numeric: y-coordinate
+#'
+#' @return for dv_index2xy, a data.frame with columns "x" and "y"; for dv_xy2index a vector of integer values
+#'
+#' @seealso \code{\link{ggcourt}}, \code{\link{dv_xy}}, \code{\link{dv_flip_xy}}
+#'
+#' @examples
+#'
+#' ## positions (zones) 1 and 3 are at x, y coordinates c(3, 1) and c(2, 3) respectively
+#'
+#' ## their grid indices:
+#' dv_xy2index(c(3, 2), c(1, 3))
+#'
+#' @export
+dv_index2xy <- function(index) {
     cxy <- expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101), KEEP.OUT.ATTRS=FALSE)
-    if (missing(idx)) {
+    if (missing(index)) {
         cxy
     } else {
-        idx[idx<1] <- NA
-        cxy[idx,]
+        assert_that(is.numeric(index))
+        index[index<1] <- NA
+        cxy[index,]
     }
 }
 
-## internal function: from x, y coordinates on grid, return the grid cell index (i.e. the start_coordinate value)
-dvxy2coord <- function(x, y) {
+#' @rdname dv_index2xy
+#' @export
+dv_xy2index <- function(x, y) {
+    if (missing(y) && ncol(x)>1) {
+        y <- x[,2]
+        x <- x[,1]
+    }
+    assert_that(is.numeric(x))
+    assert_that(is.numeric(y))
     binx <- seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100)
     binx[1] <- -Inf
     binx <- c(binx, Inf)
@@ -215,13 +240,9 @@ dvxy2coord <- function(x, y) {
     biny <- c(biny, Inf)
     xi <- .bincode(x, binx, right=FALSE)
     yi <- .bincode(y, biny, right=FALSE)
-    xi+(yi-1)*(length(binx)-1)
+    as.integer(xi+(yi-1)*(length(binx)-1))
 }
-
-##xx <- xp %>% dplyr::filter(skill %eq% "Serve") %>% select(i=start_coordinate, x=start_coordinate_x, y=start_coordinate_y)
-##xx$icheck <- dvxy2coord(xx$x, xx$y)
-##all(xx$i==xx$icheck)
-
+    
 #' Court zones to x, y coordinates
 #' 
 #' Generate x and y coordinates for plotting, from DataVolley numbered zones 
@@ -235,7 +256,7 @@ dvxy2coord <- function(x, y) {
 #'
 #' @return data.frame with columns "x" and "y" (or other names if specified in \code{xynames})
 #'
-#' @seealso \code{\link{ggcourt}}
+#' @seealso \code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}
 #'
 #' @examples
 #' \dontrun{
@@ -342,12 +363,13 @@ ggxy <- function(zones, end="lower", xynames=c("x", "y"), as_for_serve=FALSE) {
 #'
 #' This is a convenience function that will transform coordinates from the top half of the court to the bottom, or vice-verse.
 #' 
-#' @param x numeric: x-coordinate
+#' @param x numeric: x-coordinate. For \code{dv_flip_xy} this can be a two-column matrix or data.frame containing x and y
 #' @param y numeric: y-coordinate
+#' @param index integer: grid index value
 #'
-#' @return transformed coordinates
+#' @return transformed coordinates or grid index
 #'
-#' @seealso \code{\link{dv_xy}}
+#' @seealso \code{\link{ggcourt}}, \code{\link{dv_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}
 #'
 #' @examples
 #' \dontrun{
@@ -375,7 +397,13 @@ ggxy <- function(zones, end="lower", xynames=c("x", "y"), as_for_serve=FALSE) {
 #' }
 #'
 #' @export
-dv_flip_xy <- function(x, y) list(x=4-x, y=7-y)
+dv_flip_xy <- function(x, y) {
+    if (missing(y) && ncol(x)>1) {
+        y <- x[,2]
+        x <- x[,1]
+    }
+    data.frame(x=4-x, y=7-y)
+}
 
 #' @rdname dv_flip_xy
 #' @export
@@ -384,4 +412,8 @@ dv_flip_x <- function(x) 4-x
 #' @rdname dv_flip_xy
 #' @export
 dv_flip_y <- function(y) 7-y
+
+#' @rdname dv_flip_xy
+#' @export
+dv_flip_index <- function(index) 10100-index
 

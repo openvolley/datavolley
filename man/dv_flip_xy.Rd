@@ -4,6 +4,7 @@
 \alias{dv_flip_xy}
 \alias{dv_flip_x}
 \alias{dv_flip_y}
+\alias{dv_flip_index}
 \title{Flip the x,y court coordinates}
 \usage{
 dv_flip_xy(x, y)
@@ -11,14 +12,18 @@ dv_flip_xy(x, y)
 dv_flip_x(x)
 
 dv_flip_y(y)
+
+dv_flip_index(index)
 }
 \arguments{
-\item{x}{numeric: x-coordinate}
+\item{x}{numeric: x-coordinate. For \code{dv_flip_xy} this can be a two-column matrix or data.frame containing x and y}
 
 \item{y}{numeric: y-coordinate}
+
+\item{index}{integer: grid index value}
 }
 \value{
-transformed coordinates
+transformed coordinates or grid index
 }
 \description{
 This is a convenience function that will transform coordinates from the top half of the court to the bottom, or vice-verse.
@@ -50,5 +55,5 @@ ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x
 
 }
 \seealso{
-\code{\link{dv_xy}}
+\code{\link{ggcourt}}, \code{\link{dv_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}
 }

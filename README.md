@@ -74,8 +74,8 @@ attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
 attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
 
 ## for team 2, these need to be on the top half of the diagram
-tm2 <- attack_rate$team==teams(x)[2]
-attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
+tm2i <- attack_rate$team==teams(x)[2]
+attack_rate[tm2i, c("x", "y")] <- dv_flip_xy(attack_rate[tm2i, c("x", "y")])
 
 ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
     scale_fill_gradient2(name="Attack rate")

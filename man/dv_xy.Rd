@@ -80,5 +80,5 @@ p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 }
 }
 \seealso{
-\code{\link{ggcourt}}
+\code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}
 }

@@ -200,7 +200,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
     out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6","start_coordinate","mid_coordinate","end_coordinate")])
     ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
-    cxy <- dvcoord2xy() ## grid of coords in our ggcourt space
+    cxy <- dv_index2xy() ## grid of coords in our ggcourt space
     temp <- out$plays$start_coordinate
     temp[temp %in% c("-1-1", "")] <- NA_real_
     temp <- as.numeric(temp)

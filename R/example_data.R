@@ -93,10 +93,10 @@ dv_fake_coordinates <- function(skill, evaluation) {
     s_i <- s_x+(s_y-1)*100
     e_i <- e_x+(e_y-1)*100
     ## and convert s_x etc to actual court coordinates for plotting
-    temp <- dvcoord2xy(s_i)
+    temp <- dv_index2xy(s_i)
     s_x <- temp[, 1]
     s_y <- temp[, 2]
-    temp <- dvcoord2xy(e_i)
+    temp <- dv_index2xy(e_i)
     e_x <- temp[, 1]
     e_y <- temp[, 2]
     data.frame(start_coordinate=s_i, start_coordinate_x=s_x, start_coordinate_y=s_y,
