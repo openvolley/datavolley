@@ -9,8 +9,8 @@ Status](https://travis-ci.org/raymondben/datavolley.svg?branch=master)](https://
 An R package for reading DataVolley scouting files.
 
 See also this [DataVolley file
-validator](https://apps.untan.gl/dvalidate/), which is built on
-the datavolley package.
+validator](https://apps.untan.gl/dvalidate/), which is built on the
+datavolley package.
 
 ## Installation
 
@@ -57,7 +57,10 @@ table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
 #> 34 16  7  4  1  1  1
 ```
 
-Heatmap of attack rate by court position:
+The court position associated with each action can be recorded in two
+ways. The most common is by zones (numbered 1-9).
+
+Heatmap of attack rate by court zone:
 
 ``` r
 library(ggplot2)
@@ -112,6 +115,33 @@ p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 ```
 
 ![](tools/README-unnamed-chunk-7-1.png)<!-- -->
+
+The second source of position data is court coordinates. These are not
+included in all data files, because generally they must be manually
+entered by the scout and this can be a time consuming process. For the
+purposes of demonstration, here we generate fake coordinate data:
+
+``` r
+## take just the serves from the play-by-play data
+xserves <- subset(plays(x), skill=="Serve")
+
+## if the file had been scouted with coordinate included, we could plot them directly
+## this file has no coordinates, so we'll fake some up for demo purposes
+coords <- dv_fake_coordinates("serve", xserves$evaluation)
+xserves[, c("start_coordinate", "start_coordinate_x", "start_coordinate_y",
+            "end_coordinate", "end_coordinate_x", "end_coordinate_y")] <- coords
+
+## now we can plot these
+xserves$evaluation[!xserves$evaluation %in% c("Ace", "Error")] <- "Other"
+
+ggplot(xserves, aes(start_coordinate_x, start_coordinate_y,
+       xend=end_coordinate_x, yend=end_coordinate_y, colour=evaluation))+
+    geom_segment() + geom_point() +
+    scale_colour_manual(values=c(Ace="limegreen", Error="firebrick", Other="dodgerblue")) +
+    ggcourt(labels=c("Serving team", "Receiving team"))
+```
+
+![](tools/README-unnamed-chunk-8-1.png)<!-- -->
 
 ## Troubleshooting
 
