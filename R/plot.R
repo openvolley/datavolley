@@ -195,10 +195,32 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
 
 ## internal function: grid of coords in our ggcourt space
 ## the row-index into this matrix is the dv coordinate value given in the start_coordinate, mid_coordinate, end_coordinate cols
-dvcoord2xy <- function() {
-    expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101))
+dvcoord2xy <- function(idx) {
+    cxy <- expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101), KEEP.OUT.ATTRS=FALSE)
+    if (missing(idx)) {
+        cxy
+    } else {
+        idx[idx<1] <- NA
+        cxy[idx,]
+    }
 }
 
+## internal function: from x, y coordinates on grid, return the grid cell index (i.e. the start_coordinate value)
+dvxy2coord <- function(x, y) {
+    binx <- seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100)
+    binx[1] <- -Inf
+    binx <- c(binx, Inf)
+    biny <- seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101)
+    biny[1] <- -Inf
+    biny <- c(biny, Inf)
+    xi <- .bincode(x, binx, right=FALSE)
+    yi <- .bincode(y, biny, right=FALSE)
+    xi+(yi-1)*(length(binx)-1)
+}
+
+##xx <- xp %>% dplyr::filter(skill %eq% "Serve") %>% select(i=start_coordinate, x=start_coordinate_x, y=start_coordinate_y)
+##xx$icheck <- dvxy2coord(xx$x, xx$y)
+##all(xx$i==xx$icheck)
 
 #' Court zones to x, y coordinates
 #' 
