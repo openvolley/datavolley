@@ -70,12 +70,12 @@ dv_fake_coordinates <- function(skill, evaluation) {
     assert_that(is.character(evaluation))
     evaluation <- tolower(evaluation)
     N <- length(evaluation)
-    intsample <- function(N, from, to) sample.int(to-from+1, size=N, replace=TRUE)+from
+    intsample <- function(N, from, to) sample.int(to-from+1, size=N, replace=TRUE)+from-1
     if (skill %eq% "serve") {
         ## default to legal starting and ending locations
-        s_x <- intsample(N, 11, 88)
-        s_y <- intsample(N, 1, 9)
-        e_x <- intsample(N, 11, 88)
+        s_x <- intsample(N, 11, 90)
+        s_y <- intsample(N, 1, 8)
+        e_x <- intsample(N, 11, 90)
         e_y <- intsample(N, 55, 91)
         ## serve errors
         temp <- runif(N)

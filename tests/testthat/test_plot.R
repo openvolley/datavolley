@@ -13,8 +13,18 @@ test_that("coordinate utilities work as expected", {
     xserves[, c("start_coordinate", "start_coordinate_x", "start_coordinate_y",
                 "end_coordinate", "end_coordinate_x", "end_coordinate_y")] <- coords
     
-    xy0 <- dv_index2xy(c(550, 2000))
-    ##expect_identical(dv_xy2index(xy0), dv_flip_index(dv_xy2index(dv_flip_xy(xy0))))
-    ## second value is off by 1, needs checking
+    i0 <- 1:10100
+    xy0 <- dv_index2xy(i0)
+    expect_identical(rownames(xy0), as.character(1:10100))
+    ## xy to index and back again should be identity
+    temp <- dv_index2xy(dv_xy2index(xy0))
+    expect_identical(xy0, temp)
 
+    ## flip xy and back again should be identity
+    expect_equal(xy0, dv_flip_xy(dv_flip_xy(xy0))) ## "equal but not identical"??
+
+    ## (flip xy then convert to index) should be same as flipping index directly
+    expect_equal(dv_xy2index(dv_flip_xy(xy0)), dv_flip_index(i0))
+
+    expect_equal(xy0, dv_index2xy(dv_flip_index(dv_xy2index(dv_flip_xy(xy0)))))
 })
