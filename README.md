@@ -65,6 +65,14 @@ Heatmap of attack rate by court zone:
 ``` r
 library(ggplot2)
 library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
 ## calculate attack frequency by zone, per team
 attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
     group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
