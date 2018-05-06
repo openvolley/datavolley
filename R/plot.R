@@ -45,6 +45,7 @@
 #' @param grid_colour string: colour to use for court sidelines, 3m line, and net
 #' @param zone_colour string: colour to use for zone lines and labels
 #' @param minor_zone_colour string: colour to use for minor zone grid lines
+#' @param fixed_aspect_ratio logical: if TRUE, coerce the plotted court to be square (for a half-court plot) or a 2:1 rectangle (full court plot). Prior to package version 0.5.3 this was not TRUE by default
 #' @param ... : additional parameters passed to \code{ggplot2::theme_classic(...)}
 #'
 #' @return ggplot layer
@@ -106,7 +107,7 @@
 #' p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 #' }
 #' @export
-ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", ...) {
+ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }    
@@ -114,6 +115,7 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
     assert_that(is.flag(show_zones),!is.na(show_zones))
     assert_that(is.flag(show_minor_zones),!is.na(show_minor_zones))
     assert_that(is.flag(as_for_serve),!is.na(as_for_serve))
+    assert_that(is.flag(fixed_aspect_ratio),!is.na(fixed_aspect_ratio))
     ## horizontal grid lines
     hl <- data.frame(x=c(0.5,3.5),y=c(0.5,0.5,2.5,2.5,3.5,3.5,4.5,4.5,6.5,6.5),id=c(1,1,2,2,3,3,4,4,5,5))
     hl <- switch(court,
@@ -158,7 +160,8 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
     net <- ggplot2::geom_path(data=data.frame(x=c(0.25,3.75),y=c(3.5,3.5)),ggplot2::aes_string(x="x",y="y"),colour=grid_colour,size=2,inherit.aes=FALSE) ## net
     thm <- ggplot2::theme_classic(...)
     thm2 <- ggplot2::theme(axis.line=ggplot2::element_blank(),axis.text.x=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank(),axis.ticks=ggplot2::element_blank(), axis.title.x=ggplot2::element_blank(), axis.title.y=ggplot2::element_blank())
-    out <- list(net,thm,thm2)
+    out <- list(net, thm, thm2)
+    if (fixed_aspect_ratio) out <- c(out, list(coord_fixed()))
     if (show_minor_zones) out <- c(out, list(hlm, vlm))
     if (show_zone_lines) out <- c(out, list(hlz, vlz))
     out <- c(out, list(hl,vl))
@@ -213,7 +216,13 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
 #'
 #' @export
 dv_index2xy <- function(index) {
-    cxy <- expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101), KEEP.OUT.ATTRS=FALSE)
+    ##cxy <- expand.grid(x=seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100), y=seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101), KEEP.OUT.ATTRS=FALSE)
+    binx <- dv_xy_xbins()
+    biny <- dv_xy_ybins()
+    ## need to add half a bin to get cell centres
+    binx <- binx+(diff(binx[1:2])/2)
+    biny <- biny+(diff(biny[1:2])/2)
+    cxy <- expand.grid(x=binx, y=biny, KEEP.OUT.ATTRS=FALSE)
     if (missing(index)) {
         cxy
     } else {
@@ -222,6 +231,12 @@ dv_index2xy <- function(index) {
         cxy[index,]
     }
 }
+
+## internal functions
+## these give the lower-left coordinate of the grid cells in the xy grid
+dv_xy_xbins <- function() 0.5+(seq_len(100)-11)/80*3.0
+dv_xy_ybins <- function() 0.5+(seq_len(101)-11)/81*6.0
+
 
 #' @rdname dv_index2xy
 #' @export
@@ -232,10 +247,13 @@ dv_xy2index <- function(x, y) {
     }
     assert_that(is.numeric(x))
     assert_that(is.numeric(y))
-    binx <- seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100)
-    binx[1] <- -Inf
-    binx <- c(binx, Inf)
-    biny <- seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101)
+    ## define cells (these are LEFT edges) in plot x, y space
+    ##binx <- seq(from=3*(1-10.5)/79+0.5, to=3*(100-10.5)/79+0.5, length.out=100)
+    binx <- dv_xy_xbins()
+    binx[1] <- -Inf ## so that anything to the left of the first cell is put in the first cell
+    binx <- c(binx, Inf) ## and anything beyond the last cell is put into the last cell
+    ##biny <- seq(from=3*(1-10.5)/40.5+0.5, to=3*(101-10.5)/40.5+0.5, length.out=101)
+    biny <- dv_xy_ybins()
     biny[1] <- -Inf
     biny <- c(biny, Inf)
     xi <- .bincode(x, binx, right=FALSE)
@@ -415,5 +433,5 @@ dv_flip_y <- function(y) 7-y
 
 #' @rdname dv_flip_xy
 #' @export
-dv_flip_index <- function(index) 10100-index
+dv_flip_index <- function(index) 10101-index
 

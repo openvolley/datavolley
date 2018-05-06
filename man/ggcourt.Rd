@@ -7,7 +7,7 @@
 ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
   "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE,
   show_minor_zones = FALSE, grid_colour = "black", zone_colour = "grey70",
-  minor_zone_colour = "grey80", ...)
+  minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, ...)
 }
 \arguments{
 \item{court}{string: "full" (show full court) or "lower" or "upper" (show only the lower or upper half of the court)}
@@ -27,6 +27,8 @@ ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
 \item{zone_colour}{string: colour to use for zone lines and labels}
 
 \item{minor_zone_colour}{string: colour to use for minor zone grid lines}
+
+\item{fixed_aspect_ratio}{logical: if TRUE, coerce the plotted court to be square (for a half-court plot) or a 2:1 rectangle (full court plot). Prior to package version 0.5.3 this was not TRUE by default}
 
 \item{...}{: additional parameters passed to \code{ggplot2::theme_classic(...)}}
 }
