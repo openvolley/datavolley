@@ -15,15 +15,14 @@ read_match <- function(txt) {
         date_was_missing <- TRUE
     } else {
         ## date can be in various formats
-        suppressWarnings(temp <- lubridate::mdy(p$date))
-        if (is.na(temp)) suppressWarnings(temp <- lubridate::dmy(p$date))
-        if (is.na(temp)) suppressWarnings(temp <- lubridate::ymd(p$date))
-        if (is.na(temp)) {
-            ## date was not recognized as a date
-            ## was it date-time?
-            suppressWarnings(temp <- lubridate::mdy_hms(p$date))
-            if (is.na(temp)) suppressWarnings(temp <- lubridate::dmy_hms(p$date)) ## try dmy
-            if (is.na(temp)) suppressWarnings(temp <- lubridate::ymd_hms(p$date)) ## try ymd
+        temp <- manydates(p$date)
+        if (length(temp)<1) {
+            ## no recognizable date
+            temp <- as.Date(NA)
+        } else if (length(temp)>1) {
+            ## ambiguous date format
+            msgs <- collect_messages(msgs,"Ambiguous date, using DMY format",idx+1,txt[idx+1],severity=2)
+            temp <- temp[1] ##** can we do better here?
         }
         p$date <- temp
         if (is.na(p$date)) {

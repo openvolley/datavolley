@@ -161,3 +161,6 @@ most_common_value <- function(x) {
     ux[which.max(tabulate(match(x, ux)))]
 }
 
+manydates <- function(z) suppressWarnings(unique(as.Date(na.omit(c(lubridate::ymd(z), lubridate::dmy(z), lubridate::mdy(z), lubridate::ymd_hms(z), lubridate::dmy_hms(z), lubridate::mdy_hms(z))))))
+
+manydatetimes <- function(z) suppressWarnings(unique(na.omit(c(lubridate::ymd_hms(z), lubridate::dmy_hms(z), lubridate::mdy_hms(z)))))
