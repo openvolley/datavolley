@@ -65,14 +65,6 @@ Heatmap of attack rate by court zone:
 ``` r
 library(ggplot2)
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 ## calculate attack frequency by zone, per team
 attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
     group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
@@ -150,6 +142,18 @@ ggplot(xserves, aes(start_coordinate_x, start_coordinate_y,
 ```
 
 ![](tools/README-unnamed-chunk-8-1.png)<!-- -->
+
+We could also use these coordinates to generate a heatmap-style plot of
+serve location:
+
+``` r
+ggplot(xserves, aes(start_coordinate_x, start_coordinate_y))+
+    stat_density_2d(geom="raster", aes(fill=..density..), contour=FALSE)+
+    scale_fill_distiller(palette=1, direction=1)+
+    ggcourt("lower", labels="Serving team")
+```
+
+![](tools/README-unnamed-chunk-9-1.png)<!-- -->
 
 ## Troubleshooting
 
