@@ -144,10 +144,9 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
             other_enc <- setdiff(other_enc,encoding)
         }
         if (verbose) {
-            cat(sprintf("Using text encoding: %s",encoding))
+            message(sprintf("Using text encoding: %s",encoding))
             if (length(other_enc)>0)
-                cat(sprintf(" (Other possible options: %s)",paste(other_enc,collapse=", ")))
-            cat("\n")
+                message(sprintf(" (Other possible options: %s)",paste(other_enc,collapse=", ")))
         }
     }
     ## look for the "Secondo tocco di  la" with odd encoding on the trailing a

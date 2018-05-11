@@ -52,7 +52,7 @@ fix_ace_evaluations=function(x,rotation_error_is_ace=FALSE,verbose=TRUE) {
     for (k in 1:length(x)) {
         seval <- na.omit(ddply(x[[k]]$plays,c("point_id"),find_should_be_aces)) ## na.omit drops point_id's without serves
         ## now have data.frame of point_id's that need serve evaluation updated to "Ace"
-        if (verbose) cat(sprintf("Changing %d serve evaluations to \"Ace\" in match_id %s\n",nrow(seval),x[[k]]$meta$match_id))
+        if (verbose) message(sprintf("Changing %d serve evaluations to \"Ace\" in match_id %s",nrow(seval),x[[k]]$meta$match_id))
         x[[k]]$plays$evaluation[x[[k]]$plays$point_id %in% seval$point_id & x[[k]]$plays$skill %eq% "Serve"] <- "Ace" 
     }
     if (!was_list) {

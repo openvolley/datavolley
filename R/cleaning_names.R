@@ -236,7 +236,7 @@ find_player_name_remapping=function(x,distance_threshold=3,verbose=TRUE) {
                     } else {
                         names_map[n] <- name_should_be
                         name_should_be <- this_names[name_should_be]
-                        if (verbose) cat(sprintf("Team %s: mapping player name %s to %s\n",t,p,name_should_be))
+                        if (verbose) message(sprintf("Team %s: mapping player name %s to %s",t,p,name_should_be))
                         names_to_change <- rbind(names_to_change,data.frame(team=t,from=p,to=name_should_be,stringsAsFactors=FALSE))
                     }
                 }
