@@ -9,6 +9,7 @@ read_match <- function(txt) {
     names(p)[2] <- "time"
     names(p)[3] <- "season"
     names(p)[4] <- "league"
+    names(p)[9] <- "text_encoding"
     msgs <- list()
     if (is.na(p$date)) {
         msgs <- collect_messages(msgs,"Match information is missing the date",idx+1,txt[idx+1],severity=2)

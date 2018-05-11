@@ -65,6 +65,22 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         if (length(idx2)<1 || is.na(idx2)) idx2 <- 80
         tst <- paste(dv[idx1:idx2],collapse="")
         if (identical(tolower(encoding),"guess")) {
+            ## first try using the embedded encoding info in the 3MATCH section
+            textenc <- tryCatch(suppressWarnings({
+                idx <- suppressWarnings(grep("[3MATCH]", dv, fixed=TRUE))
+                setdiff(as.character(read.table(text=dv[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)$V9), "1") ## 1 seems to be used to indicate the default locale encoding, which doesn't help us
+            }), error=function(e) NULL)
+            if (!is.null(textenc)) {
+                enclist <- intersect(paste0(c("windows-", "cp"), tolower(textenc)), tolower(iconvlist()))
+                if (length(enclist)>0) {
+                    try({
+                        out <- read_dv(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose)
+                        if (verbose) message(sprintf("Using text encoding: %s", enclist[1]))
+                        return(out)
+                    }, silent=TRUE)
+                    ## if that fails, we'll drop through to our previous guessing code
+                }
+            }
             encoding <- stri_enc_detect2(tst)[[1]]$Encoding
             ## stri might return "x-iso*" encodings, but iconvlist() doesn't have them. Can these be treated just as iso*?
             ##xiso_idx <- grepl("^x\\-iso",encoding,ignore.case=TRUE)
@@ -89,9 +105,9 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         badwords <- c(badwords,tolower(c("\uc4\u15a","\u139\u2dd"))) ## utf-8 wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("Nicol\u148"))) ## windows-1252/iso-8859-1 wrongly guessed as windows-1250
         ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
-        enctest <- sapply(encoding,function(tryenc)iconv(tst,from=tryenc))
-        encerrors <- sapply(enctest,function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
-        encerr2 <- vapply(encoding,function(tryenc)tryCatch({blah <- read_match(iconv(dv[idx1:idx2],from=tryenc)); TRUE},error=function(e) FALSE),FUN.VALUE=TRUE)
+        enctest <- sapply(encoding, function(tryenc)iconv(tst,from=tryenc))
+        encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
+        encerr2 <- vapply(encoding, function(tryenc)tryCatch({blah <- read_match(iconv(dv[idx1:idx2],from=tryenc)); TRUE},error=function(e) FALSE),FUN.VALUE=TRUE)
         encerrors[!encerr2] <- 999e3
       ##cat(str(sort(encerrors)),"\n")
         idx <- encerrors==min(encerrors)
