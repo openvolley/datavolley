@@ -183,7 +183,7 @@ read_with_readr <- function(filename) {
 }
 
 read_main <- function(filename) {
-    x <- tryCatch(data.table::fread(filename, skip="[3SCOUT]", data.table=FALSE, header=FALSE),
+    x <- tryCatch(data.table::fread(filename, skip="[3SCOUT]", data.table=FALSE, header=FALSE, na.strings="NA", logical01=FALSE),
                   warning=function(w) {
                       if (grepl("stopped early", w$message, ignore.case=TRUE) && grepl("consider fill=TRUE", w$message, ignore.case=TRUE)) {
                           ## truncated lines in file
