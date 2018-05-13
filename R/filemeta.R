@@ -18,9 +18,10 @@ read_filemeta <- function(txt) {
     txt <- text_chunk(txt,"[3DATAVOLLEYSCOUT]")
     ok <- FALSE
     try({
-        p <- read.table(text=txt,sep=":",quote="",stringsAsFactors=FALSE,header=FALSE)
-        nms <- tolower(gsub("-", "_", p[, 1], fixed=TRUE))
-        p <- as.data.frame(t(p[, 2]), stringsAsFactors=FALSE)
+        if (!nzchar(txt)) stop("[3DATAVOLLEYSCOUT] section not found") ## doesn't matter what this message is, gets caught below
+        p <- stringr::str_match(strsplit(txt, "\n")[[1]], "^([^:]+):[[:space:]]*(.*)$")
+        nms <- str_trim(tolower(gsub("-", "_", p[, 2], fixed=TRUE)))
+        p <- as.data.frame(t(str_trim(p[, 3])), stringsAsFactors=FALSE)
         colnames(p) <- nms
         ok <- TRUE
     }, silent=TRUE)
