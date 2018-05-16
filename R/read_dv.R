@@ -167,6 +167,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     }
     out$file_meta <- temp$file_meta
     out$messages <- temp$messages
+    if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE)
     ## match metadata
     if (!do_warn) {
         suppressWarnings(temp <- read_meta(dv,surname_case))
@@ -174,7 +175,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         temp <- read_meta(dv,surname_case)
     }
     out$meta <- temp$meta
-    if (nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
+    if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
     out$meta$filename <- filename
     this_main <- NULL
     tryCatch({
@@ -215,7 +216,7 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     }
     temp <- parse_code(this_main$code,out$meta,skill_evaluation_decode,cln,if (is.null(cln)) NULL else dv[cln])
     out$plays <- temp$plays
-    if (nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
+    if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
     out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6","start_coordinate","mid_coordinate","end_coordinate")])
@@ -424,18 +425,19 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     if (!missing(custom_code_parser) && !is.null(custom_code_parser)) {
         cx <- custom_code_parser(out)
         out$plays <- cx$plays
-        if (nrow(cx$messages)>0) out$messages <- rbind.fill(out$messages,cx$messages)
+        if (!is.null(cx$messages) && nrow(cx$messages)>0) out$messages <- rbind.fill(out$messages,cx$messages)
     }
 
     out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
     if (extra_validation>0) {
         moreval <- validate_dv(out,validation_level=extra_validation,options=validation_options)
-        if (nrow(moreval)>0) {
+        if (!is.null(moreval) && nrow(moreval)>0) {
             out$messages <- rbind.fill(out$messages,moreval)
         }
     }
-    if (nrow(out$messages)>0) {
+    if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE) ## should not happen, but just to be sure
+    if (!is.null(out$messages) && nrow(out$messages)>0) {
         out$messages$file_line_number <- as.integer(out$messages$file_line_number)
         out$messages <- out$messages[order(out$messages$file_line_number),]
         row.names(out$messages) <- NULL
