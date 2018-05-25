@@ -35,12 +35,12 @@
 #'   x <- read_dv(myfile, insert_technical_timeouts=list(c(12),NULL))
 #' }
 #' @export
-read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_transliterate=FALSE,encoding="guess",extra_validation=2,validation_options=list(),surname_case="asis",skill_evaluation_decode=skill_evaluation_decoder(),custom_code_parser,metadata_only=FALSE,verbose=FALSE) {
+read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode=skill_evaluation_decoder(), custom_code_parser, metadata_only=FALSE, verbose=FALSE) {
     assert_that(is.flag(insert_technical_timeouts) || is.list(insert_technical_timeouts))
-    assert_that(is.flag(do_warn))
-    assert_that(is.flag(do_transliterate))
-    assert_that(is.flag(metadata_only))
-    assert_that(is.flag(verbose))
+    assert_that(is.flag(do_warn), !is.na(do_warn))
+    assert_that(is.flag(do_transliterate), !is.na(do_transliterate))
+    assert_that(is.flag(metadata_only), !is.na(metadata_only))
+    assert_that(is.flag(verbose), !is.na(verbose))
     assert_that(is.numeric(extra_validation),extra_validation %in% 0:3)
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
@@ -51,6 +51,8 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
         stop("filename was specified as an empty string (\"\")")
     if (!file.exists(filename))
         stop("specified input file (",filename,") does not exist")
+    ## don't do this unless FIVB rules change?
+    ##    if (missing(insert_technical_timeouts)) warning("the current default value insert_technical_timeouts=TRUE will change to FALSE in a forthcoming release")
     out <- list()
     ## read raw lines in
     dv <- readLines(filename,warn=FALSE)
@@ -348,17 +350,30 @@ read_dv <- function(filename,insert_technical_timeouts=TRUE,do_warn=FALSE,do_tra
     }
     out$plays$team_touch_id <- temp_ttid
     
-    ## team name
-    home_team <- out$meta$teams$team[out$meta$teams$home_away_team=="*"]
-    visiting_team <- out$meta$teams$team[out$meta$teams$home_away_team=="a"]
-    temp <- rep(as.character(NA),nrow(out$plays))
-    temp[out$plays$team=="*"] <- home_team
-    temp[out$plays$team=="a"] <- visiting_team
-    out$plays$team <- temp
+    ## team name and ID
+    idx <- out$meta$teams$home_away_team %eq% "*"
+    home_team <- out$meta$teams$team[idx]
+    home_team_id <- out$meta$teams$team_id[idx]
+    idx <- out$meta$teams$home_away_team %eq% "a"
+    visiting_team <- out$meta$teams$team[idx]
+    visiting_team_id <- out$meta$teams$team_id[idx]
+    ## replace * and a with team name
+    temp <- temp_id <- rep(NA_character_, nrow(out$plays))
+    idx <- out$plays$team %eq% "*"
+    temp[idx] <- home_team
+    temp_id[idx] <- home_team_id
+    idx <- out$plays$team %eq% "a"
+    temp[idx] <- visiting_team
+    temp_id[idx] <- visiting_team_id
     out$plays$home_team <- home_team
     out$plays$visiting_team <- visiting_team
+    out$plays$home_team_id <- home_team_id
+    out$plays$visiting_team_id <- visiting_team_id
+    out$plays$team <- temp
+    out$plays$team_id <- temp_id
+    
     ## keep track of who won each point
-    temp <- ddply(out$plays,c("point_id"),function(z)if (any(z$point)) z$team[z$point] else as.character(NA)  )
+    temp <- ddply(out$plays,c("point_id"),function(z)if (any(z$point)) z$team[z$point] else NA_character_)
     names(temp) <- c("point_id","point_won_by")
     suppressMessages(out$plays <- join(out$plays,temp))
     ## catch any that we missed
