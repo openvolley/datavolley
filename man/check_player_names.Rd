@@ -17,6 +17,13 @@ data.frame
 \description{
 Player names can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. This function checks for similar names that might possibly be multiple variants on the same name.
 }
+\examples{
+\dontrun{
+  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+ check_player_names(x)
+}
+
+}
 \seealso{
 \code{\link{read_dv}}, \code{\link{adist}}
 }
