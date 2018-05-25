@@ -1,9 +1,9 @@
 #' Change team names
 #'
-#' A team name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A team name matching the \code{from} entry in a row in \code{remap} is renamed to the corresponding \code{to} value.
+#' A team name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A team name matching the \code{from} entry in a row in \code{remap} is renamed to the corresponding \code{to} value. If the \code{remap} object also contains a \code{team_id} column, then a team name must match the \code{team_id} and \code{from} values to be changed to the corresponding \code{to} value.
 #'
 #' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
-#' @param remap data.frame: data.frame of strings with columns from and to
+#' @param remap data.frame: data.frame of strings with columns \code{from} and \code{to}, and optionally \code{team_id}
 #' @param fixed logical: treat the \code{to} and \code{from} entries as fixed string? (Treat as regexps if \code{fixed} is \code{FALSE})
 #'
 #' @return datavolley object or list with corresponding team names changed
@@ -14,19 +14,30 @@
 #' \dontrun{
 #'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   summary(x)
-#'   x <- remap_team_names(x,data.frame(from="Nova KBM Branik",to="NKBM Branik"))
-#'   summary(x)
+#'
+#'   ## rename a team based just on team name
+#'   summary(remap_team_names(x, data.frame(from="Nova KBM Branik", to="NKBM Branik")))
+#'
+#'   ## rename a team based on team name and ID
+#'   summary(remap_team_names(x, data.frame(from="Nova KBM Branik", to="NKBM Branik", id="MB4")))
 #' }
 #' @export
-remap_team_names=function(x,remap,fixed=TRUE) {
-    if (!(inherits(x,"datavolley") | (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
+remap_team_names <- function(x,remap,fixed=TRUE) {
+    if (!(inherits(x,"datavolley") || (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
         stop("x must be a datavolley object or list of such objects")
     assert_that(is.data.frame(remap))
     assert_that(is.flag(fixed))
     assert_that(has_name(remap,"from"),has_name(remap,"to"))
+    use_team_id <- "team_id" %in% names(remap)
     if (is.factor(remap$from)) remap$from <- as.character(remap$from)
     if (is.factor(remap$to)) remap$to <- as.character(remap$to)
-    if (length(remap$from)!=length(unique(remap$from))) stop("elements in from must be unique")
+    if (use_team_id) {
+        if (is.factor(remap$team_id)) remap$team_id <- as.character(remap$team_id)
+        temp <- paste0(remap$from, "@@", remap$team_id)
+        if (any(duplicated(temp))) stop("elements in team_id and from columns of remap must form unique pairs (no duplicates)")
+    } else {
+        if (length(remap$from)!=length(unique(remap$from))) stop("elements in from must be unique (no duplicates)")
+    }
     was_list <- TRUE
     if (inherits(x,"datavolley")) {
         x <- list(x)
@@ -35,10 +46,12 @@ remap_team_names=function(x,remap,fixed=TRUE) {
     for (k in 1:length(x)) {
         for (t in 1:2) {
             this_team <- x[[k]]$meta$teams$team[t]
-            if (fixed)
-                idx <- remap$from==this_team
-            else
-                idx <- !is.na(str_locate(this_team,remap$from)[,1])
+            this_team_id <- x[[k]]$meta$teams$team_id[t]
+            if (fixed) {
+                idx <- if (!use_team_id) (remap$from %eq% this_team) else ((remap$from %eq% this_team) & (remap$team_id %eq% this_team_id))
+            } else {
+                idx <- if (!use_team_id) !is.na(str_locate(this_team,remap$from)[,1]) else ((!is.na(str_locate(this_team,remap$from)[,1])) & (!is.na(str_locate(this_team_id,remap$team_id)[,1])))
+            }
             if (sum(idx)==1) {
                 team_should_be <- remap$to[which(idx)]
                 x[[k]]$meta$teams$team[t] <- team_should_be
