@@ -3,28 +3,35 @@
 \name{teams}
 \alias{teams}
 \alias{home_team}
+\alias{home_team_id}
 \alias{visiting_team}
-\title{Get team names from datavolley object}
+\alias{visiting_team_id}
+\title{Get team names and IDs from datavolley object}
 \usage{
 teams(x)
 
 home_team(x)
 
+home_team_id(x)
+
 visiting_team(x)
+
+visiting_team_id(x)
 }
 \arguments{
 \item{x}{datavolley or data.frame: a datavolley object as returned by \code{read_dv}, or the plays component of that object}
 }
 \value{
-character vector of team names
+character vector of team names or IDs
 }
 \description{
-Get team names from datavolley object
+Get team names and IDs from datavolley object
 }
 \examples{
 \dontrun{
   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
   teams(x)
+  home_team_id(x)
 }
 }
 \seealso{

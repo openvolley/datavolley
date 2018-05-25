@@ -311,11 +311,11 @@ PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 
 
 
-#' Get team names from datavolley object
+#' Get team names and IDs from datavolley object
 #'
 #' @param x datavolley or data.frame: a datavolley object as returned by \code{read_dv}, or the plays component of that object
 #'
-#' @return character vector of team names
+#' @return character vector of team names or IDs
 #'
 #' @seealso \code{\link{read_dv}}
 #' 
@@ -323,6 +323,7 @@ PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 #' \dontrun{
 #'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   teams(x)
+#'   home_team_id(x)
 #' }
 #' @export
 teams <- function(x) {
@@ -337,7 +338,7 @@ teams <- function(x) {
 #' @export
 home_team <- function(x) {
     if ("meta" %in% names(x)) {
-        x$meta$teams$team[x$meta$teams$home_away_team=="*"]
+        x$meta$teams$team[x$meta$teams$home_away_team %eq% "*"]
     } else {
         na.omit(unique(x$home_team))
     }
@@ -345,10 +346,30 @@ home_team <- function(x) {
 
 #' @rdname teams
 #' @export
+home_team_id <- function(x) {
+    if ("meta" %in% names(x)) {
+        x$meta$teams$team_id[x$meta$teams$home_away_team %eq% "*"]
+    } else {
+        if (is.null(x$home_team_id)) NA_character_ else na.omit(unique(x$home_team_id))
+    }
+}
+
+#' @rdname teams
+#' @export
 visiting_team <- function(x) {
     if ("meta" %in% names(x)) {
-        x$meta$teams$team[x$meta$teams$home_away_team=="a"]
+        x$meta$teams$team[x$meta$teams$home_away_team %eq% "a"]
     } else {
         na.omit(unique(x$visiting_team))
+    }
+}
+
+#' @rdname teams
+#' @export
+visiting_team_id <- function(x) {
+    if ("meta" %in% names(x)) {
+        x$meta$teams$team_id[x$meta$teams$home_away_team %eq% "a"]
+    } else {
+        if (is.null(x$visiting_team_id)) NA_character_ else na.omit(unique(x$visiting_team_id))
     }
 }
