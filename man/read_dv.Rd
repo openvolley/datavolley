@@ -8,7 +8,7 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
   do_transliterate = FALSE, encoding = "guess", extra_validation = 2,
   validation_options = list(), surname_case = "asis",
   skill_evaluation_decode = skill_evaluation_decoder(), custom_code_parser,
-  metadata_only = FALSE, verbose = FALSE)
+  metadata_only = FALSE, verbose = FALSE, edited_meta)
 }
 \arguments{
 \item{filename}{string: file name to read}
@@ -34,6 +34,8 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 \item{metadata_only}{logical: don't process the plays component of the file, just the match and player metadata}
 
 \item{verbose}{logical: if TRUE, show progress}
+
+\item{edited_meta}{list: [very much experimental] if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata}
 }
 \value{
 named list with several components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file

@@ -17,6 +17,7 @@
 #' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}
 #' @param metadata_only logical: don't process the plays component of the file, just the match and player metadata
 #' @param verbose logical: if TRUE, show progress
+#' @param edited_meta list: [very much experimental] if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata
 #'
 #' @return named list with several components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file
 #'
@@ -35,7 +36,7 @@
 #'   x <- read_dv(myfile, insert_technical_timeouts=list(c(12),NULL))
 #' }
 #' @export
-read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode=skill_evaluation_decoder(), custom_code_parser, metadata_only=FALSE, verbose=FALSE) {
+read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode=skill_evaluation_decoder(), custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta) {
     assert_that(is.flag(insert_technical_timeouts) || is.list(insert_technical_timeouts))
     assert_that(is.flag(do_warn), !is.na(do_warn))
     assert_that(is.flag(do_transliterate), !is.na(do_transliterate))
@@ -45,6 +46,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
     assert_that(is.function(skill_evaluation_decode))
+    if (!missing(edited_meta)) {
+        assert_that(is.list(edited_meta))
+        ## test for names? c("match", "more", "result", "teams", "players_h", "players_v", "attacks", "sets", "match_id", "filename")
+    }
     if (!missing(custom_code_parser)) assert_that(is.function(custom_code_parser) || is.null(custom_code_parser))
     assert_that(is.string(filename))
     if (nchar(filename)<1)
@@ -55,28 +60,28 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ##    if (missing(insert_technical_timeouts)) warning("the current default value insert_technical_timeouts=TRUE will change to FALSE in a forthcoming release")
     out <- list()
     ## read raw lines in
-    dv <- readLines(filename,warn=FALSE)
+    file_text <- readLines(filename,warn=FALSE)
     assert_that(is.character(encoding))
     if (length(encoding)>1 || identical(tolower(encoding),"guess")) {
         ## try to guess encoding based on the first few lines of the file
         ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
-        idx1 <- suppressWarnings(grep("[3MATCH]",dv,fixed=TRUE))
-        idx2 <- suppressWarnings(grep("[3ATTACKCOMBINATION]",dv,fixed=TRUE))+1
+        idx1 <- suppressWarnings(grep("[3MATCH]",file_text,fixed=TRUE))
+        idx2 <- suppressWarnings(grep("[3ATTACKCOMBINATION]",file_text,fixed=TRUE))+1
         ## fallback
         if (length(idx1)<1 || is.na(idx1)) idx1 <- 10
         if (length(idx2)<1 || is.na(idx2)) idx2 <- 80
-        tst <- paste(dv[idx1:idx2],collapse="")
+        tst <- paste(file_text[idx1:idx2],collapse="")
         if (identical(tolower(encoding),"guess")) {
             ## first try using the embedded encoding info in the 3MATCH section
             textenc <- tryCatch(suppressWarnings({
-                idx <- suppressWarnings(grep("[3MATCH]", dv, fixed=TRUE))
-                setdiff(as.character(read.table(text=dv[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)$V9), "1") ## 1 seems to be used to indicate the default locale encoding, which doesn't help us
+                idx <- suppressWarnings(grep("[3MATCH]", file_text, fixed=TRUE))
+                setdiff(as.character(read.table(text=file_text[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)$V9), "1") ## 1 seems to be used to indicate the default locale encoding, which doesn't help us
             }), error=function(e) NULL)
             if (!is.null(textenc)) {
                 enclist <- intersect(paste0(c("windows-", "cp"), tolower(textenc)), tolower(iconvlist()))
                 if (length(enclist)>0) {
                     try({
-                        out <- read_dv(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose)
+                        out <- read_dv(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose, edited_meta=edited_meta)
                         if (verbose) message(sprintf("Using text encoding: %s", enclist[1]))
                         return(out)
                     }, silent=TRUE)
@@ -93,7 +98,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
             ##if (length(encoding)<=1) encoding <- iconvlist()
         }
-      ##cat(encoding,"\n")
+        ##cat(encoding,"\n")
         ## badchars/badwords indicate characters/words that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
         badchars <- c(1025:7499,utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3")) ## cyrillic through to music, then some isolated ones
         ## not sure that next one should be considered bad char
@@ -109,17 +114,17 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
         enctest <- sapply(encoding, function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
-        encerr2 <- vapply(encoding, function(tryenc)tryCatch({blah <- read_match(iconv(dv[idx1:idx2],from=tryenc)); TRUE},error=function(e) FALSE),FUN.VALUE=TRUE)
+        encerr2 <- vapply(encoding, function(tryenc)tryCatch({blah <- read_match(iconv(file_text[idx1:idx2],from=tryenc)); TRUE},error=function(e) FALSE),FUN.VALUE=TRUE)
         encerrors[!encerr2] <- 999e3
-      ##cat(str(sort(encerrors)),"\n")
+        ##cat(str(sort(encerrors)),"\n")
         idx <- encerrors==min(encerrors)
         if (!any(idx)) stop("error in guessing text encoding")
         enctest <- enctest[idx]
         encoding <- encoding[idx]
-        #cat(str(encoding))
-        #cat(str(encerrors[idx]))
-      ##cat(enctest,"\n\n\n")
-      ##cat(utf8ToInt(substr(enctest,946,946)),"\n")
+                                        #cat(str(encoding))
+                                        #cat(str(encerrors[idx]))
+        ##cat(enctest,"\n\n\n")
+        ##cat(utf8ToInt(substr(enctest,946,946)),"\n")
         other_enc <- c()
         if (FALSE) {##(any(duplicated(enctest))) {
             ## pick from the ones that give the most common output
@@ -153,46 +158,51 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     }
     ## look for the "Secondo tocco di  la" with odd encoding on the trailing a
     ## this seems to be part of the default dv-generated file structure, so it's a common problem
-    dv <- gsub("Secondo tocco di[[:space:]]+l\xe0;","Secondo tocco di la;",dv)
+    file_text <- gsub("Secondo tocco di[[:space:]]+l\xe0;","Secondo tocco di la;",file_text)
 
-    dv <- iconv(dv,from=encoding,to="utf-8") ## convert to utf-8
+    file_text <- iconv(file_text,from=encoding,to="utf-8") ## convert to utf-8
+    ## so we got to here, either by reading the file, or using the supplied file_text
+    out$raw <- file_text
     if (do_transliterate) {
-        if (missing(encoding)) warning("transliteration may not work without an encoding specified")
-        dv <- stri_trans_general(dv,"latin-ascii") ##dv <- iconv(dv,from="utf-8",to="ascii//TRANSLIT")
+        ##if (missing(encoding)) warning("transliteration may not work without an encoding specified")
+        file_text <- stri_trans_general(file_text,"latin-ascii") ##file_text <- iconv(file_text,from="utf-8",to="ascii//TRANSLIT")
     }
-    out$raw <- dv
     ## file metadata
     if (!do_warn) {
-        suppressWarnings(temp <- read_filemeta(dv))
+        suppressWarnings(temp <- read_filemeta(file_text))
     } else {
-        temp <- read_filemeta(dv)
+        temp <- read_filemeta(file_text)
     }
     out$file_meta <- temp$file_meta
     out$messages <- temp$messages
     if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE)
     ## match metadata
-    if (!do_warn) {
-        suppressWarnings(temp <- read_meta(dv,surname_case))
+    if (missing(edited_meta)) {
+        if (!do_warn) {
+            suppressWarnings(temp <- read_meta(file_text, surname_case))
+        } else {
+            temp <- read_meta(file_text, surname_case)
+        }
+        out$meta <- temp$meta
+        out$meta$filename <- filename
     } else {
-        temp <- read_meta(dv,surname_case)
+        out$meta <- edited_meta
     }
-    out$meta <- temp$meta
     if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
-    out$meta$filename <- filename
     this_main <- NULL
     tryCatch({
         thismsg <- NULL
         if (!do_warn) {
-            suppressWarnings(this_main <- read_main(filename))
+            this_main <- suppressWarnings(read_main(filename))
         } else {
             this_main <- read_main(filename)
         }},
         error=function(e) {
             ## if file ends with 0x00, fread from the file will fail
-            ## but already have the file contents as dv, so use that
+            ## but already have the file contents as file_text, so use that
             if (grepl("Expected sep (';') but new line, EOF (or other non printing character) ends field 0",e$message,fixed=TRUE)) {
-                thismsg <<- data.frame(file_line_number=length(dv),video_time=NA_integer_,message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
-                suppressWarnings(tmp <- dv[grep("[3SCOUT]",dv,fixed=TRUE):length(dv)])
+                thismsg <<- data.frame(file_line_number=length(file_text),video_time=NA_integer_,message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
+                suppressWarnings(tmp <- file_text[grep("[3SCOUT]",file_text,fixed=TRUE):length(file_text)])
                 if (!do_warn) {
                     suppressWarnings(this_main <<- read_main(paste0(tmp,collapse="\n")))
                 } else {
@@ -208,15 +218,15 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     if (metadata_only) return(out)
     ## count line numbers: where do codes start from?
-    suppressWarnings(cln <- grep("[3SCOUT]",dv,fixed=TRUE))
+    suppressWarnings(cln <- grep("[3SCOUT]",file_text,fixed=TRUE))
     if (length(cln)==1) {
-        cln <- (cln+1):length(dv)
-        ## dv may have empty lines at end, which won't show up in codes from read_main
+        cln <- (cln+1):length(file_text)
+        ## file_text may have empty lines at end, which won't show up in codes from read_main
         cln <- cln[1:min(length(cln),length(this_main$code))]
     } else {
         cln <- NULL
     }
-    temp <- parse_code(this_main$code,out$meta,skill_evaluation_decode,cln,if (is.null(cln)) NULL else dv[cln])
+    temp <- parse_code(this_main$code,out$meta,skill_evaluation_decode,cln,if (is.null(cln)) NULL else file_text[cln])
     out$plays <- temp$plays
     if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
     ## post-process plays data
