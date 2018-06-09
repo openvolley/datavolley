@@ -177,7 +177,7 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
                      if (length(labels)==2) labels[2] else labels[1]
                  }
             ly <- if (as_for_serve) 6.9 else 6.6
-            out <- c(out,ggplot2::annotate("text",x=2,y=ly,label=lb))
+            out <- c(out, ggplot2::annotate("text",x=2,y=ly,label=lb))
         }
     }
     if (show_zones) {
@@ -187,10 +187,17 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
         ezx <- 4-szx
         ezy <- 3+4-szy
         lb <- if (as_for_serve) c(1,5,6,7,9) else 1:9
-        if (court %in% c("full","lower"))        
-            out <- c(out,ggplot2::annotate("text",x=szx+xoff*rep(-1,length(lb)),y=szy+0.4*rep(-1,length(lb)),label=lb,vjust="center",hjust="middle",fontface="italic",color=zone_colour))
-        if (court %in% c("full","upper"))
-            out <- c(out,ggplot2::annotate("text",x=ezx+xoff*rep(1,length(lb)),y=ezy+0.4*rep(1,length(lb)),label=lb,vjust="center",hjust="middle",fontface="italic",color=zone_colour))
+        ## these need to be added one by one, otherwise doesn't work with e.g. facet_wrap plots
+        if (court %in% c("full","lower")) {
+            for (ii in seq_len(length(lb))) {
+                out <- c(out, ggplot2::annotate("text", x=szx[ii]-xoff, y=szy[ii]-0.4, label=lb[ii], vjust="center", hjust="middle", fontface="italic", color=zone_colour))
+            }
+        }
+        if (court %in% c("full","upper")) {
+            for (ii in seq_len(length(lb))) {
+                out <- c(out, ggplot2::annotate("text", x=ezx[ii]+xoff, y=ezy[ii]+0.4, label=lb[ii], vjust="center", hjust="middle", fontface="italic", color=zone_colour))
+            }
+        }
     }
     out
 }
