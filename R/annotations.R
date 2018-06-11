@@ -16,12 +16,16 @@
 #'
 #' @export
 play_phase <- function(x) {
-    phase <- as.character(rep(NA,nrow(x)))
+    phase <- as.character(rep(NA, nrow(x)))
     phase[!is.na(x$skill)] <- "Transition" # default to this
     phase[x$skill %eq% "Serve"] <- "Serve"
     ##phase[x$skill %eq% "Reception"] <- "Reception"
     ## serve reception, along with other actions with the same team_touch_id as a reception, all count as "Reception" phase
-    temp <- paste(x$match_id,x$set_number,x$team_touch_id,sep="/")
+    temp <- paste(x$match_id, x$set_number, x$team_touch_id, sep="/")
     phase[temp %in% temp[x$skill %eq% "Reception"]] <- "Reception"
+    ## also blocks against reception attack should be reception phase
+    idx1 <- which(x$skill %eq% "Block")
+    idx2 <- which(x$skill %eq% "Attack" & x$phase %eq% "Reception")+1
+    phase[intersect(idx1, idx2)] <- "Reception"
     phase
 }
