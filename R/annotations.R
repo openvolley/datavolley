@@ -25,7 +25,7 @@ play_phase <- function(x) {
     phase[temp %in% temp[x$skill %eq% "Reception"]] <- "Reception"
     ## also blocks against reception attack should be reception phase
     idx1 <- which(x$skill %eq% "Block")
-    idx2 <- which(x$skill %eq% "Attack" & x$phase %eq% "Reception")+1
+    idx2 <- which(x$skill %eq% "Attack" & phase %eq% "Reception") + 1
     phase[intersect(idx1, idx2)] <- "Reception"
     phase
 }
