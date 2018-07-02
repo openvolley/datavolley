@@ -3,6 +3,7 @@
 #' This function is automatically run as part of \code{read_dv} if \code{extra_validation} is greater than zero.
 #' The current validation messages/checks are:
 #' \itemize{
+#'   \item message "Players xxx and yyy have the same player ID": player IDs should be unique, and so duplicated IDs will be flagged here
 #'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
 #'   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
 #'   \item message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
@@ -43,47 +44,63 @@
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- read_dv(dv_example_file(), insert_technical_timeouts = FALSE)
 #'   xv <- validate_dv(x)
 #'
 #'   ## specifying "PP" as the setter tip code
 #'   ## front-row attacks (using this code) by a back-row player won't be flagged as errors
-#'   xv <- validate_dv(x,options=list(setter_tip_codes=c("PP"))) 
+#'   xv <- validate_dv(x, options = list(setter_tip_codes = c("PP"))) 
 #' }
 #'
 #' @export
-validate_dv <- function(x,validation_level=2,options=list()) {
+validate_dv <- function(x, validation_level = 2, options = list()) {
     assert_that(is.numeric(validation_level) && validation_level %in% 0:3)
     assert_that(is.list(options))
     
-    out <- data.frame(file_line_number=integer(),video_time=integer(),message=character(),file_line=character(),severity=numeric(),stringsAsFactors=FALSE)
-    chk_df <- function(chk,msg,severity=2) {
+    out <- data.frame(file_line_number=integer(), video_time=integer(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
+    chk_df <- function(chk, msg, severity = 2) {
         vt <- video_time_from_raw(x$raw[chk$file_line_number])
-        data.frame(file_line_number=chk$file_line_number,video_time=vt,message=msg,file_line=x$raw[chk$file_line_number],severity=severity,stringsAsFactors=FALSE)
+        data.frame(file_line_number=chk$file_line_number, video_time=vt, message=msg, file_line=x$raw[chk$file_line_number], severity=severity, stringsAsFactors=FALSE)
     }
     if (validation_level<1) return(out)
+
+    ## metadata checks
+    for (py in c("players_h", "players_v")) {
+        plyrs <- x$meta[[py]]
+        tempid <- plyrs$player_id[!is.na(plyrs$player_id)]
+        if (any(duplicated(tempid))) {
+            dpids <- tempid[duplicated(tempid)]
+            for (dpid in unique(dpids)) {
+                idx <- plyrs$player_id %eq% dpid
+                this_players <- paste0(plyrs$name[idx], " [jersey number ", plyrs$number[idx], "]", collapse=", ")
+                msg <- if (py == "players_h") paste0("Home team (", home_team(x), ")") else paste0("Visiting team (", visiting_team(x), ")")
+                msg <- paste0(msg, " players ", this_players, " have the same player ID (", dpid, ")")
+                out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
+            }
+        }
+    }
 
     plays <- plays(x)
 
     ## reception to follow serve
     ## commented out, have the same check elsewhere
-    ##idx <- which(plays$skill %eq% "Serve" & !plays$evaluation %in% c("Error"))##,"Ace"))
-    ##idx2 <- idx[!is.na(plays$skill[idx+1]) & !plays$skill[idx+1] %in% c("Reception","Rotation error")]##plays$evaluation[idx] %eq% "Ace" & 
+    ##idx <- which(plays$skill %eq% "Serve" & !plays$evaluation %in% c("Error"))##, "Ace"))
+    ##idx2 <- idx[!is.na(plays$skill[idx+1]) & !plays$skill[idx+1] %in% c("Reception", "Rotation error")]##plays$evaluation[idx] %eq% "Ace" & 
     ####idx2 <- idx[!plays$skill[idx+1] %eq% "Reception"]
     ##if (length(idx2)>0) {
-    ##    out <- rbind(out,chk_df(plays[idx2,],"Serve was not followed by a reception",severity=3))
+    ##    out <- rbind(out, chk_df(plays[idx2, ], "Serve was not followed by a reception", severity=3))
     ##}
     ## multiple serves or receptions per point
     #idx <- which(plays$skill %eq% "Serve")
     #idx <- idx[duplicated(x$point_id[idx])]
-    ##x %>% group_by(point_id,match_id) %>% dplyr::summarize(r2=sum(skill %eq% "Reception")>1,s2=sum(skill %eq% "Serve")>1) %>% filter(r2|s2)
+    ##x %>% group_by(point_id, match_id) %>% dplyr::summarize(r2=sum(skill %eq% "Reception")>1, s2=sum(skill %eq% "Serve")>1) %>% filter(r2|s2)
     
     ## receive type must match serve type
     idx <- which(plays$skill %eq% "Reception")
     idx <- idx[plays$skill[idx-1] %eq% "Serve"] ## just in case have reception not preceded by serve
-    idx2 <- idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1]," reception") & (plays$skill_type[idx]!="Unknown serve reception type" & plays$skill_type[idx-1]!="Unknown serve type")]
+    idx2 <- idx[plays$skill_type[idx]!=paste0(plays$skill_type[idx-1], " reception") & (plays$skill_type[idx]!="Unknown serve reception type" & plays$skill_type[idx-1]!="Unknown serve type")]
     if (length(idx2)>0)
-        out <- rbind(out,chk_df(plays[idx2,],paste0("Reception type (",plays$skill_type[idx2],") does not match serve type (",plays$skill_type[idx2-1],")")))
+        out <- rbind(out, chk_df(plays[idx2, ], paste0("Reception type (", plays$skill_type[idx2], ") does not match serve type (", plays$skill_type[idx2-1], ")")))
     if (validation_level>2) {
         ## reception zones must match serve zones
         ## start zones mismatch, but not any missing

@@ -455,10 +455,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
-    if (extra_validation>0) {
-        moreval <- validate_dv(out,validation_level=extra_validation,options=validation_options)
-        if (!is.null(moreval) && nrow(moreval)>0) {
-            out$messages <- rbind.fill(out$messages,moreval)
+    if (extra_validation > 0) {
+        moreval <- validate_dv(out, validation_level = extra_validation, options = validation_options)
+        if (!is.null(moreval) && nrow(moreval) > 0) {
+            out$messages <- rbind.fill(out$messages, moreval)
         }
     }
     if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE) ## should not happen, but just to be sure
