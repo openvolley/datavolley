@@ -161,11 +161,7 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
     thm <- ggplot2::theme_classic(...)
     thm2 <- ggplot2::theme(axis.line=ggplot2::element_blank(),axis.text.x=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank(),axis.ticks=ggplot2::element_blank(), axis.title.x=ggplot2::element_blank(), axis.title.y=ggplot2::element_blank())
     out <- list(net, thm, thm2)
-    if (fixed_aspect_ratio) {
-        ## don't add fixed coord if it already has been, otherwise we get a diagnostic message when the plot is rendered
-        do_add <- tryCatch(!inherits(p$coordinates, "CoordFixed"), error = function(e) TRUE)
-        if (do_add) out <- c(out, list(ggplot2::coord_fixed()))
-    }
+    if (fixed_aspect_ratio) out <- c(out, list(ggplot2::coord_fixed()))
     if (show_minor_zones) out <- c(out, list(hlm, vlm))
     if (show_zone_lines) out <- c(out, list(hlz, vlz))
     out <- c(out, list(hl,vl))
