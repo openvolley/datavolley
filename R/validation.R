@@ -79,6 +79,43 @@ validate_dv <- function(x, validation_level = 2, options = list()) {
             }
         }
     }
+    ## check for missing player roles
+    for (py in c("players_h", "players_v")) {
+        plyrs <- x$meta[[py]]
+        idx <- which(is.na(plyrs$role))
+        ## of these, the players who appear in the plays data or have a special role (libero, captain)
+##        idx1 <- idx[vapply(idx, function(z) any(x$plays$player_id %eq% plyrs$player_id[z]) || (!is.na(plyrs$special_role[z]) && nzchar(plyrs$special_role[z])), FUN.VALUE = TRUE, USE.NAMES = FALSE)]
+        ## can't decide whether to treat players who appear in the plays data differently to those who do not: for now treat the same
+        idx1 <- idx
+        if (length(idx1) > 0) {
+            this_players <- paste0(plyrs$name[idx1], collapse=", ")
+            msg <- if (py == "players_h") paste0("Home team (", home_team(x), ")") else paste0("Visiting team (", visiting_team(x), ")")
+            if (length(idx1) > 1) {
+                wd1 <- " players "
+                wd2 <- " have "
+            } else {
+                wd1 <- " player "
+                wd2 <- " has "
+            }
+            msg <- paste0(msg, wd1, this_players, wd2, "no position (opposite/outside/etc) assigned in the players list")
+            out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
+        }
+##        ## players who do not appear in the plays data - these missing roles might be less important, but we'll flag them at the same level of severity (just with a different message)
+##        idx2 <- setdiff(idx, idx1)
+##        if (length(idx2) > 0) {
+##            this_players <- paste0(plyrs$name[idx2], collapse=", ")
+##            msg <- if (py == "players_h") paste0("Home team (", home_team(x), ")") else paste0("Visiting team (", visiting_team(x), ")")
+##            if (length(idx2) > 1) {
+##                wd1 <- " players "
+##                wd2 <- " have "
+##            } else {
+##                wd1 <- " player "
+##                wd2 <- " has "
+##            }
+##            msg <- paste0(msg, wd1, this_players, wd2, "no position (opposite/outside/etc) assigned in the players list. Note that these players do not appear in the plays data, so probably did not take the court during the match")
+##            out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
+##        }
+    }
 
     plays <- plays(x)
 

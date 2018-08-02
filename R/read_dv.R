@@ -464,7 +464,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE) ## should not happen, but just to be sure
     if (!is.null(out$messages) && nrow(out$messages)>0) {
         out$messages$file_line_number <- as.integer(out$messages$file_line_number)
-        out$messages <- out$messages[order(out$messages$file_line_number),]
+        out$messages <- out$messages[order(out$messages$file_line_number, na.last = FALSE),]
         row.names(out$messages) <- NULL
     }
     if (do_warn) {
