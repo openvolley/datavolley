@@ -4,10 +4,12 @@
 \alias{play_phase}
 \title{Figure out the phase of play associated with each point}
 \usage{
-play_phase(x)
+play_phase(x, method = "default")
 }
 \arguments{
 \item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}}
+
+\item{method}{string: "default" (uses the \code{team_touch_id} and \code{skill} values to figure out phase), or "alt" (uses the sequences of \code{skill} values only. This is slower and probably less reliable, but will be more likely to give correct results in some situations (e.g. if the DataVolley file has been scouted in practice mode, and all actions have been assigned to the one team)}
 }
 \value{
 character vector
@@ -18,7 +20,7 @@ or "Transition" (play not associated with serve or reception)
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- read_dv(dv_example_file(), insert_technical_timeouts = FALSE)
   px <- plays(x)
   px$phase <- play_phase(px)
 }
