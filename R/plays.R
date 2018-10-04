@@ -37,21 +37,21 @@ serve_map <- function(type,skill) {
                paste0("Unknown ",skill," type"))
     }
 
-skill_type_decode <- function(skill,type,full_line,line_num) {
+skill_type_decode <- function(skill, type, full_line, line_num) {
     mymsgs <- list()
-    this_allowed_types <- if (skill %in% c("S","R")) c("H","M","Q") else c("H","M","Q","T","U","F","O","N")
-    if (!any(type==this_allowed_types))
-        mymsgs <- collect_messages(mymsgs,paste0("Unexpected skill type: ",type," for skill: ",skill),line_num,full_line,severity=1)
-    list(decoded=switch(EXPR=skill,
-             S=serve_map(type,"serve"),
-             R=serve_map(type,"serve reception"),
-             A=attack_map(type,"attack"),
-             B=attack_map(type,"block"),
-             D=attack_map(type,"dig"),
-             E=attack_map(type,"set"),
-             F="Unknown freeball type",
-             paste0("Unknown skill type: ",type)),
-         messages=mymsgs)
+    this_allowed_types <- if (skill %in% c("S","R")) c("H", "M", "Q", "T") else c("H", "M", "Q", "T", "U", "F", "O", "N")
+    if (!any(type == this_allowed_types))
+        mymsgs <- collect_messages(mymsgs, paste0("Unexpected skill type: ", type, " for skill: ", skill), line_num, full_line, severity = 1)
+    list(decoded = switch(EXPR = skill,
+             S = serve_map(type, "serve"),
+             R = serve_map(type, "serve reception"),
+             A = attack_map(type, "attack"),
+             B = attack_map(type, "block"),
+             D = attack_map(type, "dig"),
+             E = attack_map(type, "set"),
+             F = "Unknown freeball type",
+             paste0("Unknown skill type: ", type)),
+         messages = mymsgs)
 }
 
 
