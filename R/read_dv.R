@@ -188,6 +188,11 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     } else {
         out$meta <- edited_meta
     }
+    file_type <- "indoor"
+    if (nrow(out$meta$players_h) == 2 && nrow(out$meta$players_h) == 2) {
+        ## assume is a beach volley file
+        file_type <- "beach"
+    }
     if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
     this_main <- NULL
     tryCatch({
@@ -231,7 +236,8 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
-    out$plays <- cbind(this_main[,c("time","video_time")],out$plays,this_main[,c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6","start_coordinate","mid_coordinate","end_coordinate")])
+    team_player_num <- if (file_type == "beach") 1:2 else 1:6
+    out$plays <- cbind(this_main[, c("time", "video_time")], out$plays, this_main[, c(paste0("home_p", team_player_num), paste0("visiting_p", team_player_num), "start_coordinate", "mid_coordinate", "end_coordinate")])
     ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
     cxy <- dv_index2xy() ## grid of coords in our ggcourt space
     temp <- out$plays$start_coordinate
@@ -256,9 +262,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out$plays$end_coordinate_x <- cxy[out$plays$end_coordinate, 1]
     out$plays$end_coordinate_y <- cxy[out$plays$end_coordinate, 2]
     ## add player_id values for home_p1 etc    
-    for (thisp in 1:6)
+    for (thisp in team_player_num)
         out$plays[,paste0("home_player_id",thisp)] <- get_player_id(rep("*",nrow(out$plays)),out$plays[,paste0("home_p",thisp)],out$meta)
-    for (thisp in 1:6)
+    for (thisp in team_player_num)
         out$plays[,paste0("visiting_player_id",thisp)] <- get_player_id(rep("a",nrow(out$plays)),out$plays[,paste0("visiting_p",thisp)],out$meta)
         
     ## add set number
@@ -460,7 +466,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
     if (extra_validation > 0) {
-        moreval <- validate_dv(out, validation_level = extra_validation, options = validation_options)
+        moreval <- validate_dv(out, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) {
             out$messages <- rbind.fill(out$messages, moreval)
         }

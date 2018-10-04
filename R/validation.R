@@ -37,6 +37,7 @@
 #' \itemize{
 #'   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP","XY"))}
 #' }
+#' @param file_type string: "indoor" or "beach"
 #'
 #' @return data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).
 #'
@@ -53,10 +54,14 @@
 #' }
 #'
 #' @export
-validate_dv <- function(x, validation_level = 2, options = list()) {
+validate_dv <- function(x, validation_level = 2, options = list(), file_type = "indoor") {
     assert_that(is.numeric(validation_level) && validation_level %in% 0:3)
     assert_that(is.list(options))
-    
+    assert_that(is.string(file_type))
+    file_type <- match.arg(tolower(file_type), c("indoor", "beach"))
+
+    team_player_num <- if (file_type == "beach") 1:2 else 1:6
+
     out <- data.frame(file_line_number=integer(), video_time=integer(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
     chk_df <- function(chk, msg, severity = 2) {
         vt <- video_time_from_raw(x$raw[chk$file_line_number])
@@ -79,44 +84,45 @@ validate_dv <- function(x, validation_level = 2, options = list()) {
             }
         }
     }
-    ## check for missing player roles
-    for (py in c("players_h", "players_v")) {
-        plyrs <- x$meta[[py]]
-        idx <- which(is.na(plyrs$role))
-        ## of these, the players who appear in the plays data or have a special role (libero, captain)
-##        idx1 <- idx[vapply(idx, function(z) any(x$plays$player_id %eq% plyrs$player_id[z]) || (!is.na(plyrs$special_role[z]) && nzchar(plyrs$special_role[z])), FUN.VALUE = TRUE, USE.NAMES = FALSE)]
-        ## can't decide whether to treat players who appear in the plays data differently to those who do not: for now treat the same
-        idx1 <- idx
-        if (length(idx1) > 0) {
-            this_players <- paste0(plyrs$name[idx1], collapse=", ")
-            msg <- if (py == "players_h") paste0("Home team (", home_team(x), ")") else paste0("Visiting team (", visiting_team(x), ")")
-            if (length(idx1) > 1) {
-                wd1 <- " players "
-                wd2 <- " have "
-            } else {
-                wd1 <- " player "
-                wd2 <- " has "
+    if (file_type == "indoor") {
+        ## check for missing player roles
+        for (py in c("players_h", "players_v")) {
+            plyrs <- x$meta[[py]]
+            idx <- which(is.na(plyrs$role))
+            ## of these, the players who appear in the plays data or have a special role (libero, captain)
+            ##        idx1 <- idx[vapply(idx, function(z) any(x$plays$player_id %eq% plyrs$player_id[z]) || (!is.na(plyrs$special_role[z]) && nzchar(plyrs$special_role[z])), FUN.VALUE = TRUE, USE.NAMES = FALSE)]
+            ## can't decide whether to treat players who appear in the plays data differently to those who do not: for now treat the same
+            idx1 <- idx
+            if (length(idx1) > 0) {
+                this_players <- paste0(plyrs$name[idx1], collapse=", ")
+                msg <- if (py == "players_h") paste0("Home team (", home_team(x), ")") else paste0("Visiting team (", visiting_team(x), ")")
+                if (length(idx1) > 1) {
+                    wd1 <- " players "
+                    wd2 <- " have "
+                } else {
+                    wd1 <- " player "
+                    wd2 <- " has "
+                }
+                msg <- paste0(msg, wd1, this_players, wd2, "no position (opposite/outside/etc) assigned in the players list")
+                out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
             }
-            msg <- paste0(msg, wd1, this_players, wd2, "no position (opposite/outside/etc) assigned in the players list")
-            out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
+            ##        ## players who do not appear in the plays data - these missing roles might be less important, but we'll flag them at the same level of severity (just with a different message)
+            ##        idx2 <- setdiff(idx, idx1)
+            ##        if (length(idx2) > 0) {
+            ##            this_players <- paste0(plyrs$name[idx2], collapse=", ")
+            ##            msg <- if (py == "players_h") paste0("Home team (", home_team(x), ")") else paste0("Visiting team (", visiting_team(x), ")")
+            ##            if (length(idx2) > 1) {
+            ##                wd1 <- " players "
+            ##                wd2 <- " have "
+            ##            } else {
+            ##                wd1 <- " player "
+            ##                wd2 <- " has "
+            ##            }
+            ##            msg <- paste0(msg, wd1, this_players, wd2, "no position (opposite/outside/etc) assigned in the players list. Note that these players do not appear in the plays data, so probably did not take the court during the match")
+            ##            out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
+            ##        }
         }
-##        ## players who do not appear in the plays data - these missing roles might be less important, but we'll flag them at the same level of severity (just with a different message)
-##        idx2 <- setdiff(idx, idx1)
-##        if (length(idx2) > 0) {
-##            this_players <- paste0(plyrs$name[idx2], collapse=", ")
-##            msg <- if (py == "players_h") paste0("Home team (", home_team(x), ")") else paste0("Visiting team (", visiting_team(x), ")")
-##            if (length(idx2) > 1) {
-##                wd1 <- " players "
-##                wd2 <- " have "
-##            } else {
-##                wd1 <- " player "
-##                wd2 <- " has "
-##            }
-##            msg <- paste0(msg, wd1, this_players, wd2, "no position (opposite/outside/etc) assigned in the players list. Note that these players do not appear in the plays data, so probably did not take the court during the match")
-##            out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
-##        }
     }
-
     plays <- plays(x)
 
     ## reception to follow serve
@@ -152,7 +158,7 @@ validate_dv <- function(x, validation_level = 2, options = list()) {
         idx2 <- idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx-1]) & !is.na(plays$end_subzone[idx]) & !is.na(plays$end_subzone[idx-1])]
         if (length(idx2)>0)
             out <- rbind(out,chk_df(plays[idx2,],paste0("Reception end sub-zone (",plays$end_subzone[idx2],") does not match serve end sub-zone (",plays$end_subzone[idx2-1],")"),severity=1))
-    
+
         ## attack type must match set type
         idx <- which(plays$skill %eq% "Attack")
         idx <- idx[plays$skill[idx-1] %eq% "Set"]
@@ -174,89 +180,91 @@ validate_dv <- function(x, validation_level = 2, options = list()) {
         if (length(idx)>0)
             out <- rbind(out,chk_df(plays[idx,],paste0("Dig type (",plays$skill_type[idx],") does not match attack type (",plays$skill_type[idx-1],")")))
     }
-    
-    ## front-row attacking player isn't actually in front row
-    ## find front-row players for each attack
-    ignore_codes <- options$setter_tip_codes
-    if (!is.null(ignore_codes)) {
-        if (!is.character(ignore_codes)) ignore_codes <- NULL
-    }
-    if (!is.null(ignore_codes)) ignore_codes <- na.omit(ignore_codes)
-    attacks <- plays[plays$skill %eq% "Attack", ]
-    if (nrow(attacks)>0) {
-        for (p in 1:6) attacks[,paste0("attacker_",p)] <- NA
-        idx <- attacks$home_team==attacks$team
-        attacks[idx,paste0("attacker_",1:6)] <- attacks[idx,paste0("home_p",1:6)]
-        attacks[!idx,paste0("attacker_",1:6)] <- attacks[!idx,paste0("visiting_p",1:6)]
-        chk <- attacks[attacks$start_zone %in% c(2,3,4) & (!attacks$attack_code %in% ignore_codes) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
-        if (nrow(chk)>0)
-            out <- rbind(out,chk_df(chk,"Back-row player made an attack from a front-row zone",severity=3))
 
-        ## and vice-versa: attack starting from back row by a front-row player
-        chk <- attacks[attacks$start_zone %in% c(5,6,7,8,9,1) & (attacks$player_number==attacks$attacker_2 | attacks$player_number==attacks$attacker_3 | attacks$player_number==attacks$attacker_4),]
-        if (nrow(chk)>0)
-            out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)",severity=2))
-        ## those are probably less of an issue than a back-row player making a front row attack. A front-row player making a back row attack is not illegal, just inconsistent
-    }
-    ## back row player blocking
-    chk <- (plays$skill %eq% "Block") &
-        (((plays$team %eq% plays$home_team) & (plays$player_number %eq% plays$home_p5 | plays$player_number %eq% plays$home_p6 | plays$player_number %eq% plays$home_p1)) |
-         ((plays$team %eq% plays$visiting_team) & (plays$player_number %eq% plays$visiting_p5 | plays$player_number %eq% plays$visiting_p6 | plays$player_number %eq% plays$visiting_p1)))
-    if (any(chk))
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Block by a back-row player",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
-
-    ## for the next two, not sure if we should assume rotation errors should be aces or not
-    ##  so the default rotation_error_is_ace for each is set to not warn when rotation errors are present
-    ## serves that should be coded as aces, but were not
-    find_should_be_aces <- function(rally,rotation_error_is_ace=FALSE) {
-        sv <- which(rally$skill=="Serve")
-        if (length(sv)==1) {
-            was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
-            if (!rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- FALSE ## to avoid warnings
-            ## also skip this check if the next skill not reception (or rotation error), since that's likely to affect this
-            if (!is.na(rally$skill[sv + 1]) && (!rally$skill[sv + 1] %in% c("Rotation error","Reception"))) was_ace <- FALSE
-            if (was_ace & !identical(rally$evaluation[sv], "Ace")) {
-                TRUE
-            } else {
-                FALSE
-            }
-        } else {
-            NA
+    if (file_type == "indoor") {
+        ## front-row attacking player isn't actually in front row
+        ## find front-row players for each attack
+        ignore_codes <- options$setter_tip_codes
+        if (!is.null(ignore_codes)) {
+            if (!is.character(ignore_codes)) ignore_codes <- NULL
         }
-    }
-    pid <- ddply(plays,"point_id",find_should_be_aces)
-    pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
-    chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
-    if (any(chk))
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Winning serve not coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
-    ## and vice-versa: serves that were coded as aces, but should not have been
-    find_should_not_be_aces <- function(rally,rotation_error_is_ace=TRUE) {
-        ## by default assume rotation errors should be aces here (opposite to above)
-        ## so that warnings won't be issued when rotation errors present
-        sv <- which(rally$skill=="Serve")
-        if (length(sv)==1) {
-            was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
-            if (rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- TRUE ## to avoid warnings
-            if (!was_ace & identical(rally$evaluation[sv],"Ace")) {
-                TRUE
-            } else {
-                FALSE
-            }
-        } else {
-            NA
-        }
-    }
-    pid <- ddply(plays,"point_id",find_should_not_be_aces)
-    pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
-    chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
-    if (any(chk))
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Non-winning serve was coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        if (!is.null(ignore_codes)) ignore_codes <- na.omit(ignore_codes)
+        attacks <- plays[plays$skill %eq% "Attack", ]
+        if (nrow(attacks) > 0) {
+            for (p in 1:6) attacks[, paste0("attacker_", p)] <- NA
+            idx <- attacks$home_team==attacks$team
+            attacks[idx, paste0("attacker_", 1:6)] <- attacks[idx, paste0("home_p", 1:6)]
+            attacks[!idx, paste0("attacker_", 1:6)] <- attacks[!idx, paste0("visiting_p", 1:6)]
+            chk <- attacks[attacks$start_zone %in% c(2,3,4) & (!attacks$attack_code %in% ignore_codes) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
+            if (nrow(chk)>0)
+                out <- rbind(out,chk_df(chk,"Back-row player made an attack from a front-row zone",severity=3))
 
-    ## server not in position 1
-    chk <- (plays$skill %eq% "Serve") & (((plays$team %eq% plays$home_team) & (!plays$player_number %eq% plays$home_p1)) | ((plays$team %eq% plays$visiting_team) & (!plays$player_number %eq% plays$visiting_p1)))
-    if (any(chk))
-        out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Serving player not in position 1",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
-    
+            ## and vice-versa: attack starting from back row by a front-row player
+            chk <- attacks[attacks$start_zone %in% c(5,6,7,8,9,1) & (attacks$player_number==attacks$attacker_2 | attacks$player_number==attacks$attacker_3 | attacks$player_number==attacks$attacker_4),]
+            if (nrow(chk)>0)
+                out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)",severity=2))
+            ## those are probably less of an issue than a back-row player making a front row attack. A front-row player making a back row attack is not illegal, just inconsistent
+        }
+        ## back row player blocking
+        chk <- (plays$skill %eq% "Block") &
+            (((plays$team %eq% plays$home_team) & (plays$player_number %eq% plays$home_p5 | plays$player_number %eq% plays$home_p6 | plays$player_number %eq% plays$home_p1)) |
+             ((plays$team %eq% plays$visiting_team) & (plays$player_number %eq% plays$visiting_p5 | plays$player_number %eq% plays$visiting_p6 | plays$player_number %eq% plays$visiting_p1)))
+        if (any(chk))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Block by a back-row player",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+
+        ## for the next two, not sure if we should assume rotation errors should be aces or not
+        ##  so the default rotation_error_is_ace for each is set to not warn when rotation errors are present
+        ## serves that should be coded as aces, but were not
+        find_should_be_aces <- function(rally,rotation_error_is_ace=FALSE) {
+            sv <- which(rally$skill=="Serve")
+            if (length(sv)==1) {
+                was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
+                if (!rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- FALSE ## to avoid warnings
+                ## also skip this check if the next skill not reception (or rotation error), since that's likely to affect this
+                if (!is.na(rally$skill[sv + 1]) && (!rally$skill[sv + 1] %in% c("Rotation error","Reception"))) was_ace <- FALSE
+                if (was_ace & !identical(rally$evaluation[sv], "Ace")) {
+                    TRUE
+                } else {
+                    FALSE
+                }
+            } else {
+                NA
+            }
+        }
+        pid <- ddply(plays,"point_id",find_should_be_aces)
+        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
+        if (any(chk))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Winning serve not coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        ## and vice-versa: serves that were coded as aces, but should not have been
+        find_should_not_be_aces <- function(rally,rotation_error_is_ace=TRUE) {
+            ## by default assume rotation errors should be aces here (opposite to above)
+            ## so that warnings won't be issued when rotation errors present
+            sv <- which(rally$skill=="Serve")
+            if (length(sv)==1) {
+                was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
+                if (rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- TRUE ## to avoid warnings
+                if (!was_ace & identical(rally$evaluation[sv],"Ace")) {
+                    TRUE
+                } else {
+                    FALSE
+                }
+            } else {
+                NA
+            }
+        }
+        pid <- ddply(plays,"point_id",find_should_not_be_aces)
+        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
+        if (any(chk))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Non-winning serve was coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+
+        ## server not in position 1
+        chk <- (plays$skill %eq% "Serve") & (((plays$team %eq% plays$home_team) & (!plays$player_number %eq% plays$home_p1)) | ((plays$team %eq% plays$visiting_team) & (!plays$player_number %eq% plays$visiting_p1)))
+        if (any(chk))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Serving player not in position 1",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    }
+
     ## number of blockers (for an attack) should be >=1 if it is followed by a block
     idx <- which(plays$skill %eq% "Block")-1 ## -1 to be on the attack
     idx2 <- idx[plays$skill[idx] %eq% "Attack" & (!plays$team[idx] %eq% plays$team[idx+1]) & is.na(plays$num_players[idx])]
@@ -280,23 +288,25 @@ validate_dv <- function(x, validation_level = 2, options = list()) {
     pp <- plays[plays$skill %in% c("Serve","Attack","Block","Dig","Freeball","Reception","Set"),]
     pp$labelh <- "home_team"
     pp$labelv <- "visiting_team"
-    temp <- ldply(1:nrow(pp),function(z) {fcols <- if (pp$home_team[z] %eq% pp$team[z]) c("home_p1","home_p2","home_p3","home_p4","home_p5","home_p6","labelh") else c("visiting_p1","visiting_p2","visiting_p3","visiting_p4","visiting_p5","visiting_p6","labelv"); out <- pp[z,fcols]; names(out) <- c(paste0("player",1:6),"which_team"); out })
+    temp <- ldply(1:nrow(pp),function(z) {fcols <- if (pp$home_team[z] %eq% pp$team[z]) c(paste0("home_p", team_player_num), "labelh") else c(paste0("visiting_p", team_player_num), "labelv"); out <- pp[z,fcols]; names(out) <- c(paste0("player", team_player_num),"which_team"); out })
     chk <- sapply(1:nrow(pp),function(z) !pp$player_number[z] %in% (if (temp$which_team[z]=="home_team") liberos_h else liberos_v) & (!pp$player_number[z] %in% temp[z,]))
     if (any(chk))
         out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],video_time=video_time_from_raw(x$raw[pp$file_line_number[chk]]),message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
-    ## liberos doing stuff they oughn't to be doing
-    if (length(liberos_h)>0) {
-        chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$home_team %eq% plays$team) & (plays$player_number %in% liberos_h)
-        if (any(chk))
-            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Player designated as libero was recorded making a ",tolower(plays$skill[chk])),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+    if (file_type == "indoor") {
+        ## liberos doing stuff they oughn't to be doing
+        if (length(liberos_h)>0) {
+            chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$home_team %eq% plays$team) & (plays$player_number %in% liberos_h)
+            if (any(chk))
+                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Player designated as libero was recorded making a ",tolower(plays$skill[chk])),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        }
+        if (length(liberos_v)>0) {
+            chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$visiting_team %eq% plays$team) & (plays$player_number %in% liberos_v)
+            if (any(chk))
+                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Player designated as libero was recorded making a ",tolower(plays$skill[chk])),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        }
+        ## TO DO, perhaps: check for liberos making a front-court set that is then attacked
     }
-    if (length(liberos_v)>0) {
-        chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$visiting_team %eq% plays$team) & (plays$player_number %in% liberos_v)
-        if (any(chk))
-            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Player designated as libero was recorded making a ",tolower(plays$skill[chk])),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
-    }
-    ## TO DO, perhaps: check for liberos making a front-court set that is then attacked
     
     ## duplicate entries with same skill and evaluation code for the same player
     idx <- which((plays$evaluation_code[-1] %eq% plays$evaluation_code[-nrow(plays)]) &
@@ -382,7 +392,7 @@ validate_dv <- function(x, validation_level = 2, options = list()) {
     rotleft <- function(x) if (is.data.frame(x)) {out <- cbind(x[,-1],x[,1]); names(out) <- names(x); out} else c(x[-1],x[1])
     isrotleft <- function(x,y) all(as.numeric(rotleft(x))==as.numeric(y)) ## is y a left-rotated version of x?
     for (tm in c("*","a")) {
-        rot_cols <- if (tm=="a") paste0("visiting_p",1:6) else paste0("home_p",1:6)
+        rot_cols <- if (tm=="a") paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
         temp <- plays[!tolower(plays$skill) %eq% "technical timeout",]
         rx <- temp[,rot_cols]
         idx <- unname(c(FALSE,rowSums(abs(apply(rx,2,diff)))>0)) ## rows where rotation changed from previous
@@ -400,7 +410,7 @@ validate_dv <- function(x, validation_level = 2, options = list()) {
     idx <- idx[idx>2 & idx<(nrow(plays)-1)] ## discard anything at the start or end of the file
     rot_errors <- list()
     for (k in idx) {
-        rot_cols <- if (grepl("^a",plays$code[k])) paste0("visiting_p",1:6) else paste0("home_p",1:6)
+        rot_cols <- if (grepl("^a",plays$code[k])) paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
         prev_rot <- plays[k-1,rot_cols]
         if (any(is.na(prev_rot))) {
             if (k>2) prev_rot <- plays[k-2,rot_cols]
