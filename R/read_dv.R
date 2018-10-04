@@ -193,6 +193,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         ## assume is a beach volley file
         file_type <- "beach"
     }
+    out$file_meta$file_type <- file_type
     if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
     this_main <- NULL
     tryCatch({
