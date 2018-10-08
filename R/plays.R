@@ -607,20 +607,22 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                     ## not expecting special code for this attack evaluation outcome
                     msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for attack evaluation \"",out_evaluation_code[ci],"\""),code_line_num[ci],full_lines[ci],severity=1)
                 }
-            } else if (skill=="B") {
-                if (!any(special_code==c("S","O","F","X","N","I","P","Z"))) {
-                    msgs <- collect_messages(msgs,paste0("Unexpected special code: ",special_code," for block"),code_line_num[ci],full_lines[ci],severity=1)
+            } else if (skill == "B") {
+                if (!any(special_code == c("S", "O", "F", "X", "N", "I", "A", "P", "T", "Z"))) {
+                    msgs <- collect_messages(msgs, paste0("Unexpected special code: ", special_code, " for block"), code_line_num[ci], full_lines[ci], severity = 1)
                 }
                 out_special_code[ci] <- switch(special_code,
-                                               "S"="Ball out - side",
-                                               "O"="Ball out - long",
-                                               "F"="Ball on floor",
-                                               "X"="Between hands",
-                                               "N"="Hands - net",
-                                               "I"="Net contact",
-                                               "P"="No jump",
-                                               "Z"="Referee call",
-                                               paste0("Unexpected ",special_code))
+                                               "S" = "Ball out - side",
+                                               "O" = "Ball out - long",
+                                               "F" = "Ball on floor",
+                                               "X" = "Between hands",
+                                               "N" = "Hands - net",
+                                               "I" = "Net contact",
+                                               "A" = "Antenna",
+                                               "P" = "No jump",
+                                               "T" = "Position error",
+                                               "Z" = "Referee call",
+                                               paste0("Unexpected ", special_code))
             } else if (skill=="R") {
                 ## dig, reception, freeball NOT all the same in dv4, but were in dv3 (see p16 of DV v3 manual)
                 if (!any(special_code==c("U","X","P","Z","E"))) {
