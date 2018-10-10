@@ -60,7 +60,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
     assert_that(is.string(file_type))
     file_type <- match.arg(tolower(file_type), c("indoor", "beach"))
 
-    team_player_num <- if (file_type == "beach") 1:2 else 1:6
+    team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
 
     out <- data.frame(file_line_number=integer(), video_time=integer(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
     chk_df <- function(chk, msg, severity = 2) {
