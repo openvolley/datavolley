@@ -164,10 +164,13 @@ read_meta <- function(txt,surname_case) {
     tryCatch(out$result <- read_result(txt),
              error=function(e) warning("could not read the [3SET] section of the input file")) ## not fatal: summary method will fail if this is not parsed, but we will have issued a warning message
     tryCatch(out$teams <- read_teams(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file")) ## fatal, because we need this info later
-    if (diff(out$teams$sets_won)<0) {
-        out$teams$won_match <- c(TRUE,FALSE)
+    temp <- diff(out$teams$sets_won)
+    if (is.na(temp)) {
+        out$teams$won_match <- c(NA, NA)
+    } else if (temp < 0) {
+        out$teams$won_match <- c(TRUE, FALSE)
     } else {
-        out$teams$won_match <- c(FALSE,TRUE)
+        out$teams$won_match <- c(FALSE, TRUE)
     }
 
     tryCatch(out$players_h <- read_players(txt,"home",surname_case),
