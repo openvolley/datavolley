@@ -1,18 +1,18 @@
 ## functions for dealing with the main data part of the datavolley file
-skill_decode <- function(skill,code,full_line,line_num) {
+skill_decode <- function(skill, code, full_line, line_num) {
     mymsgs <- list()
-    if (!skill %in% c("S","R","A","B","D","E","F"))
-        mymsgs <- collect_messages(mymsgs,paste0("Unexpected skill: ",skill),line_num,full_line,severity=2)
-    list(decoded=switch(EXPR=skill,
-                      S="Serve",
-                      R="Reception",
-                      A="Attack",
-                      B="Block",
-                      D="Dig",
-                      E="Set",
-                      F="Freeball",
-                      paste0("Unknown skill: ",skill)),
-         messages=mymsgs)
+    if (!skill %in% c("S", "R", "A", "B", "D", "E", "F"))
+        mymsgs <- collect_messages(mymsgs, paste0("Unexpected skill: ", skill), line_num, full_line, severity = 2)
+    list(decoded = switch(EXPR = skill,
+                          S = "Serve",
+                          R = "Reception",
+                          A = "Attack",
+                          B = "Block",
+                          D = "Dig",
+                          E = "Set",
+                          F = "Freeball",
+                          paste0("Unknown skill: ", skill)),
+         messages = mymsgs)
     }
 
 attack_map <- function(type,skill) {
@@ -28,7 +28,14 @@ attack_map <- function(type,skill) {
            paste0("Unknown ",skill," type"))
 }
 
-serve_map <- function(type,skill) {
+serve_map <- function(type, skill, file_type = "indoor") {
+    if (grepl("beach", file_type)) {
+        switch(type,
+               Q=paste0("Jump ",skill),
+               T=paste0("Jump-float ",skill),
+               H=paste0("Standing ",skill),
+               paste0("Unknown ",skill," type"))
+    } else {
         switch(type,
                H=paste0("Float ",skill),
                M=paste0("Jump-float ",skill),
@@ -36,15 +43,16 @@ serve_map <- function(type,skill) {
                T=paste0("Topspin ",skill),
                paste0("Unknown ",skill," type"))
     }
+}
 
-skill_type_decode <- function(skill, type, full_line, line_num) {
+skill_type_decode <- function(skill, type, full_line, line_num, file_type = "indoor") {
     mymsgs <- list()
     this_allowed_types <- if (skill %in% c("S","R")) c("H", "M", "Q", "T") else c("H", "M", "Q", "T", "U", "F", "O", "N")
     if (!any(type == this_allowed_types))
         mymsgs <- collect_messages(mymsgs, paste0("Unexpected skill type: ", type, " for skill: ", skill), line_num, full_line, severity = 1)
     list(decoded = switch(EXPR = skill,
-             S = serve_map(type, "serve"),
-             R = serve_map(type, "serve reception"),
+             S = serve_map(type, "serve", file_type = file_type),
+             R = serve_map(type, "serve reception", file_type = file_type),
              A = attack_map(type, "attack"),
              B = attack_map(type, "block"),
              D = attack_map(type, "dig"),
@@ -209,7 +217,7 @@ read_main <- function(filename) {
     x
 }
 
-parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
+parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines, file_type = "indoor") {
     if (missing(code_line_num)) code_line_num <- NULL
     if (missing(full_lines)) full_lines <- code ## default to codes, if full lines not supplied
     msgs <- list()##text=c(),line=c())
@@ -387,7 +395,7 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         out_skill[ci] <- tmp$decoded
         msgs <- join_messages(msgs,tmp$messages)
         hit_type <- substr(code,2,2)
-        tmp <- skill_type_decode(skill,hit_type,full_lines[ci],code_line_num[ci])
+        tmp <- skill_type_decode(skill, hit_type, full_lines[ci], code_line_num[ci], file_type = file_type)
         out_skill_type[ci] <- tmp$decoded
         msgs <- join_messages(msgs,tmp$messages)
         skill_eval <- substr(code,3,3)
@@ -506,6 +514,21 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
                                                 O="Overhand",
                                                 M="Middle line",
                                                 paste0("Unknown ",skill_subtype))
+            } else if (skill == "E") {
+                ## set subtypes were added in DV4
+                ## O and U are custom codes used by some beach volley scouts prior to DV4
+                if (!any(skill_subtype == c("1", "2", "3", "4", "5", "O", "U"))) {
+                    msgs <- collect_messages(msgs, paste0("Unexpected set subtype: ", skill_subtype), code_line_num[ci], full_lines[ci], severity = 1)
+                }
+                out_skill_subtype[ci] <- switch(EXPR = skill_subtype,
+                                                "1" = "1 hand set",
+                                                "2" = "2 hands set",
+                                                "3" = "Bump set",
+                                                "4" = "Other set",
+                                                "5" = "Underhand set",
+                                                "O" = "Hand set",
+                                                "U" = "Bump set",
+                                                paste0("Unknown set subtype ", skill_subtype))
             } else if (skill=="D") {
                 if (!any(skill_subtype==c("S","C","B","E","T","P"))) {
                     msgs <- collect_messages(msgs,paste0("Unexpected dig subtype: ",skill_subtype),code_line_num[ci],full_lines[ci],severity=1)
@@ -527,27 +550,47 @@ parse_code <- function(code,meta,evaluation_decoder,code_line_num,full_lines) {
         if (!any(num_players==c("","~"))) {
             out_num_players_numeric[ci] <- as.numeric(num_players)
             if (skill=="A") {
-                if (!any(num_players==c("0","1","2","3","4"))) {
+                if (!num_players %in% as.character(0:4)) {
                     msgs <- collect_messages(msgs,paste0("Unexpected number of players: ",num_players),code_line_num[ci],full_lines[ci],severity=2)
                 }
-                out_num_players[ci] <- switch(num_players,
-                                              "0"="No block",
-                                              "1"="1 player block",
-                                              "2"="2 player block",
-                                              "3"="3 player block",
-                                              "4"="Hole block",
-                                              paste0("Unexpected ",num_players))
+                if (grepl("beach", file_type)) {
+                    out_num_players[ci] <- switch(num_players,
+                                                  "0"="No block",
+                                                  "1"="Line block",
+                                                  "2"="Crosscourt block",
+                                                  "3"="Block jumps to line",
+                                                  "4"="Block jumps to crosscourt",
+                                                  paste0("Unexpected ",num_players))
+                } else {
+                    out_num_players[ci] <- switch(num_players,
+                                                  "0"="No block",
+                                                  "1"="1 player block",
+                                                  "2"="2 player block",
+                                                  "3"="3 player block",
+                                                  "4"="Hole block",
+                                                  paste0("Unexpected ",num_players))
+                }
             } else if (skill=="B") {
-                if (!any(num_players==c("0","1","2","3","4"))) {
+                if (!num_players %in% as.character(0:4)) {
                     msgs <- collect_messages(msgs,paste0("Unexpected number of players: ",num_players),code_line_num[ci],full_lines[ci],severity=2)
                 }
-                out_num_players[ci] <- switch(num_players,
-                                              "0"="No block",
-                                              "1"="1 player block",
-                                              "2"="2 player block",
-                                              "3"="3 player block",
-                                              "4"="Hole block",
-                                              paste0("Unexpected ",num_players))
+                if (grepl("beach", file_type)) {
+                    out_num_players[ci] <- switch(num_players,
+                                                  "0"="No block",
+                                                  "1"="Line block",
+                                                  "2"="Crosscourt block",
+                                                  "3"="Block jumps to line",
+                                                  "4"="Block jumps to crosscourt",
+                                                  paste0("Unexpected ",num_players))
+                } else {
+                    out_num_players[ci] <- switch(num_players,
+                                                  "0"="No block",
+                                                  "1"="1 player block",
+                                                  "2"="2 player block",
+                                                  "3"="3 player block",
+                                                  "4"="Hole block",
+                                                  paste0("Unexpected ",num_players))
+                }
             } else if (skill=="R") {
                 if (!any(num_players==1:9)) {
                     msgs <- collect_messages(msgs,paste0("Unexpected number of players: ",num_players),code_line_num[ci],full_lines[ci],severity=2)

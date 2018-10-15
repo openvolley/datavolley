@@ -232,7 +232,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     } else {
         cln <- NULL
     }
-    temp <- parse_code(this_main$code,out$meta,skill_evaluation_decode,cln,if (is.null(cln)) NULL else file_text[cln])
+    temp <- parse_code(code = this_main$code, meta = out$meta, evaluation_decoder = skill_evaluation_decode, code_line_num = cln, full_lines = if (is.null(cln)) NULL else file_text[cln], file_type = file_type)
     out$plays <- temp$plays
     if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
     ## post-process plays data
