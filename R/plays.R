@@ -193,6 +193,10 @@ read_main <- function(filename) {
                   },
                   error=function(e) read_with_readr(filename) ## fall back to readr
                   )
+    if (nrow(x) == 1 && ncol(x) == 1) {
+        ## this happens if file has no scout data!
+        stop("file has no scouted data (the [3SCOUT] section of the file is empty)")
+    }
     names(x)[1] <- "code"
     names(x)[5] <- "start_coordinate"
     names(x)[6] <- "mid_coordinate"
