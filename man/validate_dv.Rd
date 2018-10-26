@@ -10,7 +10,7 @@ validate_dv(x, validation_level = 2, options = list(),
 \arguments{
 \item{x}{datavolley: datavolley object as returned by \code{read_dv}}
 
-\item{validation_level}{numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes}
+\item{validation_level}{numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes)}
 
 \item{options}{list: named list of options that control optional validation behaviour. Valid entries are:
 \itemize{
@@ -20,7 +20,7 @@ validate_dv(x, validation_level = 2, options = list(),
 \item{file_type}{string: "indoor" or "beach"}
 }
 \value{
-data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), and file_line (the actual line from the DataVolley file).
+data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), video_time, and file_line (the actual line from the DataVolley file).
 }
 \description{
 This function is automatically run as part of \code{read_dv} if \code{extra_validation} is greater than zero.

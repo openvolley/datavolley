@@ -21,7 +21,7 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 
 \item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)}
 
-\item{extra_validation}{numeric: should we run some extra validation checks on the file? (Will be slower). 0=no extra validation, 1=check for major errors, 2=somewhat more extensive, 3=the most extra checking}
+\item{extra_validation}{numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking}
 
 \item{validation_options}{list: additional options to pass to the validation step. See \code{help('validate_dv')} for details}
 
@@ -38,7 +38,7 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 \item{edited_meta}{list: [very much experimental] if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata}
 }
 \value{
-named list with several components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file
+A named list with several elements. \code{meta} provides match metadata, \code{plays} is the main play-by-play data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file.
 }
 \description{
 The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)

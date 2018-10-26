@@ -8,7 +8,7 @@
 #' @param filename string: file name to read
 #' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4. Otherwise a two-element list can be supplied, giving the point-scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
-#' @param extra_validation numeric: should we run some extra validation checks on the file? (Will be slower). 0=no extra validation, 1=check for major errors, 2=somewhat more extensive, 3=the most extra checking
+#' @param extra_validation numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking
 #' @param validation_options list: additional options to pass to the validation step. See \code{help('validate_dv')} for details
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)
@@ -19,7 +19,7 @@
 #' @param verbose logical: if TRUE, show progress
 #' @param edited_meta list: [very much experimental] if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata
 #'
-#' @return named list with several components. \code{meta} provides match metadata, \code{plays} is the main point-by-point data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file
+#' @return A named list with several elements. \code{meta} provides match metadata, \code{plays} is the main play-by-play data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file.
 #'
 #' @seealso \code{\link{skill_evaluation_decoder}} \code{\link{validate_dv}}
 #' @examples
@@ -355,12 +355,12 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     ## add team_touch_id - an identifier of consecutive touches by same team in same point - e.g. a dig-set-attack sequence by one team is a "team touch"
     tid <- 0
-    temp_ttid <- rep(NA,nrow(out$plays))
+    temp_ttid <- rep(NA, nrow(out$plays))
     temp_ttid[1] <- tid
     temp_team <- out$plays$team
     temp_ptid <- out$plays$point_id
-    for (k in 2:nrow(out$plays)) {
-        if (!identical(temp_team[k],temp_team[k-1]) | !identical(temp_ptid[k],temp_ptid[k-1]))  {
+    for (k in seq_len(nrow(out$plays))[-1]) {
+        if (!identical(temp_team[k], temp_team[k-1]) || !identical(temp_ptid[k], temp_ptid[k-1]))  {
             tid <- tid+1
         }
         temp_ttid[k] <- tid
