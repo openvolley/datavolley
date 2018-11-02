@@ -110,15 +110,20 @@ read_players <- function(txt,team,surname_case) {
     names(p)[14] <- "role"
     if (is.character(surname_case)) {
         p$lastname <- switch(tolower(surname_case),
-                             upper=toupper(p$lastname),
-                             lower=tolower(p$lastname),
-                             title=str_to_title(p$lastname),
+                             upper = toupper(p$lastname),
+                             lower = tolower(p$lastname),
+                             title = str_to_title(p$lastname),
                              p$lastname)
     } else if (is.function(surname_case)) {
         p$lastname <- surname_case(p$lastname)
     }
-    p$name <- paste(p$firstname,p$lastname,sep=" ")
-    p$role <- plyr::mapvalues(p$role,from=1:6,to=c("libero","outside","opposite","middle","setter","unknown"),warn_missing=FALSE)
+    p$firstname[is.na(p$firstname)] <- ""
+    p$lastname[is.na(p$lastname)] <- ""
+    p$name <- str_trim(paste(p$firstname, p$lastname, sep = " "))
+    ## fallback for un-named players
+    idx <- which(!nzchar(p$name))
+    if (length(idx) > 0) p$name[idx] <- paste0("Unnamed player ", seq_along(idx))
+    p$role <- plyr::mapvalues(p$role, from = 1:6, to = c("libero", "outside", "opposite", "middle", "setter", "unknown"), warn_missing = FALSE)
     p$role[p$role %in% c("0")] <- NA_character_
     p$player_id <- as.character(p$player_id)
     p
