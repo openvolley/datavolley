@@ -4,9 +4,10 @@
 \alias{ggcourt}
 \title{ggplot volleyball court}
 \usage{
-ggcourt(court = "full", show_zones = TRUE, labels = c("Attacking team",
-  "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE,
-  show_minor_zones = FALSE, grid_colour = "black", zone_colour = "grey70",
+ggcourt(court = "full", show_zones = TRUE,
+  labels = c("Attacking team", "Receiving team"), as_for_serve = FALSE,
+  show_zone_lines = TRUE, show_minor_zones = FALSE,
+  grid_colour = "black", zone_colour = "grey70",
   minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, ...)
 }
 \arguments{

@@ -7,8 +7,9 @@
 read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
   do_transliterate = FALSE, encoding = "guess", extra_validation = 2,
   validation_options = list(), surname_case = "asis",
-  skill_evaluation_decode = skill_evaluation_decoder(), custom_code_parser,
-  metadata_only = FALSE, verbose = FALSE, edited_meta)
+  skill_evaluation_decode = skill_evaluation_decoder(),
+  custom_code_parser, metadata_only = FALSE, verbose = FALSE,
+  edited_meta)
 }
 \arguments{
 \item{filename}{string: file name to read}
