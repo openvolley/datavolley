@@ -94,7 +94,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             ##if (any(xiso_idx))
             ##    encoding <- c(encoding,gsub("^x\\-iso","iso",encoding[xiso_idx]))
             ## add common ones
-            encoding <- c(encoding,c("windows-1252","iso-8859-2","windows-1250","US-ASCII","UTF-8")) ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
+            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS")) ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
             encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
             ##if (length(encoding)<=1) encoding <- iconvlist()
         }
@@ -111,6 +111,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         ##badwords <- c(badwords,tolower(c("\uc4\u15a\u49\uc4\u15a","SOR\uc4\u15a"))) ## utf-8 wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("\uc4\u15a","\u139\u2dd"))) ## utf-8 wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("Nicol\u148"))) ## windows-1252/iso-8859-1 wrongly guessed as windows-1250
+        badwords <- c(badwords, tolower(c("\uc2\ue4\u77", "\uf1\u7b", "\ue5\ue4", "\ue5\ue3"))) ## japanese SHIFT-JIS wrongly guessed as macintosh
         ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
         enctest <- sapply(encoding, function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
