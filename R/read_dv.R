@@ -6,7 +6,7 @@
 #' 
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
-#' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4. Otherwise a two-element list can be supplied, giving the point-scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
+#' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4 (for indoor files) or when the team scores sum to 21 in sets 1--2 (beach). Otherwise a two-element list can be supplied, giving the scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
 #' @param extra_validation numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking
 #' @param validation_options list: additional options to pass to the validation step. See \code{help('validate_dv')} for details
@@ -276,43 +276,47 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     for (si in 2:length(temp)) {
         out$plays$set_number[(temp[si-1]+1):(temp[si]-1)] <- (si-1)
     }
-    
+
     ## technical timeouts
     if (is.flag(insert_technical_timeouts)) {
         if (insert_technical_timeouts) {
-            insert_technical_timeouts <- list(c(8,16),NULL)
+            insert_technical_timeouts <- if (grepl("beach", file_type)) list(function(s1, s2) (s1 + s2) == 21, NULL) else list(c(8,16),NULL)
         } else {
             insert_technical_timeouts <- list(NULL,NULL)
         }
-    }   
-    ## find technical timeouts at points 8 and 16 in sets 1-4
-    if (!is.null(insert_technical_timeouts[[1]])) {
-        for (this_set in 1:4) {
-            for (thisp in insert_technical_timeouts[[1]]) {
-                idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
-                if (length(idx)>0) {
-                    idx <- idx[1]
-                    ##cat(sprintf("Inserting technical timeout at row %d (set %d, score %d)\n",idx,this_set,thisp))
-                    out$plays <- rbind.fill(out$plays[1:idx,],data.frame(skill="Technical timeout",timeout=TRUE,set_number=this_set,point=FALSE,end_of_set=FALSE,substitution=FALSE),out$plays[(idx+1):nrow(out$plays),])
+    }
+    set_sets <- if (grepl("beach", file_type)) list(1:2, 3) else list(1:4, 5)
+    for (si in 1:2) {
+        if (!is.null(insert_technical_timeouts[[si]])) {
+            if (is.numeric(insert_technical_timeouts[[si]])) {
+                ## find technical timeouts at e.g. points 8 and 16 in sets 1-4
+                for (this_set in set_sets[[si]]) {
+                    for (thisp in insert_technical_timeouts[[si]]) {
+                        idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
+                        if (length(idx) > 0) {
+                            idx <- idx[1]
+                            ##cat(sprintf("Inserting technical timeout at row %d (set %d, score %d)\n",idx,this_set,thisp))
+                            out$plays <- rbind.fill(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
+                        }
+                    }
+                }
+            } else if (is.function(insert_technical_timeouts[[si]])) {
+                ## function that is TRUE when a TTO should occur
+                ## note this only allows one such TTO per set
+                for (this_set in set_sets[[si]]) {
+                    idx <- which(insert_technical_timeouts[[si]](out$plays$home_team_score, out$plays$visiting_team_score) & out$plays$set_number==this_set)
+                    if (length(idx) > 0) {
+                        idx <- idx[1]
+                        out$plays <- rbind.fill(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
+                    }
                 }
             }
         }
     }
-    if (!is.null(insert_technical_timeouts[[2]])) {
-        this_set <- 5
-        for (thisp in insert_technical_timeouts[[2]]) {
-            idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
-            if (length(idx)>0) {
-                idx <- idx[1]
-                ##cat(sprintf("Inserting technical timeout at row %d (set %d, score %d)\n",idx,this_set,thisp))
-                out$plays <- rbind.fill(out$plays[1:idx,],data.frame(skill="Technical timeout",timeout=TRUE,set_number=this_set,point=FALSE,end_of_set=FALSE,substitution=FALSE),out$plays[(idx+1):nrow(out$plays),])
-            }
-        }
-    }
-    
+
     ## add match_id
     out$plays$match_id <- out$meta$match_id
-    
+
     ## turn plays times (character) into POSIXct
     temp <- paste(format(as.Date(out$meta$match$date)),out$plays$time,sep=" ")
     temp[out$plays$time=="" | is.na(out$plays$time)] <- NA

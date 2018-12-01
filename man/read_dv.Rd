@@ -14,7 +14,7 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 \arguments{
 \item{filename}{string: file name to read}
 
-\item{insert_technical_timeouts}{logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4. Otherwise a two-element list can be supplied, giving the point-scores at which technical timeouts will be inserted for sets 1--4, and  set 5.}
+\item{insert_technical_timeouts}{logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4 (for indoor files) or when the team scores sum to 21 in sets 1--2 (beach). Otherwise a two-element list can be supplied, giving the scores at which technical timeouts will be inserted for sets 1--4, and  set 5.}
 
 \item{do_warn}{logical: should we issue warnings about the contents of the file as we read it?}
 
