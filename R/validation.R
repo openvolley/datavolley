@@ -160,8 +160,9 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             out <- rbind(out,chk_df(plays[idx2,],paste0("Reception end sub-zone (",plays$end_subzone[idx2],") does not match serve end sub-zone (",plays$end_subzone[idx2-1],")"),severity=1))
 
         ## attack type must match set type
+        ## but only from same team, so that e.g. attacks on over-sets don't get flagged here
         idx <- which(plays$skill %eq% "Attack")
-        idx <- idx[plays$skill[idx-1] %eq% "Set"]
+        idx <- idx[plays$skill[idx-1] %eq% "Set" & plays$team[idx-1] %eq% plays$team[idx]]
         idx <- idx[plays$skill_type[idx]!=gsub(" set"," attack",plays$skill_type[idx-1])]
         if (length(idx)>0)
             out <- rbind(out,chk_df(plays[idx,],paste0("Attack type (",plays$skill_type[idx],") does not match set type (",plays$skill_type[idx-1],")")))
