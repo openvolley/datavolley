@@ -210,6 +210,11 @@ read_main <- function(filename) {
     names(x)[6] <- "mid_coordinate"
     names(x)[7] <- "end_coordinate"
     names(x)[8] <- "time"
+    ## note these next 3 not yet used in actual file output, set number and setter positions are calculated directly
+    names(x)[9] <- "set"
+    names(x)[10] <- "home_rot"
+    names(x)[11] <- "visiting_rot"
+    ##names(x)[12] <- ## seems to also be set number?
     names(x)[13] <- "video_time"
     names(x)[15:20] <- paste("home_p",1:6,sep="") ## home team, court positons 1-6, entries are player numbers
     names(x)[21:26] <- paste("visiting_p",1:6,sep="") ## visiting team
