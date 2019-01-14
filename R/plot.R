@@ -46,6 +46,7 @@
 #' @param zone_colour string: colour to use for zone lines and labels
 #' @param minor_zone_colour string: colour to use for minor zone grid lines
 #' @param fixed_aspect_ratio logical: if TRUE, coerce the plotted court to be square (for a half-court plot) or a 2:1 rectangle (full court plot). Prior to package version 0.5.3 this was not TRUE by default
+#' @param zone_font_size numeric: the font size of the zone labels
 #' @param ... : additional parameters passed to \code{ggplot2::theme_classic(...)}
 #'
 #' @return ggplot layer
@@ -107,7 +108,7 @@
 #' p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 #' }
 #' @export
-ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, ...) {
+ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, zone_font_size = 10, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }    
@@ -190,12 +191,12 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Re
         ## these need to be added one by one, otherwise doesn't work with e.g. facet_wrap plots
         if (court %in% c("full","lower")) {
             for (ii in seq_len(length(lb))) {
-                out <- c(out, ggplot2::annotate("text", x=szx[ii]-xoff, y=szy[ii]-0.4, label=lb[ii], vjust="center", hjust="middle", fontface="italic", color=zone_colour))
+                out <- c(out, ggplot2::annotate("text", x=szx[ii]-xoff, y=szy[ii]-0.4, label=lb[ii], vjust="center", hjust="middle", fontface="italic", color=zone_colour, size = zone_font_size*0.35278))
             }
         }
         if (court %in% c("full","upper")) {
             for (ii in seq_len(length(lb))) {
-                out <- c(out, ggplot2::annotate("text", x=ezx[ii]+xoff, y=ezy[ii]+0.4, label=lb[ii], vjust="center", hjust="middle", fontface="italic", color=zone_colour))
+                out <- c(out, ggplot2::annotate("text", x=ezx[ii]+xoff, y=ezy[ii]+0.4, label=lb[ii], vjust="center", hjust="middle", fontface="italic", color=zone_colour, size = zone_font_size*0.35278))
             }
         }
     }
