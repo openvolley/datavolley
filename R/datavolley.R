@@ -14,7 +14,8 @@
 #' @importFrom stringi stri_trans_general stri_enc_detect2
 #' @importFrom stringr str_match str_trim regex fixed str_replace_all str_to_title str_locate str_sub
 #' @importFrom data.table fread
-#' @importFrom stats na.omit runif
+#' @importFrom stats na.omit runif setNames
+#' @importFrom tibble tibble
 #' @importFrom utils adist read.csv read.table tail
 
 NULL

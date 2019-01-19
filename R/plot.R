@@ -268,7 +268,146 @@ dv_xy2index <- function(x, y) {
     yi <- .bincode(y, biny, right=FALSE)
     as.integer(xi+(yi-1)*(length(binx)-1))
 }
-    
+
+#' Attack cones to x, y coordinates
+#'
+#' @param start_zones integer: starting zone of attack
+#' @param end_cones integer: cone of attack
+#' @param end string: use the "lower" or "upper" part of the figure
+#' @param xynames character: names to use for the x and y columns of the returned data.frame
+#' @param as string: either "points" or "polygons" (see Value, below)
+#' @param force_center_zone logical: either a vector indicating the attacks that should be treated as center zone attacks regardless of their start_zone value (e.g. by the setter). If \code{FALSE}, the start_zone value will be used. If provided as a single scalar value, this will be applied to all attacks
+#'
+#' @return a tibble (NOT a data.frame) with columns "x" and "y" (or other names if specified in \code{xynames}). If \code{as} is "polygons", the columns will be lists, because each polygon will have four x- and y-coordinates
+#'
+#' @seealso \code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_xy}}
+#'
+#' @examples
+#' \dontrun{
+#' ## attacks from left side (zone 4) to cones 1-7
+#' 
+#' ## plot as line segments
+#' cxy <- dv_cone2xy(4, 1:7)
+#' ## add starting coordinate for zone 4
+#' cxy <- cbind(dv_xy(4), cxy)
+#' ggplot(cxy, aes(x, y, xend=ex, yend=ey)) + geom_segment() + ggcourt()
+#'
+#' ## plot as polygons
+#' cxy <- dv_cone2xy(4, 1:7, as = "polygons")
+#'
+#' ## this returns coordinates as list columns, unpack these to use with ggplot
+#' ##  also add an identifier for each polygon
+#' cxy <- data.frame(x = unlist(cxy$ex), y = unlist(cxy$ey),
+#'                   id = unlist(lapply(1:nrow(cxy), rep, 4)))
+#' ggplot(cxy, aes(x, y, group = id, fill = as.factor(id))) + geom_polygon() +
+#'    ggcourt()
+#' }
+#' @export
+dv_cone2xy <- function(start_zones, end_cones, end = "upper", xynames = c("ex", "ey"), as = "points", force_center_zone = FALSE) {
+    end <- match.arg(tolower(end), c("lower", "upper"))
+    as <- match.arg(tolower(as), c("points", "polygons"))
+    as_points <- as == "points"
+    if (as_points) {
+        outx <- outy <- rep(NA_real_, length(start_zones))
+    } else {
+        outx <- outy <- vector("list", length(start_zones))
+    }
+    if (length(force_center_zone) == 1) force_center_zone <- rep(force_center_zone, length(start_zones))
+    idxL <- start_zones %in% c(4, 7, 5) & end_cones %in% 1:7
+    idxR <- start_zones %in% c(2, 9, 1) & end_cones %in% 1:7
+    idxC <- (start_zones %in% c(3, 8, 6) | force_center_zone) & end_cones %in% 1:8
+
+    if (any(idxL)) {
+        ex2 <- c(0.85, 1.35, 1.85, 2.85, 3.5, 3.5, 3.5)
+        ex1 <- c(0.5, ex2[1:6])
+        if (as_points) {
+            ex <- c((ex1[1:4]+ex2[1:4])/2, 3.5, 3.5, 3.5)
+            ey <- c(rep(6.5, 5), 5.3, 4.15)
+            if (end == "lower") {
+                temp <- dv_flip_xy(ex, ey)
+                ex <- temp$x
+                ey <- temp$y
+            }
+            outx[idxL] <- ex[end_cones[idxL]]
+            outy[idxL] <- ey[end_cones[idxL]]
+        } else {
+            ## polygons
+            sx1 <- c(0.5, rep(0.9, 6))
+            sx2 <- c(rep(0.9, 4), 3.5, 0.9, 0.9)
+            sy1 <- rep(3.5, 7)
+            sy2 <- c(rep(3.5, 4), 5.65, 3.5, 3.5)
+            ey1 <- c(rep(6.5, 5), 5.65, 4.8)
+            ey2 <- c(rep(6.5, 5), 4.8, 3.5)
+            if (end == "lower") {
+                temp <- dv_flip_xy(sx1, sy1)
+                sx1 <- temp$x; sy1 <- temp$y
+                temp <- dv_flip_xy(sx2, sy2)
+                sx2 <- temp$x; sy2 <- temp$y
+                temp <- dv_flip_xy(ex1, ey1)
+                ex1 <- temp$x; ey1 <- temp$y
+                temp <- dv_flip_xy(ex2, ey2)
+                ex2 <- temp$x; ey2 <- temp$y
+            }
+            outx[idxL] <- lapply(end_cones[idxL], function(ec) c(sx1[ec], ex1[ec], ex2[ec], sx2[ec]))
+            outy[idxL] <- lapply(end_cones[idxL], function(ec) c(sy1[ec], ey1[ec], ey2[ec], sy2[ec]))
+        }
+    }
+    ## idxR
+    if (any(idxR)) {
+        ## do as for L, then flip
+        temp <- dv_cone2xy(start_zones = 4, end_cones = end_cones[idxR], end = end, as = as, force_center_zone = FALSE)
+        outy[idxR] <- temp$ey
+        if (as_points) {
+            outx[idxR] <- dv_flip_x(temp$ex)
+        } else {
+            outx[idxR] <- lapply(temp$ex, dv_flip_x)
+        }
+    }
+    ## idxC
+    if (any(idxC)) {
+        if (as_points) {
+            ex <- c(1, 0.5+3/5/2+3/5*0:4, 3, 2)
+            ey <- c(4.5, rep(5.85, 5), 4.5, 4.75)
+            if (end == "lower") {
+                temp <- dv_flip_xy(ex, ey)
+                ex <- temp$x
+                ey <- temp$y
+            }
+            outx[idxC] <- ex[end_cones[idxC]]
+            outy[idxC] <- ey[end_cones[idxC]]
+        } else {
+            sx1 <- c(0.5, 0.5, 1.1, 1.7, 2.3, 2.9, 2.0, 2.0)
+            sx2 <- c(2.0, 1.1, 1.7, 2.3, 2.9, 3.5, 3.5, 2.0)
+            ex1 <- c(0.5, 0.5, 1.1, 1.7, 2.3, 2.9, 2.3, 1.7)
+            ex2 <- c(1.7, 1.1, 1.7, 2.3, 2.9, 3.5, 3.5, 2.3)
+            sy1 <- c(3.5, rep(5.15, 5), 3.5, 3.5)
+            sy2 <- sy1
+            ey1 <- c(5.15, rep(6.5, 5), 5.15, 5.15)
+            ey2 <- ey1
+            if (end == "lower") {
+                temp <- dv_flip_xy(sx1, sy1)
+                sx1 <- temp$x; sy1 <- temp$y
+                temp <- dv_flip_xy(sx2, sy2)
+                sx2 <- temp$x; sy2 <- temp$y
+                temp <- dv_flip_xy(ex1, ey1)
+                ex1 <- temp$x; ey1 <- temp$y
+                temp <- dv_flip_xy(ex2, ey2)
+                ex2 <- temp$x; ey2 <- temp$y
+            }
+            outx[idxC] <- lapply(end_cones[idxC], function(ec) c(sx1[ec], ex1[ec], ex2[ec], sx2[ec]))
+            outy[idxC] <- lapply(end_cones[idxC], function(ec) c(sy1[ec], ey1[ec], ey2[ec], sy2[ec]))
+        }
+    }
+    if (as_points) {
+        setNames(tibble(x = outx, y = outy), xynames)
+    } else {
+        idxNA <- !idxL & !idxR & !idxC
+        outx[idxNA] <- list(rep(NA_real_, 4))
+        outy[idxNA] <- list(rep(NA_real_, 4))
+        setNames(tibble(x = outx, y = outy), xynames)
+    }
+}
+
 #' Court zones to x, y coordinates
 #' 
 #' Generate x and y coordinates for plotting, from DataVolley numbered zones 
@@ -283,7 +422,7 @@ dv_xy2index <- function(x, y) {
 #'
 #' @return data.frame with columns "x" and "y" (or other names if specified in \code{xynames})
 #'
-#' @seealso \code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}
+#' @seealso \code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}
 #'
 #' @examples
 #' \dontrun{

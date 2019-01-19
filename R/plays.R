@@ -225,39 +225,41 @@ read_main <- function(filename) {
 parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines, file_type = "indoor") {
     if (missing(code_line_num)) code_line_num <- NULL
     if (missing(full_lines)) full_lines <- code ## default to codes, if full lines not supplied
+    using_cones <- tolower(meta$match$zones_or_cones) %eq% "c"
     msgs <- list()##text=c(),line=c())
     in_code <- code
     N <- length(code)
-    if (is.null(code_line_num)) code_line_num <- rep(NA,N)
-    out_team <- rep(as.character(NA),N)
-    out_player_number <- rep(NA,N)
-    out_player_name <- rep(as.character(NA),N)
-    out_player_id <- rep(as.character(NA),N)
-    out_skill <- rep(as.character(NA),N)
-    out_skill_type <- rep(as.character(NA),N)
-    out_evaluation_code <- rep(as.character(NA),N)
-    out_evaluation <- rep(as.character(NA),N)
-    out_attack_code <- rep(as.character(NA),N)
-    out_attack_description <- rep(as.character(NA),N)
-    out_set_code <- rep(as.character(NA),N)
-    out_set_description <- rep(as.character(NA),N)
-    out_set_type <- rep(as.character(NA),N)
-    out_start_zone <- rep(NA,N)
-    out_end_zone <- rep(NA,N)
-    out_end_subzone <- rep(as.character(NA),N)
-    out_skill_subtype <- rep(as.character(NA),N)
-    out_num_players <- rep(NA,N)
-    out_num_players_numeric <- rep(NA,N)
-    out_special_code <- rep(as.character(NA),N)
-    out_custom_code <- rep(as.character(NA),N)
+    if (is.null(code_line_num)) code_line_num <- rep(NA, N)
+    out_team <- rep(NA_character_, N)
+    out_player_number <- rep(NA, N)
+    out_player_name <- rep(NA_character_, N)
+    out_player_id <- rep(NA_character_, N)
+    out_skill <- rep(NA_character_, N)
+    out_skill_type <- rep(NA_character_, N)
+    out_evaluation_code <- rep(NA_character_, N)
+    out_evaluation <- rep(NA_character_, N)
+    out_attack_code <- rep(NA_character_, N)
+    out_attack_description <- rep(NA_character_, N)
+    out_set_code <- rep(NA_character_, N)
+    out_set_description <- rep(NA_character_, N)
+    out_set_type <- rep(NA_character_, N)
+    out_start_zone <- rep(NA, N)
+    out_end_zone <- rep(NA, N)
+    out_end_cone <- rep(NA_integer_, N)
+    out_end_subzone <- rep(NA_character_, N)
+    out_skill_subtype <- rep(NA_character_, N)
+    out_num_players <- rep(NA, N)
+    out_num_players_numeric <- rep(NA, N)
+    out_special_code <- rep(NA_character_, N)
+    out_custom_code <- rep(NA_character_, N)
     out_timeout <- rep(FALSE,N)
     out_end_of_set <- rep(FALSE,N)
     out_substitution <- rep(FALSE,N)
     out_point <- rep(FALSE,N)
-    out_home_team_score <- rep(NA,N)
-    out_visiting_team_score <- rep(NA,N)
-    out_home_setter_position <- rep(NA,N)
-    out_visiting_setter_position <- rep(NA,N)
+    out_home_team_score <- rep(NA, N)
+    out_visiting_team_score <- rep(NA, N)
+    out_home_setter_position <- rep(NA, N)
+    out_visiting_setter_position <- rep(NA, N)
     ## vectorised end-of-set handling
     done <- grepl("\\*\\*\\dset",in_code) ## end-of-set markers
     out_end_of_set[done] <- TRUE
@@ -474,10 +476,18 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
             }
         }
         end_zone <- some_codes[4]##substr(code,8,8)
-        if (!any(end_zone==c("","~"))) {
-            out_end_zone[ci] <- as.numeric(end_zone)
-            if (skill=="B" && !any(end_zone==c(2,3,4))) {
-                msgs <- collect_messages(msgs,paste0("Unexpected block end zone: ",end_zone),code_line_num[ci],full_lines[ci],severity=2)
+        if (!any(end_zone==c("", "~"))) {
+            if (skill %eq% "A" && using_cones) {
+                out_end_cone[ci] <- as.integer(end_zone)
+                ## NOT YET
+                ##if ((start_zone %in% c(4, 7, 5, 2, 9, 1) && !out_end_cone[ci] %in% 1:7) || (start_zone %in% c(3, 8) && !out_end_cone[ci] %in% 1:8)) {
+                ##    msgs <- collect_messages(msgs, paste0("Unexpected attack cone: ", end_zone), code_line_num[ci], full_lines[ci], severity = 2)
+                ##}
+            } else {
+                out_end_zone[ci] <- as.integer(end_zone)
+                if (skill=="B" && !out_end_zone[ci] %in% c(2, 3, 4)) {
+                    msgs <- collect_messages(msgs, paste0("Unexpected block end zone: ", end_zone), code_line_num[ci], full_lines[ci], severity = 2)
+                }
             }
         }
         end_subzone <- some_codes[5]##substr(code,9,9)
@@ -775,8 +785,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         msgs <- data.frame(file_line_number=integer(),video_time=integer(),message=character(),file_line=character())
     }
 
-    list(plays=data.frame(code=in_code, team=out_team,player_number=out_player_number,player_name=out_player_name,player_id=out_player_id,skill=out_skill,skill_type=out_skill_type,evaluation_code=out_evaluation_code,evaluation=out_evaluation,attack_code=out_attack_code,attack_description=out_attack_description,set_code=out_set_code,set_description=out_set_description,set_type=out_set_type,start_zone=out_start_zone,end_zone=out_end_zone,end_subzone=out_end_subzone,skill_subtype=out_skill_subtype,num_players=out_num_players,num_players_numeric=out_num_players_numeric,special_code=out_special_code,timeout=out_timeout,end_of_set=out_end_of_set,substitution=out_substitution,point=out_point,home_team_score=out_home_team_score,visiting_team_score=out_visiting_team_score,home_setter_position=out_home_setter_position,visiting_setter_position=out_visiting_setter_position,custom_code=out_custom_code,file_line_number=as.integer(code_line_num),stringsAsFactors=FALSE),
-         messages=msgs)
+    list(plays = data.frame(code = in_code, team = out_team, player_number = out_player_number, player_name = out_player_name, player_id = out_player_id, skill = out_skill, skill_type = out_skill_type, evaluation_code = out_evaluation_code, evaluation = out_evaluation, attack_code = out_attack_code, attack_description = out_attack_description, set_code = out_set_code, set_description = out_set_description, set_type = out_set_type, start_zone = out_start_zone, end_zone = out_end_zone, end_subzone = out_end_subzone, end_cone = out_end_cone, skill_subtype = out_skill_subtype, num_players = out_num_players, num_players_numeric = out_num_players_numeric, special_code = out_special_code, timeout = out_timeout, end_of_set = out_end_of_set, substitution = out_substitution, point = out_point, home_team_score = out_home_team_score, visiting_team_score = out_visiting_team_score, home_setter_position = out_home_setter_position, visiting_setter_position = out_visiting_setter_position, custom_code = out_custom_code, file_line_number = as.integer(code_line_num), stringsAsFactors = FALSE), messages = msgs)
 }
 
 ## single parenthesised capture

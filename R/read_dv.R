@@ -448,7 +448,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ##}
     
     ## enforce some columns to be integer
-    ints <- intersect(names(out$plays), c("player_number", "start_zone", "end_zone", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "set_number")) ## , "video_time" should probably be int as well, but need to check first that this won't break anything
+    ints <- intersect(names(out$plays), c("player_number", "start_zone", "end_zone", "end_cone", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "set_number")) ## , "video_time" should probably be int as well, but need to check first that this won't break anything
     for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
 
     ## add serving_team info
