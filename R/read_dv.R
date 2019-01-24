@@ -516,7 +516,7 @@ summary.datavolley <- function(object,...) {
     ## make extra sure that set_scores has home team assigned correctly
     if (object$meta$teams$home_away_team[1]!="*") { out$set_scores <- out$set_scores[,2:1] }
     out$set_scores <- na.omit(out$set_scores)
-    out$duration <- sum(object$meta$result$duration,na.rm=TRUE)
+    out$duration <- sum(object$meta$result$duration, na.rm = FALSE)
     class(out) <- "summary.datavolley"
     out
 }
@@ -530,9 +530,13 @@ summary.datavolley <- function(object,...) {
 #' @export
 print.summary.datavolley <- function(x,...) {
     out <- sprintf("Match summary:\nDate: %s\nLeague: %s\n",x$date,x$league)
-    out <- sprintf("%sTeams: %s (%s/%s)\n       vs\n       %s (%s/%s)\n",out,x$teams$team[1],x$teams$coach[1],x$teams$assistant[1],x$teams$team[2],x$teams$coach[2],x$teams$assistant[2])
+    coaches1 <- paste(Filter(Negate(is.na), c(x$teams$coach[1], x$teams$assistant[1])), collapse = "/")
+    coaches1 <- if (length(coaches1) > 0 && nzchar(coaches1)) paste0(" (", coaches1, ")") else ""
+    coaches2 <- paste(Filter(Negate(is.na), c(x$teams$coach[2], x$teams$assistant[2])), collapse = "/")
+    coaches2 <- if (length(coaches2) > 0 && nzchar(coaches2)) paste0(" (", coaches2, ")") else ""
+    out <- sprintf("%sTeams: %s%s\n       vs\n       %s%s\n", out, x$teams$team[1], coaches1, x$teams$team[2], coaches2)
     out <- sprintf("%sResult: %d-%d (%s)\n",out,x$teams$sets_won[1],x$teams$sets_won[2],paste(x$set_scores[,1],x$set_scores[,2],sep="-",collapse=", "))
-    out <- sprintf("%sDuration: %d minutes\n",out,x$duration)
+    out <- if (is.na(x$duration)) sprintf("%sDuration: unknown\n", out) else sprintf("%sDuration: %d minutes\n", out, x$duration)
     cat(out)
     invisible(out)
 }
