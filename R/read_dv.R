@@ -535,13 +535,11 @@ print.summary.datavolley <- function(x,...) {
     coaches2 <- paste(Filter(Negate(is.na), c(x$teams$coach[2], x$teams$assistant[2])), collapse = "/")
     coaches2 <- if (length(coaches2) > 0 && nzchar(coaches2)) paste0(" (", coaches2, ")") else ""
     out <- sprintf("%sTeams: %s%s\n       vs\n       %s%s\n", out, x$teams$team[1], coaches1, x$teams$team[2], coaches2)
-    out <- sprintf("%sResult: %d-%d (%s)\n",out,x$teams$sets_won[1],x$teams$sets_won[2],paste(x$set_scores[,1],x$set_scores[,2],sep="-",collapse=", "))
+    out <- sprintf("%sResult: %d-%d (%s)\n",out,x$teams$sets_won[1],x$teams$sets_won[2],paste(x$set_scores$score_home_team,x$set_scores$score_visiting_team,sep="-",collapse=", "))
     out <- if (is.na(x$duration)) sprintf("%sDuration: unknown\n", out) else sprintf("%sDuration: %d minutes\n", out, x$duration)
     cat(out)
     invisible(out)
 }
-
-    
 
 
 #' Summarize a list of volleyball matches
@@ -612,9 +610,8 @@ print.summary.datavolleylist <- function(x,...) {
 #'   inspect(plays(x))
 #' }
 #' @export
-plays=function(x) {
-    if (!(inherits(x,"datavolley"))) stop("x must be a datavolley object")
-    x$plays
+plays <- function(x) {
+    if ("plays" %in% names(x)) x$plays else stop("input has no plays component")
 }
 
 
