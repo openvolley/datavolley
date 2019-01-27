@@ -18,8 +18,42 @@ collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FA
     msgs
 }
 
+## video time from raw line, for datavolley format
+raw_vt_dv <- function(z) {
+    tryCatch({
+        if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
+            as.integer(read.csv(text = z, sep = ";", header = FALSE, stringsAsFactors = FALSE)[1,13])
+        } else {
+            NA_integer_
+        }},
+        error = function(e) NA_integer_)
+}
+
+## video time from raw line, for peranavolley format
+raw_vt_pv <- function(z) {
+    if (!requireNamespace("jsonlite", quietly = TRUE)) {
+        NA_integer_
+    } else {
+        pparse <- function(z, df = TRUE) {
+            temp <- sub("^[A-Z]+~", "", z)
+            if (grepl("^\\(?null\\)?", temp, ignore.case = TRUE)) {
+                if (df) tibble() else NULL
+            } else {
+                jsonlite::fromJSON(temp)
+            }
+        }
+        tryCatch({
+            if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
+                as.integer(pparse(z)$videoDuration)
+            } else {
+                NA_integer_
+            }},
+            error = function(e) NA_integer_)
+    }
+}
+
 video_time_from_raw <- function(raw_lines) {
-    tryCatch(vapply(raw_lines,function(z)tryCatch(if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) as.numeric(read.csv(text=z,sep=";",header=FALSE,stringsAsFactors=FALSE)[1,13]) else NA_integer_,error=function(e)NA_integer_),FUN.VALUE=1,USE.NAMES=FALSE),error=function(e)rep(NA_integer_,length(raw_lines)))
+    tryCatch(vapply(raw_lines,function(z) if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else raw_vt_dv(z), FUN.VALUE = 1L, USE.NAMES = FALSE), error = function(e) rep(NA_integer_, length(raw_lines)))
 }
 
 join_messages <- function(msgs1,msgs2) {

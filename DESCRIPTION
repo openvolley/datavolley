@@ -19,6 +19,7 @@ Imports:
     tibble
 Suggests:
     dplyr,
+    jsonlite,
     testthat,
     ggplot2
 Encoding: UTF-8
