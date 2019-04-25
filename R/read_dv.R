@@ -271,7 +271,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     ## add set number
     if (!any(out$plays$end_of_set)) {
-        warning("could not find any end-of-set markers (e.g. \"**1set\") in the input file")
+        out$messages <- rbind.fill(out$messages, data.frame(file_line_number = NA_integer_, video_time = NA_real_, message = "Could not find any end-of-set markers (e.g. \"**1set\") in the input file", file_line = NA_character_, stringsAsFactors = FALSE))
         out$plays$set_number <- 1L
     } else {
         out$plays$set_number <- NA
