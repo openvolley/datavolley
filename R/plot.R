@@ -492,7 +492,8 @@ dv_xy <- function(zones, end = "lower", xynames = c("x", "y"), as_for_serve = FA
     }
     ## define zones and their corresponding coordinates
     start_zones <- 1:9 ## lower part of figure
-    szx <- if (as_for_serve) c(3, NA, NA, NA, 1, 2, 1.5, NA, 2.5) else c(3, 3, 2, 1, 1, 2, 1, 2, 3)
+    ##szx <- if (as_for_serve) c(3, NA, NA, NA, 1, 2, 1.5, NA, 2.5) else c(3, 3, 2, 1, 1, 2, 1, 2, 3)
+    szx <- if (as_for_serve) c(3.2, NA, NA, NA, 0.8, 2, 1.4, NA, 2.6) else c(3, 3, 2, 1, 1, 2, 1, 2, 3)
     szy <- if (as_for_serve) c(1, NA, NA, NA, 1, 1, 1, NA, 1)-0.5 else c(1, 3, 3, 3, 1, 1, 2, 2, 2)
     end_zones <- 1:9 ## upper part of figure
     ezx <- 4-szx
