@@ -38,11 +38,11 @@ test_that("coordinate utilities work as expected", {
     expect_identical(temp$y, c(6, 4, 4, 4, 6, 6, 5, 5, 5))
 
     temp <- dv_xy(zones = 1:9, end = "lower", as_for_serve = TRUE)
-    expect_identical(temp$x, c(3, NA, NA, NA, 1, 2, 1.5, NA, 2.5))
+    expect_equal(temp$x, c(3.2, NA, NA, NA, 0.8, 2, 1.4, NA, 2.6))
     expect_identical(temp$y, c(0.5, NA, NA, NA, 0.5, 0.5, 0.5, NA, 0.5))
 
     temp <- dv_xy(zones = 1:9, end = "upper", as_for_serve = TRUE)
-    expect_identical(temp$x, c(1, NA, NA, NA, 3, 2, 2.5, NA, 1.5))
+    expect_equal(temp$x, c(0.8, NA, NA, NA, 3.2, 2, 2.6, NA, 1.4))
     expect_identical(temp$y, c(6.5, NA, NA, NA, 6.5, 6.5, 6.5, NA, 6.5))
 
     tempz <- setNames(as.data.frame(expand.grid(1:9, c("A", "B", "C", "D"))), c("zone", "subzone"))
@@ -56,10 +56,10 @@ test_that("coordinate utilities work as expected", {
     expect_identical(temp$y, rowSums(expand.grid(c(6, 4, 4, 4, 6, 6, 5, 5, 5), c(0.25, -0.25, -0.25, 0.25))))
 
     temp <- dv_xy(zones = tempz$zone, end = "lower", as_for_serve = TRUE, subzone = tempz$subzone)
-    expect_identical(temp$x, rowSums(expand.grid(c(3, NA, NA, NA, 1, 2, 1.5, NA, 2.5), c(0.25, 0.25, -0.25, -0.25))))
+    expect_equal(temp$x, rowSums(expand.grid(c(3.2, NA, NA, NA, 0.8, 2, 1.4, NA, 2.6), c(0.25, 0.25, -0.25, -0.25))))
     expect_identical(temp$y, rowSums(expand.grid(c(0.5, NA, NA, NA, 0.5, 0.5, 0.5, NA, 0.5), c(-0.25, 0.25, 0.25, -0.25))))
 
     temp <- dv_xy(zones = tempz$zone, end = "upper", as_for_serve = TRUE, subzone = tempz$subzone)
-    expect_identical(temp$x, rowSums(expand.grid(c(1, NA, NA, NA, 3, 2, 2.5, NA, 1.5), c(-0.25, -0.25, 0.25, 0.25))))
+    expect_equal(temp$x, rowSums(expand.grid(c(0.8, NA, NA, NA, 3.2, 2, 2.6, NA, 1.4), c(-0.25, -0.25, 0.25, 0.25))))
     expect_identical(temp$y, rowSums(expand.grid(c(6.5, NA, NA, NA, 6.5, 6.5, 6.5, NA, 6.5), c(0.25, -0.25, -0.25, 0.25))))
 })
