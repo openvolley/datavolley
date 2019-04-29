@@ -4,7 +4,7 @@
 \alias{dv_heatmap}
 \title{Plot a court heatmap, using base graphics}
 \usage{
-dv_heatmap(x, y, z, col, legend = TRUE, legend_title = NULL,
+dv_heatmap(x, y, z, col, zlim, legend = TRUE, legend_title = NULL,
   add = FALSE)
 }
 \arguments{
@@ -15,6 +15,8 @@ dv_heatmap(x, y, z, col, legend = TRUE, legend_title = NULL,
 \item{z}{numeric: values of the data to plot}
 
 \item{col}{character: a vector of colours to use}
+
+\item{zlim}{numeric: the minimum and maximum z values for which colors should be plotted, defaulting to the range of the finite values of z}
 
 \item{legend}{logical: if \code{TRUE}, plot a legend}
 
@@ -36,21 +38,25 @@ library(dplyr)
 
 ## Example: attack frequency by zone, per team
 
-attack_rate <- plays(x) \%>\% dplyr::filter(skill=="Attack") \%>\%
-  group_by(team, start_zone) \%>\% dplyr::summarize(n_attacks=n()) \%>\%
-  mutate(rate=n_attacks/sum(n_attacks)) \%>\% ungroup
+attack_rate <- plays(x) \%>\% dplyr::filter(skill == "Attack") \%>\%
+  group_by(team, start_zone) \%>\% dplyr::summarize(n_attacks = n()) \%>\%
+  mutate(rate = n_attacks/sum(n_attacks)) \%>\% ungroup
 
 ## add columns "x" and "y" for the x,y coordinates associated with the zones
-attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end = "lower"))
 
 ## for team 2, these need to be on the top half of the diagram
-tm2 <- attack_rate$team==teams(x)[2]
+tm2 <- attack_rate$team == teams(x)[2]
 attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
 
 ## plot it
 dv_heatmap(attack_rate[, c("x", "y", "rate")], legend_title = "Attack rate")
+
+## or, controlling the z-limits
+dv_heatmap(attack_rate[, c("x", "y", "rate")], legend_title = "Attack rate", zlim = c(0, 1))
+
 ## add the court diagram
-dv_court()
+dv_court(labels = teams(x))
 }
 
 }

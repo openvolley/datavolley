@@ -52,13 +52,13 @@ table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
 
 The court position associated with each action can be recorded in two ways. The most common is by zones (numbered 1-9).
 
-Heatmap of attack rate by court zone:
+Heatmap of attack rate by court zone (where the attack was made from):
 
 ```{r}
 library(ggplot2)
 library(dplyr)
 ## calculate attack frequency by zone, per team
-attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
+attack_rate <- plays(x) %>% dplyr::filter(skill == "Attack") %>%
     group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
     mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
 
@@ -72,6 +72,31 @@ attack_rate[tm2i, c("x", "y")] <- dv_flip_xy(attack_rate[tm2i, c("x", "y")])
 ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
     scale_fill_gradient2(name="Attack rate")
 ```
+
+Heatmap of where attacks ended, using only attacks by Nova KBM Branik from position 4:
+```{r}
+## calculate attack frequency by zone, per team
+attack_rate <- plays(x) %>% 
+    dplyr::filter(team == "Nova KBM Branik" & skill == "Attack" & start_zone == 4) %>%
+    group_by(end_zone) %>% dplyr::summarize(n_attacks=n()) %>%
+    mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="lower"))
+ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt("lower", labels = NULL) +
+    scale_fill_gradient2(name="Rate: attack\nend location")
+```
+
+We can also use the end subzone information, if it has been recorded. The subzones divide each zone into four, so we get higher spatial resolution (but the subzone is not always scouted). The same plot as above, but using subzones:
+
+```{r}
+attack_rate <- plays(x) %>% 
+    dplyr::filter(team != "Nova KBM Branik" & skill == "Attack" & start_zone == 4 & !is.na(end_subzone)) %>%
+    group_by(end_zone, end_subzone) %>% dplyr::summarize(n_attacks=n()) %>%
+    mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="lower", subzones = attack_rate$end_subzone))
+ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt("lower", labels = NULL) +
+    scale_fill_gradient2(name="Rate: attack\nend location")
+```
+
 
 Or using arrows to show the starting and ending zones of attacks:
 

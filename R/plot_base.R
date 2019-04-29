@@ -62,19 +62,20 @@
 #'
 #' ## Example: attack frequency by zone, per team
 #'
-#' attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
-#'   group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
-#'   mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
+#' attack_rate <- plays(x) %>% dplyr::filter(skill == "Attack") %>%
+#'   group_by(team, start_zone) %>% dplyr::summarize(n_attacks = n()) %>%
+#'   mutate(rate = n_attacks/sum(n_attacks)) %>% ungroup
 #'
 #' ## add columns "x" and "y" for the x,y coordinates associated with the zones
-#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end = "lower"))
 #'
 #' ## for team 2, these need to be on the top half of the diagram
-#' tm2 <- attack_rate$team==teams(x)[2]
-#' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
+#' tm2 <- attack_rate$team == teams(x)[2]
+#' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end = "upper")[tm2, ]
 #'
 #' ## plot it
 #' dv_heatmap(attack_rate[, c("x", "y", "rate")], legend_title = "Attack rate")
+#'
 #' ## add the court diagram
 #' dv_court(labels = teams(x))
 #' }
@@ -257,6 +258,7 @@ dv_plot_new <- function(x, y, legend, court, ...) {
 #' @param y numeric: y-coordinates of the data to plot
 #' @param z numeric: values of the data to plot
 #' @param col character: a vector of colours to use
+#' @param zlim numeric: the minimum and maximum z values for which colors should be plotted, defaulting to the range of the finite values of z
 #' @param legend logical: if \code{TRUE}, plot a legend
 #' @param legend_title string: title for the legend
 #' @param add logical: if \code{TRUE}, add the heatmap to an existing plot
@@ -273,28 +275,33 @@ dv_plot_new <- function(x, y, legend, court, ...) {
 #'
 #' ## Example: attack frequency by zone, per team
 #'
-#' attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
-#'   group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
-#'   mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
+#' attack_rate <- plays(x) %>% dplyr::filter(skill == "Attack") %>%
+#'   group_by(team, start_zone) %>% dplyr::summarize(n_attacks = n()) %>%
+#'   mutate(rate = n_attacks/sum(n_attacks)) %>% ungroup
 #'
 #' ## add columns "x" and "y" for the x,y coordinates associated with the zones
-#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end = "lower"))
 #'
 #' ## for team 2, these need to be on the top half of the diagram
-#' tm2 <- attack_rate$team==teams(x)[2]
+#' tm2 <- attack_rate$team == teams(x)[2]
 #' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
 #'
 #' ## plot it
 #' dv_heatmap(attack_rate[, c("x", "y", "rate")], legend_title = "Attack rate")
+#'
+#' ## or, controlling the z-limits
+#' dv_heatmap(attack_rate[, c("x", "y", "rate")], legend_title = "Attack rate", zlim = c(0, 1))
+#'
 #' ## add the court diagram
-#' dv_court()
+#' dv_court(labels = teams(x))
 #' }
 #'
 #' @export
-dv_heatmap <- function(x, y, z, col, legend = TRUE, legend_title = NULL, add = FALSE) {
+dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, add = FALSE) {
     assert_that(is.flag(add), !is.na(add))
     assert_that(is.flag(legend), !is.na(legend))
     if (missing(col)) col <- grDevices::colorRampPalette(c("#DEEBF7", "#C6DBEF", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C"))(21)
+    if (missing(zlim)) zlim <- NULL
     if (!inherits(x, "RasterLayer")) {
         if (!missing(y) && !missing(z)) {
             x <- raster::rasterFromXYZ(cbind(x, y, z))
@@ -303,10 +310,10 @@ dv_heatmap <- function(x, y, z, col, legend = TRUE, legend_title = NULL, add = F
         }
     }
     if (!add) dv_plot_new(x, legend)
-    raster::plot(x, col = col, legend = FALSE, add = TRUE)
+    raster::plot(x, col = col, legend = FALSE, add = TRUE, zlim = zlim)
     if (legend) {
         raster::plot(x, legend.only = TRUE, ##legend.width = 1.0, ##legend.shrink = 0.6,
-                     col = col,
+                     col = col, zlim = zlim,
                      legend.args = list(text = legend_title, cex = 0.8, side = 3, font = 2, line = 1),
                      axis.args = list(cex.axis=0.8),
                      smallplot = c(0.8, 0.85, 0.25, 0.75))
