@@ -261,6 +261,7 @@ dv_plot_new <- function(x, y, legend, court, ...) {
 #' @param zlim numeric: the minimum and maximum z values for which colors should be plotted, defaulting to the range of the finite values of z
 #' @param legend logical: if \code{TRUE}, plot a legend
 #' @param legend_title string: title for the legend
+#' @param legend_pos numeric: position of the legend (xmin, xmax, ymin, ymax) - in normalized units
 #' @param add logical: if \code{TRUE}, add the heatmap to an existing plot
 #'
 #' @return NULL
@@ -297,25 +298,40 @@ dv_plot_new <- function(x, y, legend, court, ...) {
 #' }
 #'
 #' @export
-dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, add = FALSE) {
+dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, legend_pos = c(0.8, 0.85, 0.25, 0.75), add = FALSE) {
     assert_that(is.flag(add), !is.na(add))
     assert_that(is.flag(legend), !is.na(legend))
     if (missing(col)) col <- grDevices::colorRampPalette(c("#DEEBF7", "#C6DBEF", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C"))(21)
     if (missing(zlim)) zlim <- NULL
+    noplot <- FALSE
     if (!inherits(x, "RasterLayer")) {
         if (!missing(y) && !missing(z)) {
-            x <- raster::rasterFromXYZ(cbind(x, y, z))
+            if (length(x) < 1) {
+                noplot <- TRUE
+                x <- raster::raster(matrix(1))
+            } else {
+                x <- raster::rasterFromXYZ(cbind(x, y, z))
+            }
         } else {
-            x <- raster::rasterFromXYZ(x)
+            if (is.null(x) || nrow(x) < 1) {
+                noplot <- TRUE
+                x <- raster::raster(matrix(1))
+            } else {
+                x <- raster::rasterFromXYZ(x)
+            }
         }
     }
-    if (!add) dv_plot_new(x, legend)
-    raster::plot(x, col = col, legend = FALSE, add = TRUE, zlim = zlim)
-    if (legend) {
-        raster::plot(x, legend.only = TRUE, ##legend.width = 1.0, ##legend.shrink = 0.6,
-                     col = col, zlim = zlim,
-                     legend.args = list(text = legend_title, cex = 0.8, side = 3, font = 2, line = 1),
-                     axis.args = list(cex.axis=0.8),
-                     smallplot = c(0.8, 0.85, 0.25, 0.75))
+    if (noplot) {
+        if (!add) dv_plot_new(legend = legend)
+    } else {
+        if (!add) dv_plot_new(x, legend = legend)
+        plot(x, col = col, legend = FALSE, add = TRUE, zlim = zlim)
+    }
+    if (legend && (!noplot || !is.null(zlim))) {
+        plot(x, legend.only = TRUE, ##legend.width = 1.0, ##legend.shrink = 0.6,
+             col = col, zlim = zlim,
+             legend.args = list(text = legend_title, cex = 0.8, side = 3, font = 2, line = 1),
+             axis.args = list(cex.axis=0.8),
+             smallplot = legend_pos)
     }
 }

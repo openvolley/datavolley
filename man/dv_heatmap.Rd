@@ -5,7 +5,7 @@
 \title{Plot a court heatmap, using base graphics}
 \usage{
 dv_heatmap(x, y, z, col, zlim, legend = TRUE, legend_title = NULL,
-  add = FALSE)
+  legend_pos = c(0.8, 0.85, 0.25, 0.75), add = FALSE)
 }
 \arguments{
 \item{x}{numeric, RasterLayer or data.frame: x-coordinates of the data to plot, or a \code{RasterLayer} layer or \code{data.frame} containing the data (x, y, and z together)}
@@ -21,6 +21,8 @@ dv_heatmap(x, y, z, col, zlim, legend = TRUE, legend_title = NULL,
 \item{legend}{logical: if \code{TRUE}, plot a legend}
 
 \item{legend_title}{string: title for the legend}
+
+\item{legend_pos}{numeric: position of the legend (xmin, xmax, ymin, ymax) - in normalized units}
 
 \item{add}{logical: if \code{TRUE}, add the heatmap to an existing plot}
 }
