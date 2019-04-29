@@ -108,7 +108,7 @@
 #' p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 #' }
 #' @export
-ggcourt <- function(court="full", show_zones=TRUE, labels=c("Attacking team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, zone_font_size = 10, ...) {
+ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, zone_font_size = 10, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }    
