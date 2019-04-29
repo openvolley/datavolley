@@ -325,10 +325,10 @@ dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, l
         if (!add) dv_plot_new(legend = legend)
     } else {
         if (!add) dv_plot_new(x, legend = legend)
-        plot(x, col = col, legend = FALSE, add = TRUE, zlim = zlim)
+        raster::plot(x, col = col, legend = FALSE, add = TRUE, zlim = zlim)
     }
     if (legend && (!noplot || !is.null(zlim))) {
-        plot(x, legend.only = TRUE, ##legend.width = 1.0, ##legend.shrink = 0.6,
+        raster::plot(x, legend.only = TRUE, ##legend.width = 1.0, ##legend.shrink = 0.6,
              col = col, zlim = zlim,
              legend.args = list(text = legend_title, cex = 0.8, side = 3, font = 2, line = 1),
              axis.args = list(cex.axis=0.8),
