@@ -5,7 +5,8 @@
 \title{Plot a court heatmap, using base graphics}
 \usage{
 dv_heatmap(x, y, z, col, zlim, legend = TRUE, legend_title = NULL,
-  legend_pos = c(0.8, 0.85, 0.25, 0.75), add = FALSE)
+  legend_title_font = 1, legend_title_cex = 0.7, legend_cex = 0.7,
+  legend_pos = c(0.8, 0.85, 0.25, 0.75), res, add = FALSE)
 }
 \arguments{
 \item{x}{numeric, RasterLayer or data.frame: x-coordinates of the data to plot, or a \code{RasterLayer} layer or \code{data.frame} containing the data (x, y, and z together)}
@@ -22,7 +23,15 @@ dv_heatmap(x, y, z, col, zlim, legend = TRUE, legend_title = NULL,
 
 \item{legend_title}{string: title for the legend}
 
+\item{legend_title_font}{numeric: 1 = normal, 2 = bold, 3 = italic}
+
+\item{legend_title_cex}{numeric: size scaling of legend title}
+
+\item{legend_cex}{numeric: size scaling of legend text}
+
 \item{legend_pos}{numeric: position of the legend (xmin, xmax, ymin, ymax) - in normalized units}
+
+\item{res}{numeric: size of the heatmap cells. This parameter should only be needed in cases where the input data are sparse, when the automatic algorithm can't work it out. Values are given in metres, so \code{res} is 3 when showing zones, or 1.5 when showing subzones}
 
 \item{add}{logical: if \code{TRUE}, add the heatmap to an existing plot}
 }
@@ -59,6 +68,16 @@ dv_heatmap(attack_rate[, c("x", "y", "rate")], legend_title = "Attack rate", zli
 
 ## add the court diagram
 dv_court(labels = teams(x))
+
+## sometimes you may need more control over the plot layout
+## set up a plot with 10\% bottom/top margins and 20\% left/right margins
+## showing the lower half of the court only
+dv_plot_new(margins = c(0.05, 0.1, 0.05, 0.1), court = "lower")
+## add the heatmap
+dv_heatmap(attack_rate[1:6, c("x", "y", "rate")], add = TRUE)
+## and the court diagram
+dv_court(court = "lower")
+
 }
 
 }

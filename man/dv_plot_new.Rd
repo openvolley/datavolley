@@ -2,9 +2,9 @@
 % Please edit documentation in R/plot_base.R
 \name{dv_plot_new}
 \alias{dv_plot_new}
-\title{Create a new plot frame ready for base graphics plotting}
+\title{Create a new plot page for base graphics plotting}
 \usage{
-dv_plot_new(x, y, legend, court, ...)
+dv_plot_new(x, y, legend, court, margins, par_args, ...)
 }
 \arguments{
 \item{x}{numeric or RasterLayer: x-coordinates of the data to plot, or a \code{RasterLayer} layer defining the extent of the data}
@@ -14,6 +14,10 @@ dv_plot_new(x, y, legend, court, ...)
 \item{legend}{logical: if \code{TRUE}, leave space for a legend}
 
 \item{court}{string: either "full", "lower", or "upper"}
+
+\item{margins}{numeric: vector of four values to use as margins (bottom, left, top, right). Values are as a proportion of the plot size}
+
+\item{par_args}{list: parameters to pass to \code{\link{par}}}
 
 \item{...}{: additional parameters passed to \code{\link{plot.window}}}
 }

@@ -174,7 +174,7 @@ dv_court <- function(plot_package = "base", court="full", show_zones=TRUE, label
 }
 
 
-#' Create a new plot frame ready for base graphics plotting
+#' Create a new plot page for base graphics plotting
 #'
 #' The plot will be set up as either a full- or half-court plot, depending on the inputs. The extent can be specified via the \code{court} argument (values either "full", "lower", or "upper"), or via the \code{x} and \code{y} arguments. If the latter, provide either separate \code{x} and \code{y} numeric vectors, or as a single \code{x} \code{RasterLayer} object. If no extent is specified by any of these methods, a full-court plot is assumed.
 #'
@@ -182,6 +182,8 @@ dv_court <- function(plot_package = "base", court="full", show_zones=TRUE, label
 #' @param y numeric: y-coordinates of the data to plot. Not needed if \code{x} is a \code{RasterLayer} object
 #' @param legend logical: if \code{TRUE}, leave space for a legend
 #' @param court string: either "full", "lower", or "upper"
+#' @param margins numeric: vector of four values to use as margins (bottom, left, top, right). Values are as a proportion of the plot size
+#' @param par_args list: parameters to pass to \code{\link{par}}
 #' @param ... : additional parameters passed to \code{\link{plot.window}}
 #'
 #' @return NULL
@@ -198,8 +200,7 @@ dv_court <- function(plot_package = "base", court="full", show_zones=TRUE, label
 #' dv_court(labels = c("Attacking team", "Defending team"))
 #'
 #' @export
-
-dv_plot_new <- function(x, y, legend, court, ...) {
+dv_plot_new <- function(x, y, legend, court, margins, par_args, ...) {
     if (missing(x)) x <- NULL
     if (missing(y)) y <- NULL
     if (missing(legend)) {
@@ -234,16 +235,22 @@ dv_plot_new <- function(x, y, legend, court, ...) {
     if (abs(diff(ylims)) < 0.01) ylims <- c(0, 7)
 ##    cat(str(xlims))
 ##    cat(str(ylims))
-    ## figure if full or half court, so that margin can be set appropriately
-    mar_r <- if (legend) {
-                  if (diff(range(ylims, na.rm = TRUE)) > 3.5) 0 else 3
-              } else {
-                  0
-              }
     ##opar <- par()
+    if (!missing(par_args)) do.call(par, par_args)
     graphics::plot.new()
     if (par()$page) par(oma = c(0, 0, 0, 0))
-    par(mar = c(0, 0, 0, mar_r))
+        ## figure if full or half court, so that margin can be set appropriately
+    fsz <- par("fin") ## figure size in inches, width and height
+    if (missing(margins)) {
+        mai <- c(0, 0, 0, 0)
+        if (legend && diff(range(ylims, na.rm = TRUE)) <= 3.5) {
+            mai[4] <- fsz[2]*0.1
+        }
+    } else {
+        ## margins supplied in normalized units, convert to inches
+        mai <- margins*fsz[c(2, 1, 2, 1)]
+    }
+    par(mai = mai)
     graphics::plot.window(xlim = xlims, ylim = ylims, asp = 1, ...)##, xaxt = "n", yaxt = "n")
     #par(opar)
 }
@@ -261,7 +268,11 @@ dv_plot_new <- function(x, y, legend, court, ...) {
 #' @param zlim numeric: the minimum and maximum z values for which colors should be plotted, defaulting to the range of the finite values of z
 #' @param legend logical: if \code{TRUE}, plot a legend
 #' @param legend_title string: title for the legend
+#' @param legend_title_font numeric: 1 = normal, 2 = bold, 3 = italic
+#' @param legend_title_cex numeric: size scaling of legend title
+#' @param legend_cex numeric: size scaling of legend text
 #' @param legend_pos numeric: position of the legend (xmin, xmax, ymin, ymax) - in normalized units
+#' @param res numeric: size of the heatmap cells. This parameter should only be needed in cases where the input data are sparse, when the automatic algorithm can't work it out. Values are given in metres, so \code{res} is 3 when showing zones, or 1.5 when showing subzones
 #' @param add logical: if \code{TRUE}, add the heatmap to an existing plot
 #'
 #' @return NULL
@@ -295,14 +306,32 @@ dv_plot_new <- function(x, y, legend, court, ...) {
 #'
 #' ## add the court diagram
 #' dv_court(labels = teams(x))
+#'
+#' ## sometimes you may need more control over the plot layout
+#' ## set up a plot with 10% bottom/top margins and 20% left/right margins
+#' ## showing the lower half of the court only
+#' dv_plot_new(margins = c(0.05, 0.1, 0.05, 0.1), court = "lower")
+#' ## add the heatmap
+#' dv_heatmap(attack_rate[1:6, c("x", "y", "rate")], add = TRUE)
+#' ## and the court diagram
+#' dv_court(court = "lower")
+#' 
 #' }
 #'
 #' @export
-dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, legend_pos = c(0.8, 0.85, 0.25, 0.75), add = FALSE) {
+dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, legend_title_font = 1, legend_title_cex = 0.7, legend_cex = 0.7, legend_pos = c(0.8, 0.85, 0.25, 0.75), res, add = FALSE) {
     assert_that(is.flag(add), !is.na(add))
     assert_that(is.flag(legend), !is.na(legend))
     if (missing(col)) col <- grDevices::colorRampPalette(c("#DEEBF7", "#C6DBEF", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C"))(21)
     if (missing(zlim)) zlim <- NULL
+    if (!missing(res)) {
+        assert_that(is.numeric(res), res > 0)
+        if (length(res) == 1) res <- c(res, res)
+        ## res specified in m, but we work in plot units
+        res <- res/3
+    } else {
+        res <- c(NA_real_, NA_real_)
+    }
     noplot <- FALSE
     if (!inherits(x, "RasterLayer")) {
         if (!missing(y) && !missing(z)) {
@@ -310,14 +339,14 @@ dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, l
                 noplot <- TRUE
                 x <- raster::raster(matrix(1))
             } else {
-                x <- raster::rasterFromXYZ(cbind(x, y, z))
+                x <- raster::rasterFromXYZ(cbind(x, y, z), res = res)
             }
         } else {
             if (is.null(x) || nrow(x) < 1) {
                 noplot <- TRUE
                 x <- raster::raster(matrix(1))
             } else {
-                x <- raster::rasterFromXYZ(x)
+                x <- raster::rasterFromXYZ(x, res = res)
             }
         }
     }
@@ -328,10 +357,10 @@ dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, l
         raster::plot(x, col = col, legend = FALSE, add = TRUE, zlim = zlim)
     }
     if (legend && (!noplot || !is.null(zlim))) {
-        raster::plot(x, legend.only = TRUE, ##legend.width = 1.0, ##legend.shrink = 0.6,
+        raster::plot(x, legend.only = TRUE,
              col = col, zlim = zlim,
-             legend.args = list(text = legend_title, cex = 0.8, side = 3, font = 2, line = 1),
-             axis.args = list(cex.axis=0.8),
+             legend.args = list(text = legend_title, cex = legend_title_cex, side = 3, font = legend_title_font, line = 1, adj = 0), ## adj 0 = left-align
+             axis.args = list(cex.axis = legend_cex),
              smallplot = legend_pos)
     }
 }
