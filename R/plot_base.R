@@ -354,13 +354,13 @@ dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, l
         if (!add) dv_plot_new(legend = legend)
     } else {
         if (!add) dv_plot_new(x, legend = legend)
-        raster::plot(x, col = col, legend = FALSE, add = TRUE, zlim = zlim)
+        raster::plot(x, col = col, legend = FALSE, interpolate = FALSE, add = TRUE, zlim = zlim)
     }
     if (legend && (!noplot || !is.null(zlim))) {
-        raster::plot(x, legend.only = TRUE,
-             col = col, zlim = zlim,
-             legend.args = list(text = legend_title, cex = legend_title_cex, side = 3, font = legend_title_font, line = 1, adj = 0), ## adj 0 = left-align
-             axis.args = list(cex.axis = legend_cex),
-             smallplot = legend_pos)
+        raster::plot(x, legend.only = TRUE, interpolate = FALSE,
+                     col = col, zlim = zlim,
+                     legend.args = list(text = legend_title, cex = legend_title_cex, side = 3, font = legend_title_font, line = 1, adj = 0), ## adj 0 = left-align
+                     axis.args = list(cex.axis = legend_cex),
+                     smallplot = legend_pos)
     }
 }
