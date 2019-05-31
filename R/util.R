@@ -198,3 +198,42 @@ most_common_value <- function(x) {
 manydates <- function(z) suppressWarnings(unique(as.Date(na.omit(c(lubridate::ymd(z), lubridate::dmy(z), lubridate::mdy(z), lubridate::ymd_hms(z), lubridate::dmy_hms(z), lubridate::mdy_hms(z))))))
 
 manydatetimes <- function(z) suppressWarnings(unique(na.omit(c(lubridate::ymd_hms(z), lubridate::dmy_hms(z), lubridate::mdy_hms(z)))))
+
+#' Generate a short, human-readable text summary of one or more actions
+#'
+#' @param x data.frame or tibble: one or more rows from a datavolleyplays object as returned by \code{\link{read_dv}}
+#' @param verbosity integer: 1 = least verbose, 2 = more verbose. Currently ignored
+#'
+#' @return character vector
+#'
+#' @examples
+#' x <- read_dv(dv_example_file())
+#' dv_action2text(plays(x)[27:30, ])
+#'
+#' @export
+dv_action2text <- function(x, verbosity = 1) {
+    vapply(seq_len(nrow(x)), function(i) do_action2text(x[i, ], verbosity = verbosity), FUN.VALUE = "", USE.NAMES = FALSE)
+}
+
+do_action2text <- function(x, verbosity) {
+    if (x$skill %in% c("Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball")) {
+        out <- paste0(skill_extra(x), " by ", x$player_name, " (",
+                      action_extra(x),
+                      x$evaluation, ")")
+    } else if (x$skill %in% c("Timeout")) {
+        paste0("Timeout (", x$team, ")")
+    } else if (x$skill %in% c("Technical timeout")) {
+        "Technical timeout"
+    } else {
+        NA_character_
+    }
+}
+
+skill_extra <- function(x) {
+    if (x$skill %in% c("Attack", "Serve") && !is.na(x$skill_type)) x$skill_type else x$skill
+}
+action_extra <- function(x) {
+    switch(x$skill,
+           "Attack" = if (!is.na(x$attack_code)) paste0(x$attack_code, " - ") else "",
+           "")
+}
