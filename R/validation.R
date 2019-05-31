@@ -320,12 +320,12 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         if (length(liberos_h)>0) {
             chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$home_team %eq% plays$team) & (plays$player_number %in% liberos_h)
             if (any(chk))
-                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Player designated as libero was recorded making a ",tolower(plays$skill[chk])),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+                out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
         }
         if (length(liberos_v)>0) {
             chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$visiting_team %eq% plays$team) & (plays$player_number %in% liberos_v)
             if (any(chk))
-                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Player designated as libero was recorded making a ",tolower(plays$skill[chk])),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+                out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
         }
         ## TO DO, perhaps: check for liberos making a front-court set that is then attacked
     }
