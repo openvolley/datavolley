@@ -268,8 +268,14 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     ## not sure if numbers are always 2 digits??
     ##out_custom_code <- substr(in_code,16,9999)
     temp <- sub("^.\\d+","",in_code) ## drop leading [a*] and digits
-    out_custom_code <- substr(temp,13,9999)
-
+    out_custom_code <- tryCatch(substr(temp, 13, 9999),
+                                error = function(e) {
+                                    ## if that failed, it's likely that there are improperly-encoded characters
+                                    ## but this section of the dv file shouldn't have any (only in the custom code?)
+                                    in_code <<- stri_trans_general(in_code, "latin-ascii")
+                                    temp <- sub("^.\\d+","",in_code) ## drop leading [a*] and digits
+                                    substr(temp, 13, 9999)
+                                })
     ## rotation errors
     ## ">ROT<" ">ROTAZ" ">ROTAZIONE" ">ROT" ">FALLOROT" ">FORMAZIONE"
     ## plusliga files: ROTE in custom notes
