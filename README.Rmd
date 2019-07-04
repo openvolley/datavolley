@@ -23,7 +23,7 @@ See also this [DataVolley file validator](https://apps.untan.gl/dvalidate/), whi
 ## Installation
 
 ```{r eval=FALSE}
-library(devtools)
+library(remotes)
 install_github("raymondben/datavolley")
 ```
 
@@ -159,6 +159,43 @@ ggplot(xserves, aes(start_coordinate_x, start_coordinate_y))+
     scale_fill_distiller(palette=1, direction=1)+
     ggcourt("lower", labels="Serving team")
 ```
+
+### Analyzing multiple files at once
+
+You might want to read multiple files in and analyze them all together. First find all of the DataVolley files in the target directory:
+
+```{r eval = FALSE}
+d <- dir("c:/data", pattern = "dvw$", full.names = TRUE)
+## if your files are in nested directories, add 'recursive = TRUE' to the arguments
+```
+
+```{r eval = TRUE, include = FALSE}
+## for README purposes, use the files bundled with the package
+d <- dir(system.file("extdata", package = "datavolley"), pattern = "dvw$", full.names = TRUE)
+d <- d[!grepl("testing", d)]
+```
+
+Read all of those files in a loop, extract the play-by-play component from each, and then join of those all together:
+
+```{r}
+lx <- list()
+for (fi in seq_along(d)) lx[[fi]] <- plays(read_dv(d[fi]))
+px <- do.call(rbind, lx)
+```
+
+(Note, the idiomatic R way to do this would be to use `lapply` instead of a `for` loop:
+```{r eval = FALSE}
+lx <- lapply(d, read_dv)
+px <- do.call(rbind, lapply(lx, plays))
+```
+It achieves the same thing. Use whichever you prefer.)
+
+And then we could get dataset-wide statistics, for example reception error rate by team:
+```{r}
+px %>% dplyr::filter(skill == "Reception") %>% group_by(team) %>% 
+  dplyr::summarize(N_receptions = n(), error_rate = mean(evaluation == "Error", na.rm = TRUE))
+```
+
 
 ## Troubleshooting
 
