@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 An R package for reading DataVolley scouting files.
 
-See also this [DataVolley file validator](https://apps.untan.gl/dvalidate/), which is built on the datavolley package.
+See also this [DataVolley file validator](https://apps.untan.gl/dvalidate/) and [suite of analytical apps](https://apps.untan.gl/), which are built on the datavolley package.
 
 ## Installation
 
@@ -54,7 +54,7 @@ The court position associated with each action can be recorded in two ways. The 
 
 Heatmap of attack rate by court zone (where the attack was made from):
 
-```{r}
+```{r message = FALSE}
 library(ggplot2)
 library(dplyr)
 ## calculate attack frequency by zone, per team
@@ -192,6 +192,7 @@ It achieves the same thing. Use whichever you prefer.)
 
 And then we could get dataset-wide statistics, for example reception error rate by team:
 ```{r}
+library(dplyr)
 px %>% dplyr::filter(skill == "Reception") %>% group_by(team) %>% 
   dplyr::summarize(N_receptions = n(), error_rate = mean(evaluation == "Error", na.rm = TRUE))
 ```

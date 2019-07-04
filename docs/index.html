@@ -69,7 +69,7 @@
 <a href="#datavolley" class="anchor"></a>datavolley</h1></div>
 
 <p>An R package for reading DataVolley scouting files.</p>
-<p>See also this <a href="https://apps.untan.gl/dvalidate/">DataVolley file validator</a>, which is built on the datavolley package.</p>
+<p>See also this <a href="https://apps.untan.gl/dvalidate/">DataVolley file validator</a> and <a href="https://apps.untan.gl/">suite of analytical apps</a>, which are built on the datavolley package.</p>
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
@@ -106,34 +106,21 @@
 <p>The court position associated with each action can be recorded in two ways. The most common is by zones (numbered 1-9).</p>
 <p>Heatmap of attack rate by court zone (where the attack was made from):</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(ggplot2)</a>
-<a class="sourceLine" id="cb5-2" title="2"><span class="co">#&gt; Registered S3 methods overwritten by 'ggplot2':</span></a>
-<a class="sourceLine" id="cb5-3" title="3"><span class="co">#&gt;   method         from </span></a>
-<a class="sourceLine" id="cb5-4" title="4"><span class="co">#&gt;   [.quosures     rlang</span></a>
-<a class="sourceLine" id="cb5-5" title="5"><span class="co">#&gt;   c.quosures     rlang</span></a>
-<a class="sourceLine" id="cb5-6" title="6"><span class="co">#&gt;   print.quosures rlang</span></a>
-<a class="sourceLine" id="cb5-7" title="7"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(dplyr)</a>
-<a class="sourceLine" id="cb5-8" title="8"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb5-9" title="9"><span class="co">#&gt; Attaching package: 'dplyr'</span></a>
-<a class="sourceLine" id="cb5-10" title="10"><span class="co">#&gt; The following objects are masked from 'package:stats':</span></a>
-<a class="sourceLine" id="cb5-11" title="11"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb5-12" title="12"><span class="co">#&gt;     filter, lag</span></a>
-<a class="sourceLine" id="cb5-13" title="13"><span class="co">#&gt; The following objects are masked from 'package:base':</span></a>
-<a class="sourceLine" id="cb5-14" title="14"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb5-15" title="15"><span class="co">#&gt;     intersect, setdiff, setequal, union</span></a>
-<a class="sourceLine" id="cb5-16" title="16"><span class="co">## calculate attack frequency by zone, per team</span></a>
-<a class="sourceLine" id="cb5-17" title="17">attack_rate &lt;-<span class="st"> </span><span class="kw"><a href="reference/plays.html">plays</a></span>(x) <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(skill <span class="op">==</span><span class="st"> "Attack"</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb5-18" title="18"><span class="st">    </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span>(team, start_zone) <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span>(<span class="dt">n_attacks=</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/n.html">n</a></span>()) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb5-19" title="19"><span class="st">    </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">rate=</span>n_attacks<span class="op">/</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sum">sum</a></span>(n_attacks)) <span class="op">%&gt;%</span><span class="st"> </span>ungroup</a>
-<a class="sourceLine" id="cb5-20" title="20"></a>
-<a class="sourceLine" id="cb5-21" title="21"><span class="co">## add x,y coordinates associated with the zones</span></a>
-<a class="sourceLine" id="cb5-22" title="22">attack_rate &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cbind">cbind</a></span>(attack_rate, <span class="kw"><a href="reference/dv_xy.html">dv_xy</a></span>(attack_rate<span class="op">$</span>start_zone, <span class="dt">end=</span><span class="st">"lower"</span>))</a>
-<a class="sourceLine" id="cb5-23" title="23"></a>
-<a class="sourceLine" id="cb5-24" title="24"><span class="co">## for team 2, these need to be on the top half of the diagram</span></a>
-<a class="sourceLine" id="cb5-25" title="25">tm2i &lt;-<span class="st"> </span>attack_rate<span class="op">$</span>team<span class="op">==</span><span class="kw"><a href="reference/teams.html">teams</a></span>(x)[<span class="dv">2</span>]</a>
-<a class="sourceLine" id="cb5-26" title="26">attack_rate[tm2i, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"x"</span>, <span class="st">"y"</span>)] &lt;-<span class="st"> </span><span class="kw"><a href="reference/dv_flip_xy.html">dv_flip_xy</a></span>(attack_rate[tm2i, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"x"</span>, <span class="st">"y"</span>)])</a>
-<a class="sourceLine" id="cb5-27" title="27"></a>
-<a class="sourceLine" id="cb5-28" title="28"><span class="kw"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span>(attack_rate, <span class="kw"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span>(x, y, <span class="dt">fill=</span>rate)) <span class="op">+</span><span class="st"> </span><span class="kw"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html">geom_tile</a></span>() <span class="op">+</span><span class="st"> </span><span class="kw"><a href="reference/ggcourt.html">ggcourt</a></span>(<span class="dt">labels=</span><span class="kw"><a href="reference/teams.html">teams</a></span>(x)) <span class="op">+</span></a>
-<a class="sourceLine" id="cb5-29" title="29"><span class="st">    </span><span class="kw"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html">scale_fill_gradient2</a></span>(<span class="dt">name=</span><span class="st">"Attack rate"</span>)</a></code></pre></div>
+<a class="sourceLine" id="cb5-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(dplyr)</a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="co">## calculate attack frequency by zone, per team</span></a>
+<a class="sourceLine" id="cb5-4" title="4">attack_rate &lt;-<span class="st"> </span><span class="kw"><a href="reference/plays.html">plays</a></span>(x) <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(skill <span class="op">==</span><span class="st"> "Attack"</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb5-5" title="5"><span class="st">    </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span>(team, start_zone) <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span>(<span class="dt">n_attacks=</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/n.html">n</a></span>()) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb5-6" title="6"><span class="st">    </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span>(<span class="dt">rate=</span>n_attacks<span class="op">/</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/sum">sum</a></span>(n_attacks)) <span class="op">%&gt;%</span><span class="st"> </span>ungroup</a>
+<a class="sourceLine" id="cb5-7" title="7"></a>
+<a class="sourceLine" id="cb5-8" title="8"><span class="co">## add x,y coordinates associated with the zones</span></a>
+<a class="sourceLine" id="cb5-9" title="9">attack_rate &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cbind">cbind</a></span>(attack_rate, <span class="kw"><a href="reference/dv_xy.html">dv_xy</a></span>(attack_rate<span class="op">$</span>start_zone, <span class="dt">end=</span><span class="st">"lower"</span>))</a>
+<a class="sourceLine" id="cb5-10" title="10"></a>
+<a class="sourceLine" id="cb5-11" title="11"><span class="co">## for team 2, these need to be on the top half of the diagram</span></a>
+<a class="sourceLine" id="cb5-12" title="12">tm2i &lt;-<span class="st"> </span>attack_rate<span class="op">$</span>team<span class="op">==</span><span class="kw"><a href="reference/teams.html">teams</a></span>(x)[<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb5-13" title="13">attack_rate[tm2i, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"x"</span>, <span class="st">"y"</span>)] &lt;-<span class="st"> </span><span class="kw"><a href="reference/dv_flip_xy.html">dv_flip_xy</a></span>(attack_rate[tm2i, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"x"</span>, <span class="st">"y"</span>)])</a>
+<a class="sourceLine" id="cb5-14" title="14"></a>
+<a class="sourceLine" id="cb5-15" title="15"><span class="kw"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span>(attack_rate, <span class="kw"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span>(x, y, <span class="dt">fill=</span>rate)) <span class="op">+</span><span class="st"> </span><span class="kw"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html">geom_tile</a></span>() <span class="op">+</span><span class="st"> </span><span class="kw"><a href="reference/ggcourt.html">ggcourt</a></span>(<span class="dt">labels=</span><span class="kw"><a href="reference/teams.html">teams</a></span>(x)) <span class="op">+</span></a>
+<a class="sourceLine" id="cb5-16" title="16"><span class="st">    </span><span class="kw"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html">scale_fill_gradient2</a></span>(<span class="dt">name=</span><span class="st">"Attack rate"</span>)</a></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-6-1.png" width="700"></p>
 <p>Heatmap of where attacks ended, using only attacks by Nova KBM Branik from position 4:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="co">## calculate attack frequency by zone, per team</span></a>
@@ -218,20 +205,21 @@
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">lx &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list">list</a></span>()</a>
 <a class="sourceLine" id="cb12-2" title="2"><span class="cf">for</span> (fi <span class="cf">in</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/seq">seq_along</a></span>(d)) lx[[fi]] &lt;-<span class="st"> </span><span class="kw"><a href="reference/plays.html">plays</a></span>(<span class="kw"><a href="reference/read_dv.html">read_dv</a></span>(d[fi]))</a>
 <a class="sourceLine" id="cb12-3" title="3">px &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/do.call">do.call</a></span>(rbind, lx)</a></code></pre></div>
-<p>(Note, the idiomatic R way to do this would be to use <code>lapply</code> instead of a <code>for</code>-loop:</p>
+<p>(Note, the idiomatic R way to do this would be to use <code>lapply</code> instead of a <code>for</code> loop:</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1">lx &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">lapply</a></span>(d, read_dv)</a>
 <a class="sourceLine" id="cb13-2" title="2">px &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/do.call">do.call</a></span>(rbind, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">lapply</a></span>(lx, plays))</a></code></pre></div>
 <p>It achieves the same thing. Use whichever you prefer.)</p>
 <p>And then we could get dataset-wide statistics, for example reception error rate by team:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">px <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(skill <span class="op">==</span><span class="st"> "Reception"</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span>(team) <span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb14-2" title="2"><span class="st">  </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span>(<span class="dt">N_receptions =</span> <span class="kw"><a href="https://dplyr.tidyverse.org/reference/n.html">n</a></span>(), <span class="dt">error_rate =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/mean">mean</a></span>(evaluation <span class="op">==</span><span class="st"> "Error"</span>, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>))</a>
-<a class="sourceLine" id="cb14-3" title="3"><span class="co">#&gt; # A tibble: 4 x 3</span></a>
-<a class="sourceLine" id="cb14-4" title="4"><span class="co">#&gt;   team            N_receptions error_rate</span></a>
-<a class="sourceLine" id="cb14-5" title="5"><span class="co">#&gt;   &lt;chr&gt;                  &lt;int&gt;      &lt;dbl&gt;</span></a>
-<a class="sourceLine" id="cb14-6" title="6"><span class="co">#&gt; 1 ACH Volley                32     0.0312</span></a>
-<a class="sourceLine" id="cb14-7" title="7"><span class="co">#&gt; 2 Braslovče                 44     0.227 </span></a>
-<a class="sourceLine" id="cb14-8" title="8"><span class="co">#&gt; 3 Maribor                   64     0.188 </span></a>
-<a class="sourceLine" id="cb14-9" title="9"><span class="co">#&gt; 4 Nova KBM Branik           66     0.121</span></a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(dplyr)</a>
+<a class="sourceLine" id="cb14-2" title="2">px <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span>(skill <span class="op">==</span><span class="st"> "Reception"</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span>(team) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb14-3" title="3"><span class="st">  </span>dplyr<span class="op">::</span><span class="kw"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span>(<span class="dt">N_receptions =</span> <span class="kw"><a href="https://dplyr.tidyverse.org/reference/n.html">n</a></span>(), <span class="dt">error_rate =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/mean">mean</a></span>(evaluation <span class="op">==</span><span class="st"> "Error"</span>, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>))</a>
+<a class="sourceLine" id="cb14-4" title="4"><span class="co">#&gt; # A tibble: 4 x 3</span></a>
+<a class="sourceLine" id="cb14-5" title="5"><span class="co">#&gt;   team            N_receptions error_rate</span></a>
+<a class="sourceLine" id="cb14-6" title="6"><span class="co">#&gt;   &lt;chr&gt;                  &lt;int&gt;      &lt;dbl&gt;</span></a>
+<a class="sourceLine" id="cb14-7" title="7"><span class="co">#&gt; 1 ACH Volley                32     0.0312</span></a>
+<a class="sourceLine" id="cb14-8" title="8"><span class="co">#&gt; 2 Braslovče                 44     0.227 </span></a>
+<a class="sourceLine" id="cb14-9" title="9"><span class="co">#&gt; 3 Maribor                   64     0.188 </span></a>
+<a class="sourceLine" id="cb14-10" title="10"><span class="co">#&gt; 4 Nova KBM Branik           66     0.121</span></a></code></pre></div>
 </div>
 </div>
 <div id="troubleshooting" class="section level2">

@@ -9,13 +9,14 @@ Status](https://travis-ci.org/raymondben/datavolley.svg?branch=master)](https://
 An R package for reading DataVolley scouting files.
 
 See also this [DataVolley file
-validator](https://apps.untan.gl/dvalidate/), which is built on the
-datavolley package.
+validator](https://apps.untan.gl/dvalidate/) and [suite of analytical
+apps](https://apps.untan.gl/), which are built on the datavolley
+package.
 
 ## Installation
 
 ``` r
-library(devtools)
+library(remotes)
 install_github("raymondben/datavolley")
 ```
 
@@ -60,13 +61,13 @@ table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
 The court position associated with each action can be recorded in two
 ways. The most common is by zones (numbered 1-9).
 
-Heatmap of attack rate by court zone:
+Heatmap of attack rate by court zone (where the attack was made from):
 
 ``` r
 library(ggplot2)
 library(dplyr)
 ## calculate attack frequency by zone, per team
-attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
+attack_rate <- plays(x) %>% dplyr::filter(skill == "Attack") %>%
     group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
     mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
 
@@ -81,7 +82,41 @@ ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x
     scale_fill_gradient2(name="Attack rate")
 ```
 
-![](tools/README-unnamed-chunk-6-1.png)<!-- -->
+![](man/figures/README-unnamed-chunk-6-1.png)<!-- -->
+
+Heatmap of where attacks ended, using only attacks by Nova KBM Branik
+from position 4:
+
+``` r
+## calculate attack frequency by zone, per team
+attack_rate <- plays(x) %>% 
+    dplyr::filter(team == "Nova KBM Branik" & skill == "Attack" & start_zone == 4) %>%
+    group_by(end_zone) %>% dplyr::summarize(n_attacks=n()) %>%
+    mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="lower"))
+ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt("lower", labels = NULL) +
+    scale_fill_gradient2(name="Rate: attack\nend location")
+#> Warning: Removed 1 rows containing missing values (geom_tile).
+```
+
+![](man/figures/README-unnamed-chunk-7-1.png)<!-- -->
+
+We can also use the end subzone information, if it has been recorded.
+The subzones divide each zone into four, so we get higher spatial
+resolution (but the subzone is not always scouted). The same plot as
+above, but using subzones:
+
+``` r
+attack_rate <- plays(x) %>% 
+    dplyr::filter(team != "Nova KBM Branik" & skill == "Attack" & start_zone == 4 & !is.na(end_subzone)) %>%
+    group_by(end_zone, end_subzone) %>% dplyr::summarize(n_attacks=n()) %>%
+    mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
+attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="lower", subzones = attack_rate$end_subzone))
+ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt("lower", labels = NULL) +
+    scale_fill_gradient2(name="Rate: attack\nend location")
+```
+
+![](man/figures/README-unnamed-chunk-8-1.png)<!-- -->
 
 Or using arrows to show the starting and ending zones of attacks:
 
@@ -114,7 +149,7 @@ for (n in 1:nrow(attack_rate))
 p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 ```
 
-![](tools/README-unnamed-chunk-7-1.png)<!-- -->
+![](man/figures/README-unnamed-chunk-9-1.png)<!-- -->
 
 The second source of position data is court coordinates. These are not
 included in all data files, because generally they must be manually
@@ -141,7 +176,7 @@ ggplot(xserves, aes(start_coordinate_x, start_coordinate_y,
     ggcourt(labels=c("Serving team", "Receiving team"))
 ```
 
-![](tools/README-unnamed-chunk-8-1.png)<!-- -->
+![](man/figures/README-unnamed-chunk-10-1.png)<!-- -->
 
 We could also use these coordinates to generate a heatmap-style plot of
 serve location:
@@ -153,7 +188,52 @@ ggplot(xserves, aes(start_coordinate_x, start_coordinate_y))+
     ggcourt("lower", labels="Serving team")
 ```
 
-![](tools/README-unnamed-chunk-9-1.png)<!-- -->
+![](man/figures/README-unnamed-chunk-11-1.png)<!-- -->
+
+### Analyzing multiple files at once
+
+You might want to read multiple files in and analyze them all together.
+First find all of the DataVolley files in the target directory:
+
+``` r
+d <- dir("c:/data", pattern = "dvw$", full.names = TRUE)
+## if your files are in nested directories, add 'recursive = TRUE' to the arguments
+```
+
+Read all of those files in a loop, extract the play-by-play component
+from each, and then join of those all together:
+
+``` r
+lx <- list()
+for (fi in seq_along(d)) lx[[fi]] <- plays(read_dv(d[fi]))
+px <- do.call(rbind, lx)
+```
+
+(Note, the idiomatic R way to do this would be to use `lapply` instead
+of a `for` loop:
+
+``` r
+lx <- lapply(d, read_dv)
+px <- do.call(rbind, lapply(lx, plays))
+```
+
+It achieves the same thing. Use whichever you prefer.)
+
+And then we could get dataset-wide statistics, for example reception
+error rate by team:
+
+``` r
+library(dplyr)
+px %>% dplyr::filter(skill == "Reception") %>% group_by(team) %>% 
+  dplyr::summarize(N_receptions = n(), error_rate = mean(evaluation == "Error", na.rm = TRUE))
+#> # A tibble: 4 x 3
+#>   team            N_receptions error_rate
+#>   <chr>                  <int>      <dbl>
+#> 1 ACH Volley                32     0.0312
+#> 2 Braslovče                 44     0.227 
+#> 3 Maribor                   64     0.188 
+#> 4 Nova KBM Branik           66     0.121
+```
 
 ## Troubleshooting
 
