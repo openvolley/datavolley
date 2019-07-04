@@ -127,6 +127,11 @@ read_players <- function(txt,team,surname_case) {
     p$role <- plyr::mapvalues(p$role, from = 1:6, to = c("libero", "outside", "opposite", "middle", "setter", "unknown"), warn_missing = FALSE)
     p$role[p$role %in% c("0")] <- NA_character_
     p$player_id <- as.character(p$player_id)
+    p$starting_position_set1 <- as.character(p$starting_position_set1)
+    p$starting_position_set2 <- as.character(p$starting_position_set2)
+    p$starting_position_set3 <- as.character(p$starting_position_set3)
+    p$starting_position_set4 <- as.character(p$starting_position_set4)
+    p$starting_position_set5 <- as.character(p$starting_position_set5)
     p
 }
 
