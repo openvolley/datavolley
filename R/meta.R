@@ -80,6 +80,7 @@ read_teams <- function(txt) {
     names(p)[5] <- "assistant"
     p$home_away_team <- c("*","a")
     p$team_id <- as.character(p$team_id) ## force to be char
+    suppressWarnings(p$sets_won <- as.integer(p$sets_won))
     ## check for identical team names
     if (p$team[1] %eq% p$team[2]) {
         p$team[1] <- paste0(p$team[1]," (home)")
@@ -176,7 +177,15 @@ read_meta <- function(txt,surname_case) {
     tryCatch(out$result <- read_result(txt),
              error=function(e) warning("could not read the [3SET] section of the input file")) ## not fatal: summary method will fail if this is not parsed, but we will have issued a warning message
     tryCatch(out$teams <- read_teams(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file")) ## fatal, because we need this info later
-    temp <- diff(out$teams$sets_won)
+    if (any(is.na(out$teams$sets_won))) {
+        ## hmm, can we fill this in from the out$result section?
+        try({
+            temp <- out$result[which(out$result$played), ]
+            temp$home_won <- ifelse(temp$score_home_team > temp$score_visiting_team, 1, 0)
+            out$teams$sets_won <- c(sum(temp$home_won), nrow(temp) - sum(temp$home_won))
+        }, silent = TRUE)
+    }
+    temp <- tryCatch(diff(out$teams$sets_won), error = function(e) NA)
     if (is.na(temp)) {
         out$teams$won_match <- c(NA, NA)
     } else if (temp < 0) {
