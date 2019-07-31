@@ -13,6 +13,10 @@ validator](https://apps.untan.gl/dvalidate/) and [suite of analytical
 apps](https://apps.untan.gl/), which are built on the datavolley
 package.
 
+The [peranavolley](https://github.com/raymondben/peranavolley) package
+provides similar functionality for reading files scouted by the [AOC
+VBStats](http://peranasports.com/software/vbstatshd/) software.
+
 ## Installation
 
 ``` r
