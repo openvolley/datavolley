@@ -7,7 +7,7 @@
 skill_evaluation_decoder(style = "default")
 }
 \arguments{
-\item{style}{string: currently only "default" (following the standard definitions described in the DataVolley manual)}
+\item{style}{string: currently "default" (following the standard definitions described in the DataVolley manual) or "volleymetrics" (per the conventions that VolleyMetrics use)}
 }
 \value{
 function. This function takes arguments skill, evaluation_code, and show_map and returns a string giving the interpretation of that skill evaluation code

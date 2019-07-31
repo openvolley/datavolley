@@ -69,7 +69,7 @@ skill_type_decode <- function(skill, type, full_line, line_num, file_type = "ind
 #' If your DataVolley files use evaluation codes differently to those coded here, you will need to supply a custom
 #' skill_evaluation_decode function to \code{\link{read_dv}}
 #'
-#' @param style string: currently only "default" (following the standard definitions described in the DataVolley manual)
+#' @param style string: currently "default" (following the standard definitions described in the DataVolley manual) or "volleymetrics" (per the conventions that VolleyMetrics use)
 #' @return function. This function takes arguments skill, evaluation_code, and show_map and returns a string giving the interpretation of that skill evaluation code
 #'
 #' @seealso \code{\link{read_dv}}
