@@ -533,14 +533,14 @@ summary.datavolley <- function(object,...) {
 #' @method print summary.datavolley
 #' @export
 print.summary.datavolley <- function(x,...) {
-    out <- sprintf("Match summary:\nDate: %s\nLeague: %s\n",x$date,x$league)
+    out <- paste0("Match summary:\nDate: ", x$date, "\nLeague: ", x$league, "\n")
     coaches1 <- paste(Filter(Negate(is.na), c(x$teams$coach[1], x$teams$assistant[1])), collapse = "/")
     coaches1 <- if (length(coaches1) > 0 && nzchar(coaches1)) paste0(" (", coaches1, ")") else ""
     coaches2 <- paste(Filter(Negate(is.na), c(x$teams$coach[2], x$teams$assistant[2])), collapse = "/")
     coaches2 <- if (length(coaches2) > 0 && nzchar(coaches2)) paste0(" (", coaches2, ")") else ""
-    out <- sprintf("%sTeams: %s%s\n       vs\n       %s%s\n", out, x$teams$team[1], coaches1, x$teams$team[2], coaches2)
-    out <- sprintf("%sResult: %d-%d (%s)\n",out,x$teams$sets_won[1],x$teams$sets_won[2],paste(x$set_scores$score_home_team,x$set_scores$score_visiting_team,sep="-",collapse=", "))
-    out <- if (is.na(x$duration)) sprintf("%sDuration: unknown\n", out) else sprintf("%sDuration: %d minutes\n", out, x$duration)
+    out <- paste0(out, "Teams: ", x$teams$team[1], coaches1, "\n       vs\n       ", x$teams$team[2], coaches2, "\n")
+    out <- paste0(out, "Result: ", x$teams$sets_won[1], "-", x$teams$sets_won[2], " (", paste(x$set_scores$score_home_team, x$set_scores$score_visiting_team, sep = "-", collapse = ", "), ")\n")
+    out <- if (is.na(x$duration)) paste0(out, "Duration: unknown\n") else paste0(out, "Duration: ", x$duration, " minutes\n")
     cat(out)
     invisible(out)
 }
