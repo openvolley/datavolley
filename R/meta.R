@@ -71,7 +71,9 @@ read_result <- function(txt) {
 
 ## teams
 read_teams <- function(txt) {
-    txt <- text_chunk(txt,"[3TEAMS]")
+    idx <- grep("[3TEAMS]", txt, fixed = TRUE)
+    txt <- text_chunk(txt, "[3TEAMS]")
+    msgs <- list()
     suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE,sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
     names(p)[1] <- "team_id"
     names(p)[2] <- "team"
@@ -83,10 +85,16 @@ read_teams <- function(txt) {
     suppressWarnings(p$sets_won <- as.integer(p$sets_won))
     ## check for identical team names
     if (p$team[1] %eq% p$team[2]) {
+        msgs <- collect_messages(msgs, "The two team names are identical. They will be modified here but this may still cause problems", idx+1, txt[idx+1], severity = 1)
         p$team[1] <- paste0(p$team[1]," (home)")
         p$team[2] <- paste0(p$team[2]," (visiting)")
     }
-    p
+    if (p$team_id[1] %eq% p$team_id[2]) {
+        msgs <- collect_messages(msgs, "The two team IDs are identical. They will be modified here but this may still cause problems", idx+1, txt[idx+1], severity = 1)
+        p$team_id[1] <- paste0(p$team_id[1]," (home)")
+        p$team_id[2] <- paste0(p$team_id[2]," (visiting)")
+    }
+    list(teams = p, messages = msgs)
 }
 
 ## players
@@ -172,11 +180,13 @@ read_meta <- function(txt,surname_case) {
     msgs <- list()
     temp <- read_match(txt)
     out$match <- temp$match
-    msgs <- join_messages(msgs,temp$messages)
+    msgs <- join_messages(msgs, temp$messages)
     out$more <- read_more(txt)
     tryCatch(out$result <- read_result(txt),
              error=function(e) warning("could not read the [3SET] section of the input file")) ## not fatal: summary method will fail if this is not parsed, but we will have issued a warning message
-    tryCatch(out$teams <- read_teams(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file")) ## fatal, because we need this info later
+    tryCatch(tempteams <- read_teams(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file")) ## fatal, because we need this info later
+    out$teams <- tempteams$teams
+    msgs <- join_messages(msgs, tempteams$messages)
     if (any(is.na(out$teams$sets_won))) {
         ## hmm, can we fill this in from the out$result section?
         try({
@@ -207,7 +217,7 @@ read_meta <- function(txt,surname_case) {
     temp$visiting_team <- out$teams$team[out$teams$home_away_team=="a"]
     out$match_id <- digest(temp)
     if (length(msgs)>0) {
-        msgs <- ldply(msgs,as.data.frame)
+        msgs <- ldply(msgs, as.data.frame)
     } else {
         msgs <- data.frame(file_line_number=integer(),video_time=integer(),message=character(),file_line=character())
     }
