@@ -165,7 +165,7 @@ read_attacks <- function(txt) {
 
 read_setter_calls <- function(txt) {
     txt <- text_chunk(txt,"[3SETTERCALL]")
-    if (str_trim(txt)=="") {
+    if (!nzchar(str_trim(txt))) {
         NULL
     } else {
         suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
@@ -173,6 +173,21 @@ read_setter_calls <- function(txt) {
         names(p)[3] <- "description"
         p
     }
+}
+
+read_video <- function(txt) {
+    txt <- text_chunk(txt,"[3VIDEO]")
+    p <- data.frame(camera = character(), file = character(), stringsAsFactors = FALSE)
+    if (nzchar(str_trim(txt))) {
+        p <- suppressWarnings(tryCatch({
+            p <- read.table(text = txt, sep = "=", header = FALSE, comment.char = "", stringsAsFactors=FALSE)
+            colnames(p) <- c("camera", "file")
+            p
+        }, error = function(e) {
+            warning("could not read the [3VIDEO] section of the input file")
+        }))
+    }
+    p
 }
 
 read_meta <- function(txt,surname_case) {
@@ -221,6 +236,7 @@ read_meta <- function(txt,surname_case) {
     } else {
         msgs <- data.frame(file_line_number=integer(),video_time=integer(),message=character(),file_line=character())
     }
+    out$video <- read_video(txt)
     list(meta=out,messages=msgs)
 }
 
