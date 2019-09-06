@@ -206,6 +206,8 @@ read_main <- function(filename) {
         stop("file has no scouted data (the [3SCOUT] section of the file is empty)")
     }
     names(x)[1] <- "code"
+    ## col 2 may be some sort of phase, values "p", "s"
+    ## col 3 similar, values "s", "r"
     names(x)[5] <- "start_coordinate"
     names(x)[6] <- "mid_coordinate"
     names(x)[7] <- "end_coordinate"

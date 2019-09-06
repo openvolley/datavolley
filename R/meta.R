@@ -1,5 +1,27 @@
 ## functions for reading match metadata (top part of the dv file)
 
+roles_int2str <- function(x) {
+    out <- rep(NA_character_, length(x))
+    out[x %eq% 1] <- "libero"
+    out[x %eq% 2] <- "outside"
+    out[x %eq% 3] <- "opposite"
+    out[x %eq% 4] <- "middle"
+    out[x %eq% 5] <- "setter"
+    out[x %eq% 6] <- "unknown"
+    out
+}
+
+roles_str2int <- function(x) {
+    out <- rep(0L, length(x))
+    out[x %eq% "libero"] <- 1L
+    out[x %eq% "outside"] <- 2L
+    out[x %eq% "opposite"] <- 3L
+    out[x %eq% "middle"] <- 4L
+    out[x %eq% "setter"] <- 5L
+    out[x %eq% "unknown"] <- 6L
+    out
+}
+
 ## match details
 read_match <- function(txt) {
     idx <- grep("[3MATCH]",txt,fixed=TRUE)
@@ -133,8 +155,9 @@ read_players <- function(txt,team,surname_case) {
     ## fallback for un-named players
     idx <- which(!nzchar(p$name))
     if (length(idx) > 0) p$name[idx] <- paste0("Unnamed player ", seq_along(idx))
-    p$role <- plyr::mapvalues(p$role, from = 1:6, to = c("libero", "outside", "opposite", "middle", "setter", "unknown"), warn_missing = FALSE)
-    p$role[p$role %in% c("0")] <- NA_character_
+    ##p$role <- plyr::mapvalues(p$role, from = 1:6, to = c("libero", "outside", "opposite", "middle", "setter", "unknown"), warn_missing = FALSE)
+    ##p$role[p$role %in% c("0")] <- NA_character_
+    p$role <- roles_int2str(p$role)
     p$player_id <- as.character(p$player_id)
     p$starting_position_set1 <- as.character(p$starting_position_set1)
     p$starting_position_set2 <- as.character(p$starting_position_set2)
@@ -171,6 +194,8 @@ read_setter_calls <- function(txt) {
         suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
         names(p)[1] <- "code"
         names(p)[3] <- "description"
+        names(p)[6:8] <- c("start_coordinate", "mid_coordinate", "end_coordinate")
+        ## V9 a comma-separated list of indices?
         p
     }
 }
@@ -179,13 +204,34 @@ read_video <- function(txt) {
     txt <- text_chunk(txt,"[3VIDEO]")
     p <- data.frame(camera = character(), file = character(), stringsAsFactors = FALSE)
     if (nzchar(str_trim(txt))) {
-        p <- suppressWarnings(tryCatch({
-            p <- read.table(text = txt, sep = "=", header = FALSE, comment.char = "", stringsAsFactors=FALSE)
-            colnames(p) <- c("camera", "file")
-            p
-        }, error = function(e) {
+        p <- tryCatch(
+            suppressWarnings({
+                p <- read.table(text = txt, sep = "=", header = FALSE, comment.char = "", stringsAsFactors=FALSE)
+                colnames(p) <- c("camera", "file")
+                p
+            }), error = function(e) {
             warning("could not read the [3VIDEO] section of the input file")
-        }))
+        })
+    }
+    p
+}
+
+read_winning_symbols <- function(txt) {
+    txt <- text_chunk(txt,"[3WINNINGSYMBOLS]")
+    if (nzchar(str_trim(txt))) txt else ""
+}
+
+read_comments <- function(txt) {
+    txt <- text_chunk(txt,"[3COMMENTS]")
+    ## default to NA comments
+    p <- setNames(as.data.frame(rep(list(NA_character_), 5)), paste0("comment_", 1:5))
+    if (nzchar(str_trim(txt))) {
+        p <- tryCatch(suppressWarnings({
+            tmp <- read.table(text = txt, sep = ";", header = FALSE, na.strings = "", stringsAsFactors = FALSE)
+            setNames(tmp, paste0("comment_", seq_len(ncol(tmp))))
+        }), error = function(e) {
+            warning("could not read the [3COMMENTS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?")
+        })
     }
     p
 }
@@ -197,6 +243,7 @@ read_meta <- function(txt,surname_case) {
     out$match <- temp$match
     msgs <- join_messages(msgs, temp$messages)
     out$more <- read_more(txt)
+    out$comments <- read_comments(txt)
     tryCatch(out$result <- read_result(txt),
              error=function(e) warning("could not read the [3SET] section of the input file")) ## not fatal: summary method will fail if this is not parsed, but we will have issued a warning message
     tryCatch(tempteams <- read_teams(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file")) ## fatal, because we need this info later
@@ -227,6 +274,7 @@ read_meta <- function(txt,surname_case) {
              error=function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
     tryCatch(out$sets <- read_setter_calls(txt),
              error=function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
+    tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
     temp <- out$match
     temp$home_team <- out$teams$team[out$teams$home_away_team=="*"]
     temp$visiting_team <- out$teams$team[out$teams$home_away_team=="a"]
