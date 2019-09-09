@@ -47,6 +47,7 @@
 #' @param minor_zone_colour string: colour to use for minor zone grid lines
 #' @param fixed_aspect_ratio logical: if TRUE, coerce the plotted court to be square (for a half-court plot) or a 2:1 rectangle (full court plot). Prior to package version 0.5.3 this was not TRUE by default
 #' @param zone_font_size numeric: the font size of the zone labels
+#' @param label_font_size numeric: the font size of the labels
 #' @param ... : additional parameters passed to \code{ggplot2::theme_classic(...)}
 #'
 #' @return ggplot layer
@@ -108,7 +109,7 @@
 #' p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 #' }
 #' @export
-ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, zone_font_size = 10, ...) {
+ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, zone_font_size = 10, label_font_size = 12, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }    
@@ -169,7 +170,7 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Rece
     if (!is.null(labels)) {
         if (court %in% c("full","lower")) {
             ly <- if (as_for_serve) 0.1 else 0.4
-            out <- c(out,ggplot2::annotate("text",x=2,y=ly,label=labels[1]))
+            out <- c(out,ggplot2::annotate("text",x=2,y=ly,label=labels[1], size = label_font_size*0.35278))
         }
         if (court %in% c("full","upper")) {
             lb <- if (court=="full") {
@@ -178,7 +179,7 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Rece
                      if (length(labels)==2) labels[2] else labels[1]
                  }
             ly <- if (as_for_serve) 6.9 else 6.6
-            out <- c(out, ggplot2::annotate("text",x=2,y=ly,label=lb))
+            out <- c(out, ggplot2::annotate("text",x=2,y=ly,label=lb, size = label_font_size*0.35278))
         }
     }
     if (show_zones) {
