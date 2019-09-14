@@ -30,6 +30,8 @@ The current validation messages/checks are:
   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
   \item message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
+  \item message "Quick attack by non-middle player"
+  \item message "Middle player made a non-quick attack"
   \item message "Block by a back-row player"
   \item message "Winning serve not coded as an ace"
   \item message "Non-winning serve was coded as an ace"

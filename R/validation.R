@@ -7,6 +7,8 @@
 #'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
 #'   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
 #'   \item message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
+#'   \item message "Quick attack by non-middle player"
+#'   \item message "Middle player made a non-quick attack"
 #'   \item message "Block by a back-row player"
 #'   \item message "Winning serve not coded as an ace"
 #'   \item message "Non-winning serve was coded as an ace"
@@ -205,6 +207,25 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             if (nrow(chk)>0)
                 out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)",severity=2))
             ## those are probably less of an issue than a back-row player making a front row attack. A front-row player making a back row attack is not illegal, just inconsistent
+
+            ## quick attacks by non-middles
+            idx <- attacks$team %eq% attacks$home_team
+            attacks$player_role <- NA_character_
+            temp_roles <- plyr::join(attacks[idx, ], x$meta$players_h[, c("player_id", "role")], by = "player_id", match = "first")$role
+            attacks$player_role[idx] <- temp_roles
+            idx <- attacks$team %eq% attacks$visiting_team
+            temp_roles <- plyr::join(attacks[idx, ], x$meta$players_v[, c("player_id", "role")], by = "player_id", match = "first")$role
+            attacks$player_role[idx] <- temp_roles
+            ## first-tempo attack by non-middle
+            chk <- attacks[!attacks$player_role %in% c(NA_character_, "middle") & grepl("^Quick", attacks$skill_type), ]
+            if (nrow(chk) > 0) {
+                out <- rbind(out, chk_df(chk, "Quick attack by non-middle player", severity = 2))
+            }
+            ## middle attack not a quick ball
+            chk <- attacks[attacks$player_role %eq% "middle" & !grepl("^(Quick|Other)", attacks$skill_type), ]
+            if (nrow(chk) > 0) {
+                out <- rbind(out, chk_df(chk, "Middle player made a non-quick attack", severity = 2))
+            }
         }
         ## back row player blocking
         chk <- (plays$skill %eq% "Block") &
