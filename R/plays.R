@@ -467,10 +467,10 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         }
         set_type <- some_codes[2]##substr(code,6,6)
         if (!any(set_type==c("","~"))) {
-            if (skill=="E") {
+            if (skill == "E") {
                 out_set_type[ci] <- set_type
-                if (!any(set_type==meta$attacks$set_type)) {
-                    msgs <- collect_messages(msgs,paste0("Unmatched set type: ",set_type),code_line_num[ci],full_lines[ci],severity=1)
+                if (!is.na(set_type) && !set_type %in% c("F", "B", "C", "P", "S")) {
+                    msgs <- collect_messages(msgs,paste0("Set type (attack target) should be F, B, C, P, or S, but is: ",set_type),code_line_num[ci],full_lines[ci],severity=1)
                 }
             } else {
                 msgs <- collect_messages(msgs,paste0("Unexpected set type: ",set_type),code_line_num[ci],full_lines[ci],severity=1)
