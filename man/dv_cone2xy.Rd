@@ -18,7 +18,7 @@ dv_cone2xy(start_zones, end_cones, end = "upper", xynames = c("ex",
 
 \item{as}{string: either "points" or "polygons" (see Value, below)}
 
-\item{force_center_zone}{logical: either a vector indicating the attacks that should be treated as center zone attacks regardless of their start_zone value (e.g. by the setter). If \code{FALSE}, the start_zone value will be used. If provided as a single scalar value, this will be applied to all attacks}
+\item{force_center_zone}{logical: a vector indicating the attacks that should be treated as center zone attacks regardless of their start_zone value (e.g. by the setter). If \code{FALSE}, the start_zone value will be used. If provided as a single scalar value, this will be applied to all attacks}
 }
 \value{
 a tibble (NOT a data.frame) with columns "x" and "y" (or other names if specified in \code{xynames}). If \code{as} is "polygons", the columns will be lists, because each polygon will have four x- and y-coordinates

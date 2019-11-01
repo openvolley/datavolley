@@ -277,7 +277,7 @@ dv_xy2index <- function(x, y) {
 #' @param end string: use the "lower" or "upper" part of the figure
 #' @param xynames character: names to use for the x and y columns of the returned data.frame
 #' @param as string: either "points" or "polygons" (see Value, below)
-#' @param force_center_zone logical: either a vector indicating the attacks that should be treated as center zone attacks regardless of their start_zone value (e.g. by the setter). If \code{FALSE}, the start_zone value will be used. If provided as a single scalar value, this will be applied to all attacks
+#' @param force_center_zone logical: a vector indicating the attacks that should be treated as center zone attacks regardless of their start_zone value (e.g. by the setter). If \code{FALSE}, the start_zone value will be used. If provided as a single scalar value, this will be applied to all attacks
 #'
 #' @return a tibble (NOT a data.frame) with columns "x" and "y" (or other names if specified in \code{xynames}). If \code{as} is "polygons", the columns will be lists, because each polygon will have four x- and y-coordinates
 #'
@@ -604,3 +604,155 @@ dv_flip_y <- function(y) 7-y
 #' @export
 dv_flip_index <- function(index) 10101-index
 
+
+#' The polygon coordinates for attack cones
+#'
+#' @param zone string: one of "L", "R", "M"
+#' @param end string: use the "lower" or "upper" part of the figure
+#' @param extended logical: if \code{FALSE}, the polygons will only cover the actual court area; if \code{TRUE}, they will be extended to cover the court periphery as well
+#'
+#' @return A data.frame with columns \code{cone_number}, \code{x}, \code{y}
+#'
+#' @examples
+#' \dontrun{
+#'  library(ggplot2)
+#'  cxy <- dv_cone_polygons("M")
+#'  ggplot(cxy, aes(x, y, group = cone_number, fill = as.factor(cone_number))) +
+#'    geom_polygon() + ggcourt()
+#' }
+#' @export
+dv_cone_polygons <- function(zone, end = "upper", extended = FALSE) {
+    if (is.numeric(zone)) {
+        if (zone %in% c(2, 9, 1)) {
+            zone <- "L"
+        } else if (zone %in% c(3, 8, 6)) {
+            zone <- "M"
+        } else if (zone %in% c(4, 7, 5)) {
+            zone <- "L"
+        }
+    }
+    zone <- match.arg(toupper(zone), c("L", "M", "C", "R"))
+    end <- match.arg(tolower(end), c("lower", "upper"))
+    assert_that(is.flag(extended), !is.na(extended))
+    xmax <- 3.5 + extended*2.5
+    xmin <- 0.5 - extended*2.5
+    ymax <- 6.5 + extended*2.5
+    if (zone == "L") {
+        xextra <- function(x0) x0 + extended*(x0-0.9)/3*(xmax-3.5)
+        yextra <- function(y0) y0 + extended*(y0-3.5)/(3.5-0.9)*(xmax-3.5)
+        ex2 <- c(xextra(0.85), xextra(1.35), xextra(1.85), xextra(2.85), xmax, xmax, xmax)
+        ex1 <- c(xmin, ex2[1:6])
+        ## polygons
+        sx1 <- c(xmin, rep(0.9, 6))
+        sx2 <- c(rep(0.9, 4), xmax, 0.9, 0.9)
+        sy1 <- rep(3.5, 7)
+        sy2 <- c(rep(3.5, 4), yextra(5.65), 3.5, 3.5)
+        ey1 <- c(rep(ymax, 5), yextra(5.65), yextra(4.8))
+        ey2 <- c(rep(ymax, 5), 4.8, 3.5)
+        outx <- lapply(1:7, function(ec) c(sx1[ec], ex1[ec], ex2[ec], sx2[ec]))
+        outy <- lapply(1:7, function(ec) c(sy1[ec], ey1[ec], ey2[ec], sy2[ec]))
+    } else if (zone == "R") {
+        ## do as for L, then flip
+        temp <- dv_cone_polygons(zone = "L", end = end, extended = extended)
+        temp$x <- dv_flip_x(temp$x)
+        return(temp)
+    } else if (zone %in% c("M", "C")) {
+        sx1 <- c(xmin, xmin, 1.1, 1.7, 2.3, 2.9, 2.0, 2.0)
+        sx2 <- c(2.0, 1.1, 1.7, 2.3, 2.9, xmax, xmax, 2.0)
+        ex1 <- c(xmin, xmin, 1.1, 1.7, 2.3, 2.9, 2.3, 1.7)
+        ex2 <- c(1.7, 1.1, 1.7, 2.3, 2.9, xmax, xmax, 2.3)
+        sy1 <- c(3.5, rep(5.15, 5), 3.5, 3.5)
+        sy2 <- sy1
+        ey1 <- c(5.15, rep(ymax, 5), 5.15, 5.15)
+        ey2 <- ey1
+        outx <- lapply(1:8, function(ec) c(sx1[ec], ex1[ec], ex2[ec], sx2[ec]))
+        outy <- lapply(1:8, function(ec) c(sy1[ec], ey1[ec], ey2[ec], sy2[ec]))
+    }
+    out <- do.call(rbind, lapply(seq_along(outx), function(ci) data.frame(cone_number = ci, x = outx[[ci]], y = outy[[ci]])))
+    if (end == "lower") {
+        out$x <- dv_flip_x(out$x)
+        out$y <- dv_flip_y(out$y)
+    }
+    out
+}
+
+
+
+#' Convert x, y coordinates to cones
+#'
+#' @param x numeric: the x coordinate
+#' @param y numeric: the y coordinate. If \code{y} is \code{NULL}, \code{x} will be treated as a grid index (see \code{\link{dv_index2xy}})
+#' @param start_zones numeric or character: the starting zone of each row (values 1-9, or "L", "M", "R")
+#' @param force_center_zone logical: a vector indicating the rows that should be treated as center zone attacks regardless of their start_zone value (e.g. attacks by the setter). If \code{FALSE}, the start_zone value will be used. If provided as a single scalar value, this will be applied to all attacks
+#'
+#' @return A numeric vector giving the cone number
+#'
+#' @seealso \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}
+#'
+#' @examples
+#' \dontrun{
+#'
+#' ## a bunch of random points on and around the court
+#' idx <- round(runif(100, min = 1, max = 10000))
+#'
+#' ## convert to cones, assuming a start_zone of "L"
+#' cn <- dv_xy2cone(x = idx, start_zones = "M")
+#'
+#' ## generate the cone polygons for reference
+#' cxy <- dv_cone_polygons("M")
+#' cxyl <- dv_cone_polygons("M", end = "lower")
+#'
+#' ## plot
+#' ggplot(cxy, aes(x, y, group = cone_number, fill = as.factor(cone_number))) +
+#'   ## the cone polygons
+#'   geom_polygon() + geom_polygon(data = cxyl) +
+#'   ggcourt(labels = NULL) +
+#'   ## and our points
+#'   geom_point(data = dv_index2xy(idx) %>% mutate(cone_number = cn), shape = 21,
+#'              colour = "black", size = 2)
+#'
+#' ## the points shoud be coloured the same as the cone polygons
+#' }
+#'
+#' @export
+dv_xy2cone <- function(x, y = NULL, start_zones, force_center_zone = FALSE) {
+    if (is.null(y)) {
+        xy <- dv_index2xy(x)
+        x <- xy$x
+        y <- xy$y
+    }
+    if (is.numeric(start_zones)) {
+        temp <- rep(NA_character_, length(start_zones))
+        temp[start_zones %in% c(2, 9, 1)] <- "R"
+        temp[start_zones %in% c(3, 8, 6)] <- "M"
+        temp[start_zones %in% c(4, 7, 5)] <- "L"
+        start_zones <- temp
+    }
+    assert_that(is.character(start_zones))
+    start_zones <- toupper(start_zones)
+    assert_that(all(start_zones %in% c("R", "L", "M", "C", NA_character_)))
+    out <- rep(NA_integer_, length(x))
+    ## do point-in-polygon test for each polygon
+    for (end in c("lower", "upper")) {
+        for (z in c("L", "R", "M")) {
+            idx <- which(is.na(out) & start_zones %eq% z)
+            if (length(idx) > 0) {
+                this_cpp <- dv_cone_polygons(z, end = end, extended = TRUE)
+                for (ppi in unique(this_cpp$cone_number)) {
+                    this_pp <- this_cpp[this_cpp$cone_number %eq% ppi, ]
+                    this_pp <- rbind(this_pp, this_pp[1, ])
+                    cidx <- sp::point.in.polygon(x[idx], y[idx], pol.x = this_pp$x, pol.y = this_pp$y)
+                    cidx <- which(cidx > 0)
+                    out[idx[cidx]] <- ppi
+                }
+            }
+        }
+    }
+    out
+}
+
+
+##library(dplyr)
+##cxy <- bind_rows(lapply(c("L", "M", "R"), function(z) dv_cone_polygons(z) %>% mutate(end = "upper", zone = z))) %>%
+##    bind_rows(bind_rows(lapply(c("L", "M", "R"), function(z) dv_cone_polygons(z, end = "lower") %>% mutate(end = "lower", zone = z))))
+##ggplot(cxy, aes(x, y, group = cone_number, fill = as.factor(cone_number))) + geom_polygon() + ggcourt() + facet_wrap(~end + zone)
