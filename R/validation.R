@@ -64,7 +64,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
 
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
 
-    out <- data.frame(file_line_number=integer(), video_time=integer(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
+    out <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
     chk_df <- function(chk, msg, severity = 2) {
         vt <- video_time_from_raw(x$raw[chk$file_line_number])
         data.frame(file_line_number=chk$file_line_number, video_time=vt, message=msg, file_line=x$raw[chk$file_line_number], severity=severity, stringsAsFactors=FALSE)

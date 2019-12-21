@@ -82,6 +82,8 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                 if (length(enclist)>0) {
                     try({
                         out <- read_dv(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose, edited_meta=edited_meta)
+                        ## TODO: need to check that this actually worked, because there are files with the wrong encoding specified in their metadata
+                        ## some files also appear to use different encodings for the home/visiting player lists
                         if (verbose) message(sprintf("Using text encoding: %s", enclist[1]))
                         return(out)
                     }, silent=TRUE)
@@ -112,6 +114,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         badwords <- c(badwords,tolower(c("\uc4\u15a","\u139\u2dd"))) ## utf-8 wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("Nicol\u148"))) ## windows-1252/iso-8859-1 wrongly guessed as windows-1250
         badwords <- c(badwords, tolower(c("\uc2\ue4\u77", "\uf1\u7b", "\ue5\ue4", "\ue5\ue3"))) ## japanese SHIFT-JIS wrongly guessed as macintosh
+        badwords <- c(badwords, tolower("\u102\u104\u7a"), tolower("\u102\u104\u73"), tolower("\u102\u2c7\u7a"), tolower("\u102\u2c7\u73"))
         ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
         enctest <- sapply(encoding, function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
@@ -208,7 +211,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             ## if file ends with 0x00, fread from the file will fail
             ## but already have the file contents as file_text, so use that
             if (grepl("Expected sep (';') but new line, EOF (or other non printing character) ends field 0",e$message,fixed=TRUE)) {
-                thismsg <<- data.frame(file_line_number=length(file_text),video_time=NA_integer_,message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
+                thismsg <<- data.frame(file_line_number=length(file_text),video_time=NA_real_,message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
                 suppressWarnings(tmp <- file_text[grep("[3SCOUT]",file_text,fixed=TRUE):length(file_text)])
                 if (!do_warn) {
                     suppressWarnings(this_main <<- read_main(paste0(tmp,collapse="\n")))
@@ -452,7 +455,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ##}
     
     ## enforce some columns to be integer
-    ints <- intersect(names(out$plays), c("player_number", "start_zone", "end_zone", "end_cone", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "set_number")) ## , "video_time" should probably be int as well, but need to check first that this won't break anything
+    ints <- intersect(names(out$plays), c("player_number", "start_zone", "end_zone", "end_cone", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "set_number"))
     for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
 
     ## add serving_team info

@@ -5,7 +5,7 @@ collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FA
     if (missing(line_nums)) line_nums <- NA
     if (missing(raw_lines)) raw_lines <- "[unknown]"
     if (missing(severity)) severity <- NA
-    vt <- rep(NA_integer_,length(line_nums))
+    vt <- rep(NA_real_,length(line_nums))
     if (!missing(raw_lines)) vt <- video_time_from_raw(raw_lines)
     if (fatal) {
         lnt <- as.character(line_nums)
@@ -22,17 +22,17 @@ collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FA
 raw_vt_dv <- function(z) {
     tryCatch({
         if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
-            as.integer(read.csv(text = z, sep = ";", header = FALSE, stringsAsFactors = FALSE)[1,13])
+            as.numeric(read.csv(text = z, sep = ";", header = FALSE, stringsAsFactors = FALSE)[1,13])
         } else {
-            NA_integer_
+            NA_real_
         }},
-        error = function(e) NA_integer_)
+        error = function(e) NA_real_)
 }
 
 ## video time from raw line, for peranavolley format
 raw_vt_pv <- function(z) {
     if (!requireNamespace("jsonlite", quietly = TRUE)) {
-        NA_integer_
+        NA_real_
     } else {
         pparse <- function(z, df = TRUE) {
             temp <- sub("^[A-Z]+~", "", z)
@@ -44,16 +44,16 @@ raw_vt_pv <- function(z) {
         }
         tryCatch({
             if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
-                as.integer(pparse(z)$videoDuration)
+                as.numeric(pparse(z)$videoDuration)
             } else {
-                NA_integer_
+                NA_real_
             }},
-            error = function(e) NA_integer_)
+            error = function(e) NA_real_)
     }
 }
 
 video_time_from_raw <- function(raw_lines) {
-    tryCatch(vapply(raw_lines,function(z) if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else raw_vt_dv(z), FUN.VALUE = 1L, USE.NAMES = FALSE), error = function(e) rep(NA_integer_, length(raw_lines)))
+    tryCatch(vapply(raw_lines,function(z) if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else raw_vt_dv(z), FUN.VALUE = 1.0, USE.NAMES = FALSE), error = function(e) rep(NA_real_, length(raw_lines)))
 }
 
 join_messages <- function(msgs1,msgs2) {
