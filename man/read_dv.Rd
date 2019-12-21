@@ -7,9 +7,8 @@
 read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
   do_transliterate = FALSE, encoding = "guess", extra_validation = 2,
   validation_options = list(), surname_case = "asis",
-  skill_evaluation_decode = skill_evaluation_decoder(),
-  custom_code_parser, metadata_only = FALSE, verbose = FALSE,
-  edited_meta)
+  skill_evaluation_decode = "default", custom_code_parser,
+  metadata_only = FALSE, verbose = FALSE, edited_meta)
 }
 \arguments{
 \item{filename}{string: file name to read}
@@ -28,7 +27,7 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 
 \item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 
-\item{skill_evaluation_decode}{function: function to use to convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}}
+\item{skill_evaluation_decode}{function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions) or "volleymetrics" (to follow the scouting conventions used by VolleyMetrics). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}}
 
 \item{custom_code_parser}{function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}}
 
@@ -56,6 +55,9 @@ The \code{do_transliterate} option may be helpful when trying to work with multi
 
   ## Insert a technical timeout at point 12 in sets 1 to 4:
   x <- read_dv(myfile, insert_technical_timeouts=list(c(12),NULL))
+
+  ## to read a VolleyMetrics file
+  x <- read_dv(myfile, skill_evaluation_decode = "volleymetrics")
 }
 }
 \references{

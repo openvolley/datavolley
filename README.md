@@ -44,11 +44,11 @@ summary(x)
 
 Note that if you are working with files that were scouted by
 VolleyMetrics, they use some conventions in their files that differ from
-standard DataVolley usage. There is a semi-experimental option to tell
+standard DataVolley usage. There is an option to tell
 `read_dv` to follow their conventions:
 
 ``` r
-x <- read_dv("/your/file.dvw", skill_evaluation_decode = skill_evaluation_decoder("volleymetrics"))
+x <- read_dv("/your/file.dvw", skill_evaluation_decode = "volleymetrics")
 ```
 
 Number of serves by team:
