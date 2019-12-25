@@ -9,7 +9,8 @@ ggcourt(court = "full", show_zones = TRUE, labels = c("Serving team",
   show_minor_zones = FALSE, grid_colour = "black",
   zone_colour = "grey70", minor_zone_colour = "grey80",
   fixed_aspect_ratio = TRUE, zone_font_size = 10,
-  label_font_size = 12, ...)
+  label_font_size = 12, label_colour = "black", court_colour = NULL,
+  figure_colour = NULL, ...)
 }
 \arguments{
 \item{court}{string: "full" (show full court) or "lower" or "upper" (show only the lower or upper half of the court)}
@@ -35,6 +36,12 @@ ggcourt(court = "full", show_zones = TRUE, labels = c("Serving team",
 \item{zone_font_size}{numeric: the font size of the zone labels}
 
 \item{label_font_size}{numeric: the font size of the labels}
+
+\item{label_colour}{string: colour to use for labels}
+
+\item{court_colour}{string: colour to use for the court. If \code{NULL}, the court is only plotted with lines (no colour fill) and so the \code{figure_colour} will show through. The string "indoor" can be used as a shortcut to set the court colour to orange, figure colour to blue, and lines and labels to white (similar to the typical indoor court colour scheme)}
+
+\item{figure_colour}{string: colour to set the figure background to. If \code{NULL}, the background colour of the theme will be used (white, by default)}
 
 \item{...}{: additional parameters passed to \code{ggplot2::theme_classic(...)}}
 }

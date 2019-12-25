@@ -48,6 +48,9 @@
 #' @param fixed_aspect_ratio logical: if TRUE, coerce the plotted court to be square (for a half-court plot) or a 2:1 rectangle (full court plot). Prior to package version 0.5.3 this was not TRUE by default
 #' @param zone_font_size numeric: the font size of the zone labels
 #' @param label_font_size numeric: the font size of the labels
+#' @param label_colour string: colour to use for labels
+#' @param court_colour string: colour to use for the court. If \code{NULL}, the court is only plotted with lines (no colour fill) and so the \code{figure_colour} will show through. The string "indoor" can be used as a shortcut to set the court colour to orange, figure colour to blue, and lines and labels to white (similar to the typical indoor court colour scheme)
+#' @param figure_colour string: colour to set the figure background to. If \code{NULL}, the background colour of the theme will be used (white, by default)
 #' @param ... : additional parameters passed to \code{ggplot2::theme_classic(...)}
 #'
 #' @return ggplot layer
@@ -109,15 +112,29 @@
 #' p + scale_fill_gradient(name="Attack rate") + guides(size="none")
 #' }
 #' @export
-ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, zone_font_size = 10, label_font_size = 12, ...) {
+ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
-    }    
+    }
     court <- match.arg(tolower(court),c("full","lower","upper"))
     assert_that(is.flag(show_zones),!is.na(show_zones))
     assert_that(is.flag(show_minor_zones),!is.na(show_minor_zones))
     assert_that(is.flag(as_for_serve),!is.na(as_for_serve))
     assert_that(is.flag(fixed_aspect_ratio),!is.na(fixed_aspect_ratio))
+    if (is.null(court_colour)) court_colour <- "none"
+    if (is.null(figure_colour)) figure_colour <- "none"
+    assert_that(is.string(court_colour))
+    assert_that(is.string(figure_colour))
+    if (tolower(court_colour) %eq% "indoor") {
+        court_colour <- "#D98875"
+        figure_colour <- "#26A9BD"
+        grid_colour <- label_colour <- "white"
+    }
+    if (tolower(court_colour) %eq% "none") {
+        cfill <- NULL
+    } else {
+        cfill <- ggplot2::annotate(geom = "rect", xmin = 0.5, xmax = 3.5, ymin = switch(court, upper = 3.5, 0.5), ymax = switch(court, lower = 3.5, 6.5), fill = court_colour)
+    }
     ## horizontal grid lines
     hl <- data.frame(x=c(0.5,3.5),y=c(0.5,0.5,2.5,2.5,3.5,3.5,4.5,4.5,6.5,6.5),id=c(1,1,2,2,3,3,4,4,5,5))
     hl <- switch(court,
@@ -161,8 +178,9 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Rece
     }
     net <- ggplot2::geom_path(data=data.frame(x=c(0.25,3.75),y=c(3.5,3.5)),ggplot2::aes_string(x="x",y="y"),colour=grid_colour,size=2,inherit.aes=FALSE) ## net
     thm <- ggplot2::theme_classic(...)
-    thm2 <- ggplot2::theme(axis.line=ggplot2::element_blank(),axis.text.x=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank(),axis.ticks=ggplot2::element_blank(), axis.title.x=ggplot2::element_blank(), axis.title.y=ggplot2::element_blank())
-    out <- list(net, thm, thm2)
+    thm2 <- ggplot2::theme(axis.line = ggplot2::element_blank(),axis.text.x = ggplot2::element_blank(), axis.text.y = ggplot2::element_blank(),axis.ticks = ggplot2::element_blank(), axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank())
+    thm3 <- if (!tolower(figure_colour) %eq% "none") ggplot2::theme(panel.background = ggplot2::element_rect(fill = figure_colour)) else NULL
+    out <- list(cfill, net, thm, thm2, thm3)
     if (fixed_aspect_ratio) out <- c(out, list(ggplot2::coord_fixed()))
     if (show_minor_zones) out <- c(out, list(hlm, vlm))
     if (show_zone_lines) out <- c(out, list(hlz, vlz))
@@ -170,7 +188,7 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Rece
     if (!is.null(labels)) {
         if (court %in% c("full","lower")) {
             ly <- if (as_for_serve) 0.1 else 0.4
-            out <- c(out,ggplot2::annotate("text",x=2,y=ly,label=labels[1], size = label_font_size*0.35278))
+            out <- c(out,ggplot2::annotate("text", x = 2, y = ly, label = labels[1], size = label_font_size*0.35278, colour = label_colour))
         }
         if (court %in% c("full","upper")) {
             lb <- if (court=="full") {
@@ -179,7 +197,7 @@ ggcourt <- function(court="full", show_zones=TRUE, labels=c("Serving team","Rece
                      if (length(labels)==2) labels[2] else labels[1]
                  }
             ly <- if (as_for_serve) 6.9 else 6.6
-            out <- c(out, ggplot2::annotate("text",x=2,y=ly,label=lb, size = label_font_size*0.35278))
+            out <- c(out, ggplot2::annotate("text", x = 2, y = ly, label = lb, size = label_font_size*0.35278, colour = label_colour))
         }
     }
     if (show_zones) {
