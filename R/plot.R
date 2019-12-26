@@ -51,6 +51,8 @@
 #' @param label_colour string: colour to use for labels
 #' @param court_colour string: colour to use for the court. If \code{NULL}, the court is only plotted with lines (no colour fill) and so the \code{figure_colour} will show through. The string "indoor" can be used as a shortcut to set the court colour to orange, figure colour to blue, and lines and labels to white (similar to the typical indoor court colour scheme)
 #' @param figure_colour string: colour to set the figure background to. If \code{NULL}, the background colour of the theme will be used (white, by default)
+#' @param background_only logical: if \code{TRUE}, only plot the background elements (including general plot attributes such as the theme)
+#' @param foreground_only logical: if \code{TRUE}, only plot the foreground elements (grid lines, labels, etc)
 #' @param ... : additional parameters passed to \code{ggplot2::theme_classic(...)}
 #'
 #' @return ggplot layer
@@ -66,26 +68,39 @@
 #' 
 #' ## Example 1: attack frequency by zone, per team
 #' 
-#' attack_rate <- plays(x) %>% dplyr::filter(skill=="Attack") %>%
+#' attack_rate <- plays(x) %>% dplyr::filter(skill == "Attack") %>%
 #'   group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
 #'   mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
 #' 
 #' ## add columns "x" and "y" for the x,y coordinates associated with the zones
-#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower"))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end = "lower"))
 #'
 #' ## for team 2, these need to be on the top half of the diagram
-#' tm2 <- attack_rate$team==teams(x)[2]
-#' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
+#' tm2 <- attack_rate$team == teams(x)[2]
+#' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end = "upper")[tm2, ]
 #'
 #' ## plot this
-#' ggplot(attack_rate, aes(x, y, fill=rate)) + geom_tile() + ggcourt(labels=teams(x)) +
-#'   scale_fill_gradient2(name="Attack rate")
-#' 
+#' ggplot(attack_rate, aes(x, y, fill = rate)) + geom_tile() + ggcourt(labels = teams(x)) +
+#'   scale_fill_gradient2(name = "Attack rate")
 #'
-#' ## Example 2: map of starting and ending zones of attacks using arrows
+#'
+#' ## Example 2: controlling layering
+#' ## use the background_only and foreground_only parameters to control the
+#' ##   order of layers in a plot
+#'
+#' ggplot(attack_rate, aes(x, y, fill=rate)) +
+#'   ## add the background court colours
+#'   ggcourt(court_colour = "indoor", background_only = TRUE) +
+#'   ## now the heatmap
+#'   geom_tile() +
+#'   ## and finally the grid lines and labels
+#'   ggcourt(labels = teams(x), foreground_only = TRUE, court_colour = "indoor")
+#'
+#'
+#' ## Example 3: map of starting and ending zones of attacks using arrows
 #'
 #' ## first tabulate attacks by starting and ending zone
-#' attack_rate <- plays(x) %>% dplyr::filter(team==teams(x)[1] & skill=="Attack") %>%
+#' attack_rate <- plays(x) %>% dplyr::filter(team == teams(x)[1] & skill == "Attack") %>%
 #'   group_by(start_zone, end_zone) %>% tally() %>% ungroup
 #'
 #' ## convert counts to rates
@@ -95,24 +110,29 @@
 #' attack_rate <- attack_rate %>% dplyr::filter(rate>0 & !is.na(start_zone) & !is.na(end_zone))
 #'
 #' ## add starting x,y coordinates
-#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end="lower", xynames=c("sx","sy")))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end = "lower",
+#'                                         xynames = c("sx","sy")))
 #'
 #' ## and ending x,y coordinates
-#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end="upper", xynames=c("ex","ey")))
+#' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$end_zone, end = "upper",
+#'                                         xynames = c("ex","ey")))
 #'
 #' ## plot in reverse order so largest arrows are on the bottom
 #' attack_rate <- attack_rate %>% dplyr::arrange(desc(rate))
 #'
-#' p <- ggplot(attack_rate,aes(x,y,col=rate)) + ggcourt(labels=c(teams(x)[1],""))
+#' p <- ggplot(attack_rate, aes(x, y, col = rate)) + ggcourt(labels = c(teams(x)[1], ""))
 #' for (n in 1:nrow(attack_rate))
-#'     p <- p + geom_path(data=data.frame(x=c(attack_rate$sx[n], attack_rate$ex[n]),
-#'                                        y=c(attack_rate$sy[n],attack_rate$ey[n]),
-#'                                        rate=attack_rate$rate[n]),
-#'         aes(size=rate), lineend="round", arrow=arrow(ends="last", type="closed"))
-#' p + scale_fill_gradient(name="Attack rate") + guides(size="none")
+#'     p <- p + geom_path(data = data.frame(x = c(attack_rate$sx[n], attack_rate$ex[n]),
+#'                                          y = c(attack_rate$sy[n], attack_rate$ey[n]),
+#'                                          rate = attack_rate$rate[n]),
+#'                        aes(size = rate), lineend = "round",
+#'                        arrow = arrow(length = unit(2, "mm"), type = "closed",
+#'                                      angle = 20, ends = "last"))
+#' p + scale_colour_gradient(name = "Attack rate") + guides(size = "none")
 #' }
+#' 
 #' @export
-ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, ...) {
+ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, background_only = FALSE, foreground_only = FALSE, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }
@@ -125,6 +145,8 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
     if (is.null(figure_colour)) figure_colour <- "none"
     assert_that(is.string(court_colour))
     assert_that(is.string(figure_colour))
+    assert_that(is.flag(background_only),!is.na(background_only))
+    assert_that(is.flag(foreground_only),!is.na(foreground_only))
     if (tolower(court_colour) %eq% "indoor") {
         court_colour <- "#D98875"
         figure_colour <- "#26A9BD"
@@ -180,12 +202,13 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
     thm <- ggplot2::theme_classic(...)
     thm2 <- ggplot2::theme(axis.line = ggplot2::element_blank(),axis.text.x = ggplot2::element_blank(), axis.text.y = ggplot2::element_blank(),axis.ticks = ggplot2::element_blank(), axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank())
     thm3 <- if (!tolower(figure_colour) %eq% "none") ggplot2::theme(panel.background = ggplot2::element_rect(fill = figure_colour)) else NULL
-    out <- list(cfill, net, thm, thm2, thm3)
-    if (fixed_aspect_ratio) out <- c(out, list(ggplot2::coord_fixed()))
-    if (show_minor_zones) out <- c(out, list(hlm, vlm))
-    if (show_zone_lines) out <- c(out, list(hlz, vlz))
-    out <- c(out, list(hl,vl))
-    if (!is.null(labels)) {
+    out <- if (!foreground_only) list(cfill, thm, thm2, thm3) else list()
+    if (!background_only) out <- c(out, list(net))
+    if (fixed_aspect_ratio && !foreground_only) out <- c(out, list(ggplot2::coord_fixed()))
+    if (show_minor_zones && !background_only) out <- c(out, list(hlm, vlm))
+    if (show_zone_lines && !background_only) out <- c(out, list(hlz, vlz))
+    if (!background_only) out <- c(out, list(hl,vl))
+    if (!is.null(labels) && !background_only) {
         if (court %in% c("full","lower")) {
             ly <- if (as_for_serve) 0.1 else 0.4
             out <- c(out,ggplot2::annotate("text", x = 2, y = ly, label = labels[1], size = label_font_size*0.35278, colour = label_colour))
@@ -200,7 +223,7 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
             out <- c(out, ggplot2::annotate("text", x = 2, y = ly, label = lb, size = label_font_size*0.35278, colour = label_colour))
         }
     }
-    if (show_zones) {
+    if (show_zones && !background_only) {
         xoff <- if (as_for_serve) 0.5 else 0.4
         szx <- if (as_for_serve) c(3,1,2,1.5,2.5)+0.5 else c(3,3,2,1,1,2,1,2,3)
         szy <- if (as_for_serve) c(1,1,1,1,1)-0.25 else c(1,3,3,3,1,1,2,2,2)
