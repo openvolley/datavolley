@@ -97,6 +97,27 @@ ggplot(attack_rate, aes(x, y, fill = rate)) + geom_tile() + ggcourt(labels = tea
 
 ![](man/figures/README-unnamed-chunk-6-1.png)<!-- -->
 
+If you prefer a more colourful court, check the `court_colour =
+"indoor"` option. Note that we make two calls to `ggcourt` in this
+example, one with `background_only = TRUE` to plot just the court
+background colours, and again with `foreground_only = TRUE` to add the
+grid lines and labels. Making two calls allows us to control the layer
+order, so that the court colours are behind the heatmap, but the grid
+lines are on top of it:
+
+``` r
+ggplot(attack_rate, aes(x, y, fill = rate)) +
+    ## plot just the background court colour
+    ggcourt(court_colour = "indoor", background_only = TRUE) +
+    ## add the heatmap
+    geom_tile() +
+    ## now add the grid lines and labels
+    ggcourt(labels = teams(x), court_colour = "indoor", foreground_only = TRUE) +
+    scale_fill_gradient2(name = "Attack rate")
+```
+
+![](man/figures/README-indoor1-1.png)<!-- -->
+
 Heatmap of where attacks ended, using only attacks by Nova KBM Branik
 from position 4:
 
@@ -165,9 +186,7 @@ p + scale_colour_gradient(name = "Attack rate") + guides(size = "none")
 
 ![](man/figures/README-unnamed-chunk-9-1.png)<!-- -->
 
-(Note the `court_colour = "indoor"` option on this plot.)
-
-The second source of position data is court coordinates. These are not
+Another source of position data is court coordinates. These are not
 included in all data files, because generally they must be manually
 entered by the scout and this can be a time consuming process. For the
 purposes of demonstration, here we generate fake coordinate data:
