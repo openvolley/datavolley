@@ -27,7 +27,7 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 
 \item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 
-\item{skill_evaluation_decode}{function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions) or "volleymetrics" (to follow the scouting conventions used by VolleyMetrics). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}}
+\item{skill_evaluation_decode}{function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}}
 
 \item{custom_code_parser}{function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}}
 
