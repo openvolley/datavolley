@@ -48,5 +48,5 @@ ggplot(cxy, aes(x, y, group = id, fill = as.factor(id))) + geom_polygon() +
 }
 }
 \seealso{
-\code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_xy}}
+\code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_xy}}, \code{\link{dv_xy2zone}}, \code{\link{dv_xy2subzone}}
 }
