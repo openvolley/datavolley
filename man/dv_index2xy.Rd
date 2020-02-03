@@ -31,5 +31,5 @@ dv_xy2index(c(3, 2), c(1, 3))
 
 }
 \seealso{
-\code{\link{ggcourt}}, \code{\link{dv_xy}}, \code{\link{dv_flip_xy}}
+\code{\link{ggcourt}}, \code{\link{dv_xy}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2zone}}, \code{\link{dv_xy2subzone}}
 }

@@ -48,5 +48,5 @@ ggplot(cxy, aes(x, y, group = cone_number, fill = as.factor(cone_number))) +
 
 }
 \seealso{
-\code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}
+\code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}, \code{\link{dv_xy2zone}}, \code{\link{dv_xy2subzone}}
 }

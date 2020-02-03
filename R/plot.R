@@ -255,7 +255,7 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
 #'
 #' @return for dv_index2xy, a data.frame with columns "x" and "y"; for dv_xy2index a vector of integer values
 #'
-#' @seealso \code{\link{ggcourt}}, \code{\link{dv_xy}}, \code{\link{dv_flip_xy}}
+#' @seealso \code{\link{ggcourt}}, \code{\link{dv_xy}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2zone}}, \code{\link{dv_xy2subzone}}
 #'
 #' @examples
 #'
@@ -322,7 +322,7 @@ dv_xy2index <- function(x, y) {
 #'
 #' @return a tibble (NOT a data.frame) with columns "x" and "y" (or other names if specified in \code{xynames}). If \code{as} is "polygons", the columns will be lists, because each polygon will have four x- and y-coordinates
 #'
-#' @seealso \code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_xy}}
+#' @seealso \code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_xy}}, \code{\link{dv_xy2zone}}, \code{\link{dv_xy2subzone}}
 #'
 #' @examples
 #' \dontrun{
@@ -451,11 +451,11 @@ dv_cone2xy <- function(start_zones, end_cones, end = "upper", xynames = c("ex", 
 }
 
 #' Court zones to x, y coordinates
-#' 
+#'
 #' Generate x and y coordinates for plotting, from DataVolley numbered zones 
 #'
 #' For a description of the court dimensions and coordinates used for plotting, see \code{\link{ggcourt}}
-#' 
+#'
 #' @param zones numeric: zones numbers 1-9 to convert to x and y coordinates
 #' @param end string: use the "lower" or "upper" part of the figure
 #' @param xynames character: names to use for the x and y columns of the returned data.frame
@@ -464,7 +464,7 @@ dv_cone2xy <- function(start_zones, end_cones, end = "upper", xynames = c("ex", 
 #'
 #' @return data.frame with columns "x" and "y" (or other names if specified in \code{xynames})
 #'
-#' @seealso \code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}
+#' @seealso \code{\link{ggcourt}}, \code{\link{dv_flip_xy}}, \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}, \code{\link{dv_xy2zone}}, \code{\link{dv_xy2subzone}}
 #'
 #' @examples
 #' \dontrun{
@@ -728,7 +728,7 @@ dv_cone_polygons <- function(zone, end = "upper", extended = FALSE) {
 #'
 #' @return A numeric vector giving the cone number
 #'
-#' @seealso \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}
+#' @seealso \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}, \code{\link{dv_xy2zone}}, \code{\link{dv_xy2subzone}}
 #'
 #' @examples
 #' \dontrun{
@@ -790,6 +790,114 @@ dv_xy2cone <- function(x, y = NULL, start_zones, force_center_zone = FALSE) {
         }
     }
     out
+}
+
+
+#' Convert x, y coordinates to zones
+#'
+#' @param x numeric: the x coordinate
+#' @param y numeric: the y coordinate. If \code{y} is \code{NULL}, \code{x} will be treated as a grid index (see \code{\link{dv_index2xy}})
+#' @param as_for_serve logical: if \code{TRUE}, treat the zones as if they refer to serving locations (i.e. zone 7 in between zones 5 and 6, and zone 9 in between zones 6 and 1)
+#'
+#' @return A numeric vector giving the zone number
+#'
+#' @seealso \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}, \code{\link{dv_xy2subzone}}
+#'
+#' @examples
+#' \dontrun{
+#'
+#' ## a bunch of random points on and around the court
+#' idx <- round(runif(100, min = 1, max = 10000))
+#'
+#' ## convert to zones
+#' zn <- dv_xy2zone(x = idx)
+#'
+#' ## or, equivalently, convert the index to xy values first
+#' idx_xy <- dv_index2xy(idx)
+#' zn <- dv_xy2zone(x = idx_xy$x, idx_xy$y)
+#'
+#' ## plot
+#' ggplot(idx_xy, aes(x, y, fill = as.factor(zn))) + geom_point(shape = 21) +
+#'   ggcourt(labels = NULL)
+#'
+#' ## the points shoud be coloured by zone
+#' }
+#'
+#' @export
+dv_xy2zone <- function(x, y = NULL, as_for_serve = FALSE) {
+    assert_that(is.flag(as_for_serve), !is.na(as_for_serve))
+    if (is.null(y)) {
+        xy <- dv_index2xy(x)
+        y <- xy$y
+        x <- xy$x
+    }
+    if (!as_for_serve) {
+        zm <- matrix(c(5L, 6L, 1L, 7L, 8L, 9L, 4L, 3L, 2L), nrow = 3)
+        zm <- cbind(zm, zm[3:1, 3:1])
+        x <- pmax(1, pmin(3, round(x)))
+        y <- pmax(1, pmin(6, round(y)))
+        zm[(y - 1)*3 + x]
+    } else {
+        x <- pmax(2, pmin(6, round(x*2))) - 1 # round to 0.5m bins
+        ## positions 7 and 9 lie in between 5-6 and 6-1
+        zm <- c(5L, 7L, 6L, 9L, 1L)
+        out <- zm[x]
+        out[y > 3.5] <- rev(zm)[x[y > 3.5]]
+        out
+    }
+}
+
+
+#' Convert x, y coordinates to zones and subzones
+#'
+#' @param x numeric: the x coordinate
+#' @param y numeric: the y coordinate. If \code{y} is \code{NULL}, \code{x} will be treated as a grid index (see \code{\link{dv_index2xy}})
+#'
+#' @return A tibble with columns \code{zone} and \code{subzone}
+#'
+#' @seealso \code{\link{dv_xy2index}}, \code{\link{dv_index2xy}}, \code{\link{dv_cone2xy}}, \code{\link{dv_xy2zone}}
+#'
+#' @examples
+#' \dontrun{
+#'
+#' ## a bunch of random points on and around the court
+#' idx <- round(runif(100, min = 1, max = 10000))
+#'
+#' ## convert to zones
+#' zn <- dv_xy2subzone(x = idx)
+#'
+#' ## or, equivalently, convert the index to xy values first
+#' zn <- cbind(zn, dv_index2xy(idx))
+#'
+#' ## plot
+#' ggplot(zn, aes(x, y, colour = as.factor(zone), shape = subzone)) + geom_point(size = 3) +
+#'   ggcourt(labels = NULL)
+#'
+#' ## the points shoud be coloured by zone
+#' }
+#'
+#' @export
+dv_xy2subzone <- function(x, y = NULL) {
+    if (is.null(y)) {
+        xy <- dv_index2xy(x)
+        y <- xy$y
+        x <- xy$x
+    }
+    sz <- xy2subzone(x, y)
+    zm <- matrix(c(5L, 6L, 1L, 7L, 8L, 9L, 4L, 3L, 2L), nrow = 3)
+    zm <- cbind(zm, zm[3:1, 3:1])
+    x <- pmax(1, pmin(3, round(x)))
+    y <- pmax(1, pmin(6, round(y)))
+    tibble(zone = zm[(y - 1)*3 + x], subzone = sz)
+}
+
+xy2subzone <- function(x, y) {
+    szm <- matrix(c("D", "A", "C", "B"), nrow = 2)
+    szm <- rbind(szm, szm, szm)
+    szm <- cbind(szm, szm, szm, szm[6:1, 2:1], szm[6:1, 2:1], szm[6:1, 2:1])
+    x <- pmax(1, pmin(6, ceiling((x-0.5)/0.5)))
+    y <- pmax(1, pmin(12, ceiling((y-0.5)/0.5)))
+    szm[(y - 1)*6 + x]
 }
 
 
