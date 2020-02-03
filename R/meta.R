@@ -221,7 +221,7 @@ read_video <- function(txt) {
     if (nzchar(str_trim(txt))) {
         p <- tryCatch(
             suppressWarnings({
-                p <- read_semi_text(text = txt, sep = "=", fallback = "read.table")
+                p <- read_semi_text(txt, sep = "=", fallback = "read.table")
                 colnames(p) <- c("camera", "file")
                 p
             }), error = function(e) {
