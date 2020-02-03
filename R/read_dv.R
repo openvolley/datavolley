@@ -3,7 +3,7 @@
 #' Read a datavolley file
 #'
 #' The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)
-#' 
+#'
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
 #' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4 (for indoor files) or when the team scores sum to 21 in sets 1--2 (beach). Otherwise a two-element list can be supplied, giving the scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
@@ -31,7 +31,7 @@
 #'
 #'   ## or to read your own file:
 #'   x <- read_dv("c:/some/path/myfile.dvw", insert_technical_timeouts=FALSE)
-#' 
+#'
 #'   ## Insert a technical timeout at point 12 in sets 1 to 4:
 #'   x <- read_dv(myfile, insert_technical_timeouts=list(c(12),NULL))
 #'
@@ -175,9 +175,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     }
     ## look for the "Secondo tocco di  la" with odd encoding on the trailing a
     ## this seems to be part of the default dv-generated file structure, so it's a common problem
+    file_text <- enc::read_lines_enc(filename, file_encoding = encoding)
     file_text <- gsub("Secondo tocco di[[:space:]]+l\xe0;","Secondo tocco di la;",file_text)
 
-    file_text <- iconv(file_text,from=encoding,to="utf-8") ## convert to utf-8
+##    file_text <- iconv(file_text,from=encoding,to="utf-8") ## convert to utf-8
     ## so we got to here, either by reading the file, or using the supplied file_text
     out$raw <- file_text
     if (do_transliterate) {
@@ -279,7 +280,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out$plays$end_coordinate <- temp
     out$plays$end_coordinate_x <- cxy[out$plays$end_coordinate, 1]
     out$plays$end_coordinate_y <- cxy[out$plays$end_coordinate, 2]
-    ## add player_id values for home_p1 etc    
+    ## add player_id values for home_p1 etc
     for (thisp in team_player_num)
         out$plays[,paste0("home_player_id",thisp)] <- get_player_id(rep("*",nrow(out$plays)),out$plays[,paste0("home_p",thisp)],out$meta)
     for (thisp in team_player_num)
@@ -345,8 +346,8 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ##    ## maybe match date failed to parse? try
     ##    suppressWarnings(out$plays$time <- lubridate::hms(temp))
     ## except this gives objects of class period, not POSIXct - hold off on this for now
-    ##}        
-    
+    ##}
+
     ## add point_id - an identifier of each point. One point may consist of multiple attacks or other actions. Timeouts get assigned to their own "point", but other non-play rows may get assigned as part of a point.
     pid <- 0
     temp_point_id <- rep(NA,nrow(out$plays))
@@ -361,7 +362,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         temp_point_id[k] <- pid
     }
     out$plays$point_id <- temp_point_id
-    
+
     ## fill in setter position
     temp_home_setter_position <- out$plays$home_setter_position
     temp_visiting_setter_position <- out$plays$visiting_setter_position
@@ -391,7 +392,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         temp_ttid[k] <- tid
     }
     out$plays$team_touch_id <- temp_ttid
-    
+
     ## team name and ID
     idx <- out$meta$teams$home_away_team %eq% "*"
     home_team <- out$meta$teams$team[idx]
@@ -413,7 +414,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out$plays$visiting_team_id <- visiting_team_id
     out$plays$team <- temp
     out$plays$team_id <- temp_id
-    
+
     ## keep track of who won each point
     temp <- ddply(out$plays,c("point_id"),function(z)if (any(z$point)) z$team[z$point] else NA_character_)
     names(temp) <- c("point_id","point_won_by")
@@ -425,7 +426,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
     ##}
 #### not sure how to deal with these!
-    
+
     ## winning attacks
     ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
     temp1 <- out$plays[-nrow(out$plays),]
@@ -466,7 +467,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ##        out$plays$visiting_team_score[k] <- out$plays$visiting_team_score[k-1]
     ##    }
     ##}
-    
+
     ## enforce some columns to be integer
     ints <- intersect(names(out$plays), c("player_number", "start_zone", "end_zone", "end_cone", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "set_number"))
     for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
@@ -475,13 +476,13 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     who_served <- ddply(out$plays,c("match_id","point_id"),function(z)data.frame(serving_team=na.omit(z$team[z$skill %eq% "Serve"])[1],stringsAsFactors=FALSE))
     out$plays <- plyr::join(out$plays,who_served,by=c("match_id","point_id"),match="first")
     out$plays$serving_team <- as.character(out$plays$serving_team) ## to be sure is not factor
-    
+
     class(out) <- c("datavolley",class(out))
     class(out$plays) <- c("datavolleyplays",class(out$plays))
 
     ## add play phase
     out$plays$phase <- play_phase(out$plays)
-    
+
     ## now call custom code parser, if it was provided
     if (!missing(custom_code_parser) && !is.null(custom_code_parser)) {
         cx <- custom_code_parser(out)
@@ -590,7 +591,7 @@ dvlist_summary=function(z) {
     temp <- ddply(ldply(z,function(q){ temp <- q$meta$teams[,c("team","sets_won")]; temp$sets_played <- sum(q$meta$teams$sets_won); temp}),c("team"),function(z)data.frame(sets_played=sum(z$sets_played),sets_won=sum(z$sets_won)))##summarise,sets_played=sum(sets_played),sets_won=sum(sets_won))
     temp$set_win_rate <- temp$sets_won/temp$sets_played
     teams <- suppressMessages(join(teams,temp))
-    
+
     temp <- ldply(z,function(q){ s <- summary(q); s$sc <- colSums(s$set_scores); data.frame(team=s$teams$team,points_for=s$sc,points_against=s$sc[2:1])})
     teams <- suppressMessages(join(teams,ddply(temp,c("team"),function(q)data.frame(points_for=as.integer(sum(q$points_for)),points_against=as.integer(sum(q$points_against))))))
     teams$points_ratio <- teams$points_for/teams$points_against
