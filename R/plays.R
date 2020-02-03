@@ -37,10 +37,10 @@ serve_map <- function(type, skill, file_type = "indoor") {
                paste0("Unknown ",skill," type"))
     } else {
         switch(type,
-               H=paste0("Float ",skill),
+               H=paste0("Float ",skill), ## volleymetrics use this for float far from the service line
                M=paste0("Jump-float ",skill),
                Q=paste0("Jump ",skill),
-               T=paste0("Topspin ",skill),
+               T=paste0("Topspin ",skill), ## volleymetrics use this for float from the service line
                paste0("Unknown ",skill," type"))
     }
 }
