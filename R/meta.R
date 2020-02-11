@@ -24,7 +24,7 @@ roles_str2int <- function(x) {
 
 read_semi_text <- function(txt, sep = ";", fallback = "fread") {
     suppressWarnings(tryCatch(
-        readr::read_delim(txt, delim = sep, col_names = FALSE),
+        readr::read_delim(txt, delim = sep, col_names = FALSE, locale = readr::locale(encoding = "UTF-8")),
         error = function(e) {
             if (fallback == "fread") {
                 data.table::fread(txt, data.table = FALSE, sep = sep, header = FALSE, na.strings = "NA", logical01 = FALSE)

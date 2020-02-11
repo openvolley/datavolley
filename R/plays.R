@@ -178,29 +178,25 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 
 read_with_readr <- function(filename) {
     temp <- readLines(filename)
-    skip <- which(temp=="[3SCOUT]")
-    if (length(skip)==1) {
+    skip <- which(temp == "[3SCOUT]")
+    if (length(skip) == 1) {
         out <- suppressWarnings(suppressMessages(readr::read_csv2(filename, skip = skip, progress = FALSE, col_names = FALSE, locale = readr::locale(encoding = "UTF-8"))))
-        attr(out,"problems") <- NULL
-        attr(out,"spec") <- NULL
-        out <- as.data.frame(out,stringsAsFactors=FALSE) ## so that we don't get caught by e.g. tibble column indexing differences to data.frames
+        attr(out, "problems") <- NULL
+        attr(out, "spec") <- NULL
+        out <- as.data.frame(out, stringsAsFactors = FALSE) ## so that we don't get caught by e.g. tibble column indexing differences to data.frames
         out
     } else {
-        stop("could not read main [3SCOUT] section of file")
+        NULL
     }
 }
 
 read_main <- function(filename) {
-    x <- tryCatch(data.table::fread(filename, skip="[3SCOUT]", data.table=FALSE, header=FALSE, na.strings="NA", logical01=FALSE),
-                  warning=function(w) {
-                      if (grepl("stopped early", w$message, ignore.case=TRUE) && grepl("consider fill=TRUE", w$message, ignore.case=TRUE)) {
-                          ## truncated lines in file
-                          ## use readr::read_csv2 or perhaps fread with fill=TRUE
-                          read_with_readr(filename)
-                      }
-                  },
-                  error=function(e) read_with_readr(filename) ## fall back to readr
-                  )
+    ##x <- tryCatch(data.table::fread(filename, skip="[3SCOUT]", data.table=FALSE, header=FALSE, na.strings="NA", logical01=FALSE),
+    ##              warning=function(w) read_with_readr(filename),
+    ##              error=function(e) read_with_readr(filename) ## fall back to readr
+    ##              )
+    x <- tryCatch(read_with_readr(filename), error = function(e) stop("could not read the [3SCOUT] section of the file, the error message was: ", conditionMessage(e)))
+    if (is.null(x)) stop("could not read the [3SCOUT] section of the file")
     if (nrow(x) == 1 && ncol(x) == 1) {
         ## this happens if file has no scout data!
         stop("file has no scouted data (the [3SCOUT] section of the file is empty)")
