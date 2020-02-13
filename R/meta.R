@@ -35,7 +35,7 @@ read_semi_text <- function(txt, sep = ";", fallback = "fread") {
 }
 
 ## match details
-read_match <- function(txt) {
+read_match <- function(txt, date_format = NULL) {
     idx <- grep("[3MATCH]",txt,fixed=TRUE)
     ##tryCatch(p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE),
     ##         error=function(e) { stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") })
@@ -52,7 +52,7 @@ read_match <- function(txt) {
         date_was_missing <- TRUE
     } else {
         ## date can be in various formats
-        temp <- manydates(p$date)
+        temp <- manydates(p$date, preferred = date_format)
         if (length(temp)<1) {
             ## no recognizable date
             temp <- as.Date(NA)
@@ -251,10 +251,10 @@ read_comments <- function(txt) {
     p
 }
 
-read_meta <- function(txt,surname_case) {
+read_meta <- function(txt, surname_case, date_format = NULL) {
     out <- list()
     msgs <- list()
-    temp <- read_match(txt)
+    temp <- read_match(txt, date_format = date_format)
     out$match <- temp$match
     msgs <- join_messages(msgs, temp$messages)
     out$more <- read_more(txt)

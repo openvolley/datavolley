@@ -195,9 +195,33 @@ most_common_value <- function(x) {
     ux[which.max(tabulate(match(x, ux)))]
 }
 
-manydates <- function(z) suppressWarnings(unique(as.Date(na.omit(c(lubridate::ymd(z), lubridate::dmy(z), lubridate::mdy(z), lubridate::ymd_hms(z), lubridate::dmy_hms(z), lubridate::mdy_hms(z))))))
+manydates <- function(z, preferred = NULL) {
+    suppressWarnings(
+        tries <- list(ymd = unique(as.Date(na.omit(c(lubridate::ymd(z), lubridate::ymd_hms(z))))),
+                      dmy = unique(as.Date(na.omit(c(lubridate::dmy(z), lubridate::dmy_hms(z))))),
+                      mdy = unique(as.Date(na.omit(c(lubridate::mdy(z), lubridate::mdy_hms(z))))))
+    )
+    if (!is.null(preferred)) {
+        preferred <- tolower(preferred)
+        chk <- tries[[tolower(preferred)]]
+        if (!is.null(chk) && length(chk) > 0) return(chk)
+    }
+    unique(c(tries$ymd, tries$dmy, tries$mdy))
+}
 
-manydatetimes <- function(z) suppressWarnings(unique(na.omit(c(lubridate::ymd_hms(z), lubridate::dmy_hms(z), lubridate::mdy_hms(z)))))
+manydatetimes <- function(z, preferred = NULL) {
+    suppressWarnings(
+        tries <- list(ymd = unique(na.omit(c(lubridate::ymd_hms(z)))),
+                      dmy = unique(na.omit(c(lubridate::dmy_hms(z)))),
+                      mdy = unique(na.omit(c(lubridate::mdy_hms(z)))))
+    )
+    if (!is.null(preferred)) {
+        preferred <- tolower(preferred)
+        chk <- tries[[tolower(preferred)]]
+        if (!is.null(chk) && length(chk) > 0) return(chk)
+    }
+    unique(c(tries$ymd, tries$dmy, tries$mdy))
+}
 
 #' Generate a short, human-readable text summary of one or more actions
 #'

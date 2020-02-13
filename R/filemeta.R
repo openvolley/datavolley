@@ -13,7 +13,7 @@
 ##LASTCHANGE-VER: Professional
 ##LASTCHANGE-NAM: KLUB SPORTOWY JASTRZEBSKI WEGIEL S.A.
 
-read_filemeta <- function(txt) {
+read_filemeta <- function(txt, date_format = NULL) {
     msgs <- list()
     txt <- text_chunk(txt,"[3DATAVOLLEYSCOUT]")
     ok <- FALSE
@@ -33,11 +33,11 @@ read_filemeta <- function(txt) {
     }
 
     if ("generator_day" %in% names(p)) {
-        dt <- manydatetimes(p$generator_day)
+        dt <- manydatetimes(p$generator_day, preferred = date_format)
         if (length(dt)==1) p$generator_day <- dt
     }
     if ("lastchange_day" %in% names(p)) {
-        dt <- manydatetimes(p$lastchange_day)
+        dt <- manydatetimes(p$lastchange_day, preferred = date_format)
         if (length(dt)==1) p$lastchange_day <- dt
     }
     list(file_meta=p, messages=do.call(rbind, lapply(msgs, as.data.frame)))

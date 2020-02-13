@@ -11,7 +11,8 @@
 #' @param extra_validation numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking
 #' @param validation_options list: additional options to pass to the validation step. See \code{help('validate_dv')} for details
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
-#' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)
+#' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed
+#' @param date_format string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If \code{date_format} is something other than "guess", that date format will be preferred where dates are ambiguous
 #' @param surname_case string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings
 #' @param skill_evaluation_decode function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}
 #' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}
@@ -39,7 +40,7 @@
 #'   x <- read_dv(myfile, skill_evaluation_decode = "volleymetrics")
 #' }
 #' @export
-read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta) {
+read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", date_format = "guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta) {
     assert_that(is.string(filename))
     if (nchar(filename) < 1) stop("filename was specified as an empty string (\"\")")
     if (!file.exists(filename)) stop("specified input file (", filename, ") does not exist")
@@ -48,6 +49,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     assert_that(is.flag(do_transliterate), !is.na(do_transliterate))
     assert_that(is.flag(metadata_only), !is.na(metadata_only))
     assert_that(is.flag(verbose), !is.na(verbose))
+    assert_that(is.string(date_format))
+    date_format <- match.arg(tolower(date_format), c("guess", "dmy", "ymd", "mdy"))
+    if (date_format %eq% "guess") date_format <- NULL
     assert_that(is.numeric(extra_validation),extra_validation %in% 0:3)
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
@@ -61,9 +65,15 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             }, error = function(e) FALSE)
             skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
         }
+        if (skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format)) date_format <- "mdy"
         skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }
     assert_that(is.function(skill_evaluation_decode))
+    if (is.null(date_format)) {
+        ## check if the decoder function is the volleymetrics one
+        is_vm <- tryCatch(identical(get("dtbl", envir = environment(skill_evaluation_decode)), get("dtbl", envir = environment(skill_evaluation_decoder(style = "volleymetrics")))), error = function(e) FALSE)
+        if (is_vm) date_format <- "mdy"
+    }
     if (!missing(edited_meta)) {
         assert_that(is.list(edited_meta))
         ## test for names? c("match", "more", "result", "teams", "players_h", "players_v", "attacks", "sets", "match_id", "filename")
@@ -187,9 +197,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     }
     ## file metadata
     if (!do_warn) {
-        suppressWarnings(temp <- read_filemeta(file_text))
+        suppressWarnings(temp <- read_filemeta(file_text, date_format = date_format))
     } else {
-        temp <- read_filemeta(file_text)
+        temp <- read_filemeta(file_text, date_format = date_format)
     }
     out$file_meta <- temp$file_meta
     out$messages <- temp$messages
@@ -197,9 +207,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## match metadata
     if (missing(edited_meta)) {
         if (!do_warn) {
-            suppressWarnings(temp <- read_meta(file_text, surname_case))
+            suppressWarnings(temp <- read_meta(file_text, surname_case, date_format = date_format))
         } else {
-            temp <- read_meta(file_text, surname_case)
+            temp <- read_meta(file_text, surname_case, date_format = date_format)
         }
         out$meta <- temp$meta
         out$meta$filename <- filename

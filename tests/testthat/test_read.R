@@ -30,3 +30,21 @@ test_that("supplying edited_meta works", {
     expect_equal(length(blah), 8)
     expect_equal(sum(grepl("home_player_id[123456]", blah)), 6)
 })
+
+test_that("supplying a preferred date format works", {
+    ## first generate a modified example file
+    x <- read_dv(dv_example_file(1))
+    x$raw <- sub("01/25/2015;;2014/2015", "08/12/2015;;2014/2015", x$raw, fixed = TRUE)
+    tf <- tempfile()
+    writeLines(x$raw, tf)
+    chk <- read_dv(tf)
+    expect_equal(chk$meta$match$date, lubridate::ymd("2015-12-08")) ## by default
+    chk <- read_dv(tf, date_format = "mdy")
+    expect_equal(chk$meta$match$date, lubridate::ymd("2015-08-12"))
+    chk <- read_dv(tf, date_format = "dmy")
+    expect_equal(chk$meta$match$date, lubridate::ymd("2015-12-08"))
+    chk <- read_dv(tf, date_format = "ymd")
+    ## can't be this format, so it's ignored
+    expect_equal(chk$meta$match$date, lubridate::ymd("2015-12-08"))
+    unlink(tf)
+})
