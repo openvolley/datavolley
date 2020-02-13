@@ -4,11 +4,22 @@
 \alias{read_dv}
 \title{Read a datavolley file}
 \usage{
-read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
-  do_transliterate = FALSE, encoding = "guess", extra_validation = 2,
-  validation_options = list(), surname_case = "asis",
-  skill_evaluation_decode = "default", custom_code_parser,
-  metadata_only = FALSE, verbose = FALSE, edited_meta)
+read_dv(
+  filename,
+  insert_technical_timeouts = TRUE,
+  do_warn = FALSE,
+  do_transliterate = FALSE,
+  encoding = "guess",
+  date_format = "guess",
+  extra_validation = 2,
+  validation_options = list(),
+  surname_case = "asis",
+  skill_evaluation_decode = "default",
+  custom_code_parser,
+  metadata_only = FALSE,
+  verbose = FALSE,
+  edited_meta
+)
 }
 \arguments{
 \item{filename}{string: file name to read}
@@ -19,7 +30,9 @@ read_dv(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
 
 \item{do_transliterate}{logical: should we transliterate all text to ASCII? See details}
 
-\item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed (really experimental)}
+\item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed}
+
+\item{date_format}{string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If \code{date_format} is something other than "guess", that date format will be preferred where dates are ambiguous}
 
 \item{extra_validation}{numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking}
 

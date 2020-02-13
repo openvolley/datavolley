@@ -4,12 +4,21 @@
 \alias{dv_court}
 \title{Plot a volleyball court diagram}
 \usage{
-dv_court(plot_package = "base", court = "full", show_zones = TRUE,
-  labels = c("Serving team", "Receiving team"), as_for_serve = FALSE,
-  show_zone_lines = TRUE, show_minor_zones = FALSE,
-  grid_colour = "black", zone_colour = "grey70",
-  minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE,
-  zone_font_size = 10, ...)
+dv_court(
+  plot_package = "base",
+  court = "full",
+  show_zones = TRUE,
+  labels = c("Serving team", "Receiving team"),
+  as_for_serve = FALSE,
+  show_zone_lines = TRUE,
+  show_minor_zones = FALSE,
+  grid_colour = "black",
+  zone_colour = "grey70",
+  minor_zone_colour = "grey80",
+  fixed_aspect_ratio = TRUE,
+  zone_font_size = 10,
+  ...
+)
 }
 \arguments{
 \item{plot_package}{string: either "base" or "ggplot2". If "ggplot2", the \code{\link{ggcourt}} function is used}

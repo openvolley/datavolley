@@ -4,8 +4,14 @@
 \alias{dv_cone2xy}
 \title{Attack cones to x, y coordinates}
 \usage{
-dv_cone2xy(start_zones, end_cones, end = "upper", xynames = c("ex",
-  "ey"), as = "points", force_center_zone = FALSE)
+dv_cone2xy(
+  start_zones,
+  end_cones,
+  end = "upper",
+  xynames = c("ex", "ey"),
+  as = "points",
+  force_center_zone = FALSE
+)
 }
 \arguments{
 \item{start_zones}{integer: starting zone of attack}

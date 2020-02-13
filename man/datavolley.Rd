@@ -3,7 +3,6 @@
 \docType{package}
 \name{datavolley}
 \alias{datavolley}
-\alias{datavolley-package}
 \title{\pkg{datavolley}}
 \description{
 Provides basic functions for parsing Datavolley scouting files. Datavolley is a software package used for scouting and summarizing volleyball matches.

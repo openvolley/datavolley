@@ -4,8 +4,13 @@
 \alias{dv_xy}
 \title{Court zones to x, y coordinates}
 \usage{
-dv_xy(zones, end = "lower", xynames = c("x", "y"),
-  as_for_serve = FALSE, subzones)
+dv_xy(
+  zones,
+  end = "lower",
+  xynames = c("x", "y"),
+  as_for_serve = FALSE,
+  subzones
+)
 }
 \arguments{
 \item{zones}{numeric: zones numbers 1-9 to convert to x and y coordinates}

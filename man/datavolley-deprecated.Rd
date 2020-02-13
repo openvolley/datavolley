@@ -5,8 +5,7 @@
 \alias{ggxy}
 \title{Deprecated functions in package \pkg{datavolley}.}
 \usage{
-ggxy(zones, end = "lower", xynames = c("x", "y"),
-  as_for_serve = FALSE)
+ggxy(zones, end = "lower", xynames = c("x", "y"), as_for_serve = FALSE)
 }
 \description{
 The functions listed below are deprecated and will be defunct in

@@ -4,14 +4,26 @@
 \alias{ggcourt}
 \title{ggplot volleyball court}
 \usage{
-ggcourt(court = "full", show_zones = TRUE, labels = c("Serving team",
-  "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE,
-  show_minor_zones = FALSE, grid_colour = "black",
-  zone_colour = "grey70", minor_zone_colour = "grey80",
-  fixed_aspect_ratio = TRUE, zone_font_size = 10,
-  label_font_size = 12, label_colour = "black", court_colour = NULL,
-  figure_colour = NULL, background_only = FALSE,
-  foreground_only = FALSE, ...)
+ggcourt(
+  court = "full",
+  show_zones = TRUE,
+  labels = c("Serving team", "Receiving team"),
+  as_for_serve = FALSE,
+  show_zone_lines = TRUE,
+  show_minor_zones = FALSE,
+  grid_colour = "black",
+  zone_colour = "grey70",
+  minor_zone_colour = "grey80",
+  fixed_aspect_ratio = TRUE,
+  zone_font_size = 10,
+  label_font_size = 12,
+  label_colour = "black",
+  court_colour = NULL,
+  figure_colour = NULL,
+  background_only = FALSE,
+  foreground_only = FALSE,
+  ...
+)
 }
 \arguments{
 \item{court}{string: "full" (show full court) or "lower" or "upper" (show only the lower or upper half of the court)}

@@ -4,9 +4,21 @@
 \alias{dv_heatmap}
 \title{Plot a court heatmap, using base graphics}
 \usage{
-dv_heatmap(x, y, z, col, zlim, legend = TRUE, legend_title = NULL,
-  legend_title_font = 1, legend_title_cex = 0.7, legend_cex = 0.7,
-  legend_pos = c(0.8, 0.85, 0.25, 0.75), res, add = FALSE)
+dv_heatmap(
+  x,
+  y,
+  z,
+  col,
+  zlim,
+  legend = TRUE,
+  legend_title = NULL,
+  legend_title_font = 1,
+  legend_title_cex = 0.7,
+  legend_cex = 0.7,
+  legend_pos = c(0.8, 0.85, 0.25, 0.75),
+  res,
+  add = FALSE
+)
 }
 \arguments{
 \item{x}{numeric, RasterLayer or data.frame: x-coordinates of the data to plot, or a \code{RasterLayer} layer or \code{data.frame} containing the data (x, y, and z together)}

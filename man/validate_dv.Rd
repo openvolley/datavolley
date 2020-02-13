@@ -4,8 +4,7 @@
 \alias{validate_dv}
 \title{Additional validation checks on a DataVolley file}
 \usage{
-validate_dv(x, validation_level = 2, options = list(),
-  file_type = "indoor")
+validate_dv(x, validation_level = 2, options = list(), file_type = "indoor")
 }
 \arguments{
 \item{x}{datavolley: datavolley object as returned by \code{read_dv}}
