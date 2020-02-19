@@ -103,7 +103,7 @@ read_result <- function(txt) {
     p$score_home_team <- as.numeric(temp[,2])
     p$score_visiting_team <- as.numeric(temp[,3])
     p <- p[p$score!="",]
-    p
+    p[rowSums(is.na(p)) < ncol(p), ] ## discard all-NA rows
 }
 
 ## teams
