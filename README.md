@@ -17,6 +17,14 @@ The [peranavolley](https://github.com/raymondben/peranavolley) package
 provides similar functionality for reading files scouted by the [AOC
 VBStats](http://peranasports.com/software/vbstatshd/) software.
 
+**NOTE:** recent updates have included substantial changes to the way
+that text encoding is handled, including the way that the correct
+encoding is guessed with `read_dv(..., text_encoding = "guess")`. Text
+encoding should work better now, particular on Windows. Please [submit
+an issue](https://github.com/raymondben/datavolley/issues/new) if you
+find problems related to text encoding (e.g. player or team names not
+displaying correctly).
+
 ## Installation
 
 ``` r
@@ -37,7 +45,7 @@ summary(x)
 #> League: Finale mladinke
 #> Teams: Braslovče (JERONČIČ ZORAN/MIHALINEC DAMIJANA)
 #>        vs
-#>        Nova KBM Branik (HAFNER MATJAŽ/)
+#>        Nova KBM Branik (HAFNER MATJAŽ)
 #> Result: 3-0 (25-16, 25-14, 25-22)
 #> Duration: 67 minutes
 ```

@@ -22,6 +22,8 @@ See also this [DataVolley file validator](https://apps.untan.gl/dvalidate/) and 
 
 The [peranavolley](https://github.com/raymondben/peranavolley) package provides similar functionality for reading files scouted by the [AOC VBStats](http://peranasports.com/software/vbstatshd/) software.
 
+**NOTE:** recent updates have included substantial changes to the way that text encoding is handled, including the way that the correct encoding is guessed with `read_dv(..., text_encoding = "guess")`. Text encoding should work better now, particular on Windows. Please [submit an issue](https://github.com/raymondben/datavolley/issues/new) if you find problems related to text encoding (e.g. player or team names not displaying correctly).
+
 ## Installation
 
 ```{r eval=FALSE}
