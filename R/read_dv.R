@@ -537,6 +537,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out
 }
 
+#' @rdname read_dv
+#' @export
+dv_read <- read_dv
 
 #' A simple summary of a volleyball match
 #'

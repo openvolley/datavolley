@@ -2,9 +2,27 @@
 % Please edit documentation in R/read_dv.R
 \name{read_dv}
 \alias{read_dv}
+\alias{dv_read}
 \title{Read a datavolley file}
 \usage{
 read_dv(
+  filename,
+  insert_technical_timeouts = TRUE,
+  do_warn = FALSE,
+  do_transliterate = FALSE,
+  encoding = "guess",
+  date_format = "guess",
+  extra_validation = 2,
+  validation_options = list(),
+  surname_case = "asis",
+  skill_evaluation_decode = "default",
+  custom_code_parser,
+  metadata_only = FALSE,
+  verbose = FALSE,
+  edited_meta
+)
+
+dv_read(
   filename,
   insert_technical_timeouts = TRUE,
   do_warn = FALSE,

@@ -2,9 +2,12 @@
 % Please edit documentation in R/write.R
 \name{dv_write}
 \alias{dv_write}
+\alias{write_dv}
 \title{Write a datavolley object to dvw file}
 \usage{
 dv_write(x, file, text_encoding = "UTF-8")
+
+write_dv(x, file, text_encoding = "UTF-8")
 }
 \arguments{
 \item{x}{datvolley: a datavolley object as returned by \code{\link{read_dv}}}

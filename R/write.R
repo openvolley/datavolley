@@ -42,6 +42,10 @@ dv_write <- function(x, file, text_encoding = "UTF-8") {
     invisible(out)
 }
 
+#' @rdname dv_write
+#' @export
+write_dv <- dv_write
+
 not_null_or <- function(z, or) if (is.null(z)) or else z
 
 df2txt <- function(z) {
