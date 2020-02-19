@@ -89,10 +89,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         ## try to guess encoding based on the first few lines of the file
         ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
         idx1 <- suppressWarnings(grep("[3MATCH]",file_text,fixed=TRUE))
-        idx2 <- suppressWarnings(grep("[3ATTACKCOMBINATION]",file_text,fixed=TRUE))+1
+        idx2 <- suppressWarnings(grep("[3SETTERCALL]",file_text,fixed=TRUE))+1
         ## fallback
         if (length(idx1)<1 || is.na(idx1)) idx1 <- 10
-        if (length(idx2)<1 || is.na(idx2)) idx2 <- 80
+        if (length(idx2)<1 || is.na(idx2)) idx2 <- 90
         tst <- paste(file_text[idx1:idx2],collapse="")
         if (identical(tolower(encoding),"guess")) {
             ## first try using the embedded encoding info in the 3MATCH section
@@ -128,22 +128,31 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         badchars <- c(1025:7499,utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3")) ## cyrillic through to music, then some isolated ones
         ## not sure that next one should be considered bad char
         ##badchars <- c(badchars,utf8ToInt("\uf9"))##iconv("\xf9",from="latin2")))
-        ## 0x2000 to 0x206f (general punctuation) likely wrong
-        badchars <- c(badchars,0x2000:0x206f)
+        ## 0x2000 to 0x206f (general punctuation) likely wrong, 0x01-0x07 are control characters we don't expect to see
+        badchars <- c(badchars,0x2000:0x206f, 0x00:0x07)
         badwords <- tolower(c("S\u159RENSEN","S\u159gaard","S\u159ren","M\u159LLER","Ish\u159j","Vestsj\u107lland","KJ\u107R","M\u159rk","Hj\u159rn","\u139rhus")) ## these from windows-1252 (or ISO-8859-1) wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("\ud9ukas","Pawe\uf9","\ud9omacz",paste0("Mo\ufd","d\ufdonek"),"W\uf9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1252
         badwords <- c(badwords,tolower(c("\u3a9ukas","Pawe\u3c9","\u3a9omacz",paste0("Mo\u3cd","d\u3cdonek"),"W\u3c9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1253
-        ##badwords <- c(badwords,tolower(c("\uc4\u15a\u49\uc4\u15a","SOR\uc4\u15a"))) ## utf-8 wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("\uc4\u15a","\u139\u2dd"))) ## utf-8 wrongly guessed as windows-1250
+        badwords <- c(badwords, tolower(c("\uc4\u8d", "\uc5\ubd", "\uc4\u152"))) ## utf-8 wrongly guessed as windows-1252
         badwords <- c(badwords,tolower(c("Nicol\u148"))) ## windows-1252/iso-8859-1 wrongly guessed as windows-1250
         badwords <- c(badwords, tolower(c("\uc2\ue4\u77", "\uf1\u7b", "\ue5\ue4", "\ue5\ue3"))) ## japanese SHIFT-JIS wrongly guessed as macintosh
         badwords <- c(badwords, tolower("\u102\u104\u7a"), tolower("\u102\u104\u73"), tolower("\u102\u2c7\u7a"), tolower("\u102\u2c7\u73"))
+        badwords <- c(badwords, tolower(c(intToUtf8(c(8222, 162)))))
+        badwords <- c(badwords, tolower(c("\u192\u56", "\u192\u2021", "\u192\u67", "\u192\u6f", "\u192\u62", "\u192\u4e", "\u2018\u4f", "\u192\u70", "\u192\u43", "\u192\u76")))
         ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
-        enctest <- sapply(encoding, function(tryenc)iconv(tst,from=tryenc))
+          test_with_enc <- function(enc_to_test) {
+              con <- file(filename, encoding = enc_to_test)
+              on.exit(close(con))
+              ## warn = FALSE (covers NULLs and missing final EOL, but not invalid text chars from mis-specified encoding)
+              tryCatch(paste(readLines(con, n = idx2, warn = FALSE)[idx1:idx2], collapse = ""), warning = function(w) NA_character_, error = function(e) NA_character_)
+          }
+        enctest <- sapply(encoding, test_with_enc)
+        ##enctest <- sapply(encoding, function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
-        encerr2 <- vapply(encoding, function(tryenc)tryCatch({blah <- read_match(iconv(file_text[idx1:idx2],from=tryenc)); TRUE},error=function(e) FALSE),FUN.VALUE=TRUE)
-        encerrors[!encerr2] <- 999e3
-        ##cat(str(sort(encerrors)),"\n")
+        ##encerr2 <- vapply(encoding, function(tryenc)tryCatch({blah <- read_match(iconv(file_text[idx1:idx2],from=tryenc)); TRUE},error=function(e) FALSE),FUN.VALUE=TRUE)
+        ##encerrors[!encerr2] <- 999e3
+        ##cat("encerrors:\n"); print(sort(encerrors))
         idx <- encerrors==min(encerrors)
         if (!any(idx)) stop("error in guessing text encoding")
         enctest <- enctest[idx]
@@ -168,10 +177,14 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                 encoding <- rset[1]
             other_enc <- setdiff(encoding,rset)
         } else {
-            ## pick the first windows- encoding if there is one, else just pick first
+            ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then just whatever was first
             other_enc <- encoding
             if (any(grepl("^windows",tolower(encoding)))) {
                 encoding <- encoding[grepl("^windows",tolower(encoding))][1]
+            } else if (any(tolower(encoding) %in% c("utf-8", "utf8"))) {
+                encoding <- encoding[tolower(encoding) %in% c("utf-8", "utf8")][1]
+            } else if (any(tolower(encoding) %in% c("us-ascii"))) {
+                encoding <- encoding[tolower(encoding) %in% c("us-ascii")][1]
             } else {
                 encoding <- encoding[1]
             }
