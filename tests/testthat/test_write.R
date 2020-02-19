@@ -27,9 +27,7 @@ test_that("dv_write behaves", {
     x0$meta$match$text_encoding <- NA_character_
     x1$meta$match$text_encoding <- NA_character_
 
-    x1$meta$match_id <- x0$meta$match_id
     x1$meta$filename <- x0$meta$filename
-    x1$plays$match_id <- x1$meta$match_id
     ## x1 will have had an (empty) [3VIDEO] section inserted, but x0 does not have it
     ## that doesn't really matter but the file line numbers will be off by one because of it
     x1$plays$file_line_number[which(x1$plays$file_line_number >= 118)] <- x1$plays$file_line_number[which(x1$plays$file_line_number >= 118)]-1L
