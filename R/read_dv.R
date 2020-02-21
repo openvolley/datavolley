@@ -279,7 +279,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
-    out$plays <- cbind(this_main[, c("time", "video_time")], out$plays, this_main[, c(paste0("home_p", team_player_num), paste0("visiting_p", team_player_num), "start_coordinate", "mid_coordinate", "end_coordinate")])
+    out$plays <- cbind(this_main[, c("time", "video_time")], out$plays, this_main[, c(paste0("home_p", team_player_num), paste0("visiting_p", team_player_num), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase")])
     ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
     cxy <- dv_index2xy() ## grid of coords in our ggcourt space
     temp <- out$plays$start_coordinate
@@ -408,11 +408,15 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     temp_ttid[1] <- tid
     temp_team <- out$plays$team
     temp_ptid <- out$plays$point_id
+    temp_skill <- out$plays$skill
+    ## keep track of attacks - if a file has been scouted with only attacks, we need to account for that
+    had_attack <- length(temp_skill) > 0 && temp_skill[1] %eq% "Attack" ## had_attack = had an attack already in this touch sequence
     for (k in seq_len(nrow(out$plays))[-1]) {
-        if (!identical(temp_team[k], temp_team[k-1]) || !identical(temp_ptid[k], temp_ptid[k-1]))  {
+        if (!identical(temp_team[k], temp_team[k-1]) || !identical(temp_ptid[k], temp_ptid[k-1]) || (temp_skill[k] %eq% "Attack" && had_attack))  {
             tid <- tid+1
         }
         temp_ttid[k] <- tid
+        had_attack <- temp_skill[k] %eq% "Attack"
     }
     out$plays$team_touch_id <- temp_ttid
 

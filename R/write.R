@@ -166,10 +166,21 @@ dvw_scout <- function(x, text_encoding = text_encoding) {
     xp$na_col <- NA_character_ ## for unused output columns
     ## some reformatting
     xp$time <- format(xp$time, "%H.%M.%S")
+    ## map some changed values back to DV's encoding
+    ## col 2 is "point/sideout"; "p" = winning attack in breakpoint, "s" = winning attack in sideout
+    this <- xp$point_phase
+    this[this %eq% "Breakpoint"] <- "p"
+    this[this %eq% "Sideout"] <- "s"
+    xp$point_phase <- this
+    this <- xp$attack_phase
+    this[this %eq% "Transition breakpoint"] <- "p"
+    this[this %eq% "Transition sideout"] <- "s"
+    this[this %eq% "Reception"] <- "r"
+    xp$attack_phase <- this
     ## setter position uses 0 not missing when unknown
     xp$home_setter_position[is.na(xp$home_setter_position)] <- 0
     xp$visiting_setter_position[is.na(xp$visiting_setter_position)] <- 0
-    nms <- c("code_modified", "na_col", "na_col", "na_col", ## cols 1-4
+    nms <- c("code_modified", "point_phase", "attack_phase", "na_col", ## cols 1-4
              "start_coordinate", "mid_coordinate", "end_coordinate", ## cols 5-7
              "time", ## col 8, HH.MM.SS format
              "set_number", ## col 9

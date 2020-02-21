@@ -202,8 +202,19 @@ read_main <- function(filename) {
         stop("file has no scouted data (the [3SCOUT] section of the file is empty)")
     }
     names(x)[1] <- "code"
-    ## col 2 may be some sort of phase, values "p", "s"
-    ## col 3 similar, values "s", "r"
+    ## col 2 is "point/sideout"; "p" = winning attack in breakpoint, "s" = winning attack in sideout
+    names(x)[2] <- "point_phase"
+    this <- x$point_phase
+    this[this %eq% "p"] <- "Breakpoint"
+    this[this %eq% "s"] <- "Sideout"
+    x$point_phase <- this
+    ## col 3 values "s" = transition attack during in sideout, "p" = transition attack in breakpoint, "r" = reception attack
+    names(x)[3] <- "attack_phase"
+    this <- x$attack_phase
+    this[this %eq% "p"] <- "Transition breakpoint"
+    this[this %eq% "s"] <- "Transition sideout"
+    this[this %eq% "r"] <- "Reception"
+    x$attack_phase <- this
     names(x)[5] <- "start_coordinate"
     names(x)[6] <- "mid_coordinate"
     names(x)[7] <- "end_coordinate"
