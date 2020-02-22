@@ -92,19 +92,28 @@ dvw_winning_symbols <- function(x, text_encoding) {
     c("[3WINNINGSYMBOLS]", mm)
 }
 
-dvw_setter_calls <- function(x, text_encoding) sect2txt(x$meta$sets, "meta$sets", "[3SETTERCALL]")
+dvw_setter_calls <- function(x, text_encoding) {
+    tmp <- x$meta$sets
+    ## force coords to be 4-digit ints
+    tmp$start_coordinate <- sprintf("%04d", tmp$start_coordinate)
+    tmp$mid_coordinate <- sprintf("%04d", tmp$mid_coordinate)
+    tmp$end_coordinate <- sprintf("%04d", tmp$end_coordinate)
+    sect2txt(tmp, "meta$sets", "[3SETTERCALL]")
+}
 
 dvw_attack_combos <- function(x, text_encoding) sect2txt(x$meta$attacks, "meta$attacks", "[3ATTACKCOMBINATION]")
 
 dvw_players_v <- function(x, text_encoding) {
     tmp <- x$meta$players_v[, setdiff(names(x$meta$players_v), "name")]
-    tmp$role <- roles_str2int(tmp$role)
+    tmp$role <- as.character(roles_str2int(tmp$role))
+    tmp$role[tmp$role == "0"] <- ""
     sect2txt(tmp, "meta$players_v", "[3PLAYERS-V]")
 }
 
 dvw_players_h <- function(x, text_encoding) {
     tmp <- x$meta$players_h[, setdiff(names(x$meta$players_h), "name")]
-    tmp$role <- roles_str2int(tmp$role)
+    tmp$role <- as.character(roles_str2int(tmp$role))
+    tmp$role[tmp$role == "0"] <- ""
     sect2txt(tmp, "meta$players_h", "[3PLAYERS-H]")
 }
 
@@ -178,8 +187,9 @@ dvw_scout <- function(x, text_encoding = text_encoding) {
     this[this %eq% "Reception"] <- "r"
     xp$attack_phase <- this
     ## setter position uses 0 not missing when unknown
-    xp$home_setter_position[is.na(xp$home_setter_position)] <- 0
-    xp$visiting_setter_position[is.na(xp$visiting_setter_position)] <- 0
+    ##  though in some files it seems to be 5 not 0
+    xp$home_setter_position[is.na(xp$home_setter_position)] <- 5
+    xp$visiting_setter_position[is.na(xp$visiting_setter_position)] <- 5
     nms <- c("code_modified", "point_phase", "attack_phase", "na_col", ## cols 1-4
              "start_coordinate", "mid_coordinate", "end_coordinate", ## cols 5-7
              "time", ## col 8, HH.MM.SS format
