@@ -21,9 +21,6 @@ test_that("dv_write behaves", {
     x1$file_meta$lastchange_ver <- x0$file_meta$lastchange_ver
     x1$file_meta$lastchange_nam <- x0$file_meta$lastchange_nam
 
-    x0$messages$file_line <- NA_character_
-    x1$messages$file_line <- NA_character_
-
     x0$meta$match$text_encoding <- NA_character_
     x1$meta$match$text_encoding <- NA_character_
 
