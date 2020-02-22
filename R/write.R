@@ -60,14 +60,21 @@ df2txt <- function(z) {
         vapply(seq_len(ncol(w)), function(ci) is.logical(w[[ci]]) & !all(is.na(w[[ci]])), FUN.VALUE = TRUE)
     }
     for (lc in which(findlogicalcols(z))) z[[lc]] <- logical2char(z[[lc]])
+    ## convert period cols to text
+    findperiodcols <- function(w) vapply(seq_len(ncol(w)), function(ci) lubridate::is.period(w[[ci]]), FUN.VALUE = TRUE)
+    for (pc in which(findperiodcols(z))) z[[pc]] <- paste0(lubridate::hour(z[[pc]]), ".", lubridate::minute(z[[pc]]), ".", lubridate::second(z[[pc]]))
     capture.output(data.table::fwrite(z, sep = ";", col.names = FALSE, row.names = FALSE, quote = FALSE, na = ""))
 }
 
 ## helper for simple sections that just require a dump of the existing section
 sect2txt <- function(sect, component, outhdr, trailing_col = FALSE) {
-    if (is.null(sect)) stop("missing the ", component, " component of the input object")
-    if (trailing_col) sect[, ncol(sect)+1] <- NA_character_
-    c(outhdr, df2txt(sect))
+    if (is.null(sect)) {
+        warning("missing the ", component, " component of the input object")
+        outhdr
+    } else {
+        if (trailing_col) sect[, ncol(sect)+1] <- NA_character_
+        c(outhdr, df2txt(sect))
+    }
 }
 
 dvw_video <- function(x, text_encoding) {
@@ -94,11 +101,16 @@ dvw_winning_symbols <- function(x, text_encoding) {
 
 dvw_setter_calls <- function(x, text_encoding) {
     tmp <- x$meta$sets
-    ## force coords to be 4-digit ints
-    tmp$start_coordinate <- sprintf("%04d", tmp$start_coordinate)
-    tmp$mid_coordinate <- sprintf("%04d", tmp$mid_coordinate)
-    tmp$end_coordinate <- sprintf("%04d", tmp$end_coordinate)
-    sect2txt(tmp, "meta$sets", "[3SETTERCALL]")
+    if (is.null(tmp)) {
+        warning("missing the meta$sets component of the input object")
+        "[3SETTERCALL]"
+    } else {
+        ## force coords to be 4-digit ints
+        tmp$start_coordinate <- sprintf("%04d", tmp$start_coordinate)
+        tmp$mid_coordinate <- sprintf("%04d", tmp$mid_coordinate)
+        tmp$end_coordinate <- sprintf("%04d", tmp$end_coordinate)
+        sect2txt(tmp, "meta$sets", "[3SETTERCALL]")
+    }
 }
 
 dvw_attack_combos <- function(x, text_encoding) sect2txt(x$meta$attacks, "meta$attacks", "[3ATTACKCOMBINATION]")
@@ -186,8 +198,7 @@ dvw_scout <- function(x, text_encoding = text_encoding) {
     this[this %eq% "Transition sideout"] <- "s"
     this[this %eq% "Reception"] <- "r"
     xp$attack_phase <- this
-    ## setter position uses 0 not missing when unknown
-    ##  though in some files it seems to be 5 not 0
+    ## setter position uses 0 or 5 when unknown
     xp$home_setter_position[is.na(xp$home_setter_position)] <- 5
     xp$visiting_setter_position[is.na(xp$visiting_setter_position)] <- 5
     nms <- c("code_modified", "point_phase", "attack_phase", "na_col", ## cols 1-4
