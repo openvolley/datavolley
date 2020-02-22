@@ -22,9 +22,9 @@ roles_str2int <- function(x) {
     out
 }
 
-read_semi_text <- function(txt, sep = ";", fallback = "fread") {
+read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
     suppressWarnings(tryCatch({
-        out <- readr::read_delim(txt, delim = sep, col_names = FALSE, locale = readr::locale(encoding = "UTF-8"))
+        out <- readr::read_delim(txt, delim = sep, col_names = FALSE, locale = readr::locale(encoding = "UTF-8"), ...)
         ## strip the extra attributes that readr adds, and convert from spec_tbl_df back to plain old tbl_df
         attr(out, "spec") <- NULL
         tibble::as_tibble(out)
@@ -208,12 +208,13 @@ read_setter_calls <- function(txt) {
     if (!nzchar(str_trim(txt))) {
         NULL
     } else {
-        ##suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
-        tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+        ## with read_semi_text, need to force col 9 to be char (it's a comma-separated string of ints) else it gets parsed into a single number
+        tryCatch(p <- read_semi_text(txt, col_types = "c?c??iiic??"), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
         names(p)[1] <- "code"
         names(p)[3] <- "description"
         names(p)[6:8] <- c("start_coordinate", "mid_coordinate", "end_coordinate")
-        ## V9 a comma-separated list of indices?
+        ## V9 is a comma-separated list of indices that give a path
+        names(p)[9] <- "path"
         p
     }
 }
