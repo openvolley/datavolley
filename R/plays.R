@@ -184,6 +184,11 @@ read_with_readr <- function(filename) {
         attr(out, "problems") <- NULL
         attr(out, "spec") <- NULL
         out <- as.data.frame(out, stringsAsFactors = FALSE) ## so that we don't get caught by e.g. tibble column indexing differences to data.frames
+        ## strip trailing all-NA rows, which would have come from trailing empty lines in the original file
+        chk <- rle(rev(!nzchar(out$X1)))
+        if (chk$values[1]) {
+            out <- out[seq(from = 1, to = nrow(out)-chk$lengths[1], by = 1), ]
+        }
         out
     } else {
         NULL
