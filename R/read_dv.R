@@ -236,6 +236,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     }
     out$file_meta$file_type <- file_type
     if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
+    if (metadata_only) return(out)
     this_main <- NULL
     tryCatch({
         thismsg <- NULL
@@ -263,7 +264,6 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ##if (!is.null(thismsg)) mymsgs <- rbind.fill(mymsgs,thismsg)
     ## don't actually issue this warning, for now at least
 
-    if (metadata_only) return(out)
     ## count line numbers: where do codes start from?
     suppressWarnings(cln <- grep("[3SCOUT]",file_text,fixed=TRUE))
     if (length(cln)==1) {
