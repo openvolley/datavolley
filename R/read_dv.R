@@ -318,6 +318,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         temp <- c(0L, which(out$plays$end_of_set))
         for (si in 2:length(temp)) {
             out$plays$set_number[(temp[si-1]+1):(temp[si]-1)] <- (si-1)
+            out$plays$set_number[temp[si]] <- si ## +1 on the actual **1set line
         }
     }
 
