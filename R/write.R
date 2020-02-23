@@ -76,7 +76,12 @@ df2txt <- function(z) {
     ## convert period cols to text
     findperiodcols <- function(w) vapply(seq_len(ncol(w)), function(ci) lubridate::is.period(w[[ci]]), FUN.VALUE = TRUE)
     ldz <- function(nn, width = 2) formatC(nn, flag = "0", width = width) ## leading zeros
-    for (pc in which(findperiodcols(z))) z[[pc]] <- paste0(ldz(lubridate::hour(z[[pc]])), ".", ldz(lubridate::minute(z[[pc]])), ".", ldz(lubridate::second(z[[pc]])))
+    for (pc in which(findperiodcols(z))) {
+        nnaidx <- which(!is.na(z[[pc]]))
+        temp <- rep("", nrow(z))
+        temp[nnaidx] <- paste0(ldz(lubridate::hour(z[[pc]][nnaidx])), ".", ldz(lubridate::minute(z[[pc]][nnaidx])), ".", ldz(lubridate::second(z[[pc]][nnaidx])))
+        z[[pc]] <- temp
+    }
     capture.output(data.table::fwrite(z, sep = ";", col.names = FALSE, row.names = FALSE, quote = FALSE, na = ""))
 }
 
