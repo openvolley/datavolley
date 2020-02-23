@@ -20,8 +20,21 @@
 #' @export
 dv_write <- function(x, file, text_encoding = "UTF-8") {
     if (!inherits(x, "datavolley")) stop("x must be a datavolley object")
-    out <- c(dvw_header(x, text_encoding = text_encoding),
-             dvw_match(x, text_encoding = text_encoding),
+    dateformat <- if (!is.null(x$file_meta$preferred_date_format)) {
+                      if (tolower(x$file_meta$preferred_date_format) %eq% "mdy") {
+                          "%m/%d/%Y"
+                      } else if (tolower(x$file_meta$preferred_date_format) %eq% "dmy") {
+                          "%d/%m/%Y"
+                      } else if (tolower(x$file_meta$preferred_date_format) %eq% "ymd") {
+                          "%Y/%m/%d"
+                      } else {
+                          "%d/%m/%Y"
+                      }
+                  } else {
+                      "%d/%m/%Y"
+                  }
+    out <- c(dvw_header(x, text_encoding = text_encoding, date_format = dateformat),
+             dvw_match(x, text_encoding = text_encoding, date_format = dateformat),
              dvw_teams(x, text_encoding = text_encoding),
              dvw_more(x, text_encoding = text_encoding),
              dvw_comments(x, text_encoding = text_encoding),
@@ -62,7 +75,8 @@ df2txt <- function(z) {
     for (lc in which(findlogicalcols(z))) z[[lc]] <- logical2char(z[[lc]])
     ## convert period cols to text
     findperiodcols <- function(w) vapply(seq_len(ncol(w)), function(ci) lubridate::is.period(w[[ci]]), FUN.VALUE = TRUE)
-    for (pc in which(findperiodcols(z))) z[[pc]] <- paste0(lubridate::hour(z[[pc]]), ".", lubridate::minute(z[[pc]]), ".", lubridate::second(z[[pc]]))
+    ldz <- function(nn, width = 2) formatC(nn, flag = "0", width = width) ## leading zeros
+    for (pc in which(findperiodcols(z))) z[[pc]] <- paste0(ldz(lubridate::hour(z[[pc]])), ".", ldz(lubridate::minute(z[[pc]])), ".", ldz(lubridate::second(z[[pc]])))
     capture.output(data.table::fwrite(z, sep = ";", col.names = FALSE, row.names = FALSE, quote = FALSE, na = ""))
 }
 
@@ -146,7 +160,7 @@ dvw_teams <- function(x, text_encoding) {
     sect2txt(tmp, "meta$teams", "[3TEAMS]")
 }
 
-dvw_match <- function(x, text_encoding) {
+dvw_match <- function(x, text_encoding, date_format) {
     ## [3MATCH]
     ## @@match_date@@;@@match_time@@;@@season@@;@@league@@;;;;;UTF-8;1;@@cones_zones@@;0;
     ## ;;12345;;;;;;
@@ -154,22 +168,24 @@ dvw_match <- function(x, text_encoding) {
     mm <- x$meta$match
     if (is.null(mm)) stop("missing the meta$match component of the input object")
     if (!missing(text_encoding)) mm$text_encoding <- text_encoding
+    mm$date <- format(mm$date, date_format)
     c("[3MATCH]", df2txt(mm), ";;12345;;;;;;")
 }
 
-dvw_header <- function(x, text_encoding) {
+dvw_header <- function(x, text_encoding, date_format) {
     fm <- x$file_meta
     if (is.null(fm)) stop("missing file_meta component of the input object")
-    tdnow <- format(Sys.time(), "%d/%m/%Y %H.%M.%S")
+    tdnow <- Sys.time()
+    tdformat <- function(z) format(z, paste0(date_format, " %H.%M.%S"))
     c("[3DATAVOLLEYSCOUT]",
       paste0("FILEFORMAT: ", not_null_or(fm$fileformat, "2.0")),
-      paste0("GENERATOR-DAY: ", not_null_or(fm$generator_day, tdnow)),
+      paste0("GENERATOR-DAY: ", tdformat(not_null_or(fm$generator_day, tdnow))),
       paste0("GENERATOR-IDP: ", not_null_or(fm$generator_idp, "")),
       paste0("GENERATOR-PRG: ", not_null_or(fm$generator_prg, "")),
       paste0("GENERATOR-REL: ", not_null_or(fm$generator_rel, "")),
       paste0("GENERATOR-VER: ", not_null_or(fm$generator_ver, "")),
       paste0("GENERATOR-NAM: ", not_null_or(fm$generator_nam, "")),
-      paste0("LASTCHANGE-DAY: ", tdnow),
+      paste0("LASTCHANGE-DAY: ", tdformat(tdnow)),
       paste0("LASTCHANGE-IDP: datavolley"),
       paste0("LASTCHANGE-PRG: datavolley-R"),
       paste0("LASTCHANGE-REL: ", packageVersion("datavolley")),

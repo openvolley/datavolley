@@ -214,6 +214,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     } else {
         temp <- read_filemeta(file_text, date_format = date_format)
     }
+    ## insert preferred date_format so it can be used if this object gets passed to dv_write
+    ##  this isn't the ideal solution, because they actual date format in the file might not actually follow the preferred date_format
+    ##  but it's a start
+    temp$file_meta$preferred_date_format <- date_format
     out$file_meta <- temp$file_meta
     out$messages <- temp$messages
     if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE)
