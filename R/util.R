@@ -197,9 +197,9 @@ most_common_value <- function(x) {
 
 manydates <- function(z, preferred = NULL) {
     suppressWarnings(
-        tries <- list(ymd = unique(as.Date(na.omit(c(lubridate::ymd(z), lubridate::ymd_hms(z))))),
-                      dmy = unique(as.Date(na.omit(c(lubridate::dmy(z), lubridate::dmy_hms(z))))),
-                      mdy = unique(as.Date(na.omit(c(lubridate::mdy(z), lubridate::mdy_hms(z))))))
+        tries <- list(ymd = unique(as.Date(na.omit(c(lubridate::ymd(z), lubridate::parse_date_time(z, "Ymd HMS"))))),
+                      dmy = unique(as.Date(na.omit(c(lubridate::dmy(z), lubridate::parse_date_time(z, "dmY HMS"))))),
+                      mdy = unique(as.Date(na.omit(c(lubridate::mdy(z), lubridate::parse_date_time(z, "mdY HMS"))))))
     )
     if (!is.null(preferred)) {
         preferred <- tolower(preferred)
@@ -210,10 +210,12 @@ manydates <- function(z, preferred = NULL) {
 }
 
 manydatetimes <- function(z, preferred = NULL) {
+    ## don't use lubridate::ymd_hms etc here, because they will fall foul of e.g.
+    ##  https://github.com/tidyverse/lubridate/issues/552
     suppressWarnings(
-        tries <- list(ymd = unique(na.omit(c(lubridate::ymd_hms(z)))),
-                      dmy = unique(na.omit(c(lubridate::dmy_hms(z)))),
-                      mdy = unique(na.omit(c(lubridate::mdy_hms(z)))))
+        tries <- list(ymd = unique(na.omit(c(lubridate::parse_date_time(z, "Ymd HMS")))),
+                      dmy = unique(na.omit(c(lubridate::parse_date_time(z, "dmY HMS")))),
+                      mdy = unique(na.omit(c(lubridate::parse_date_time(z, "mdY HMS")))))
     )
     if (!is.null(preferred)) {
         preferred <- tolower(preferred)
