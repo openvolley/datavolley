@@ -199,7 +199,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## look for the "Secondo tocco di  la" with odd encoding on the trailing a
     ## this seems to be part of the default dv-generated file structure, so it's a common problem
     file_text <- enc::read_lines_enc(filename, file_encoding = encoding)
-    file_text <- gsub("Secondo tocco di[[:space:]]+l\xe0;","Secondo tocco di la;",file_text)
+    file_text <- gsub("Secondo tocco di[[:space:]]+l.;","Secondo tocco di la;", file_text)
 
 ##    file_text <- iconv(file_text,from=encoding,to="utf-8") ## convert to utf-8
     ## so we got to here, either by reading the file, or using the supplied file_text
