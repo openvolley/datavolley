@@ -415,6 +415,15 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         if (length(idx)>0)
             out <- rbind(out,chk_df(plays[idx+1,],"Consecutive actions by the same player",severity=3))
 
+        ## every point (with any actual skill) should have a winning action or error
+        tmp <- plays
+        tmp$rowid <- seq_len(nrow(tmp))
+        chk <- plyr::ddply(tmp, "point_id", .fun = function(z) data.frame(any_skill = any(!is.na(z$skill) & !z$skill %in% c("Timeout", "Technical timeout", "Substitution")), win_err = any((z$skill %eq% "Block" & z$evaluation %eq% "Invasion") | (grepl("Error", z$evaluation)) | (grepl("Ace|Winning", z$evaluation))), rowid = max(z$rowid)))
+        chk <- chk$rowid[chk$any_skill & !chk$win_err]
+        if (length(chk) > 0) {
+            out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Rally does not include a winning or losing action", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+        }
+
         ## point not awarded to right team following error
         chk <- (plays$evaluation_code %eq% "=" | (plays$skill %eq% "Block" & grepl("invasion", plays$evaluation, ignore.case=TRUE))) &  ## error or block Invasion
             (plays$team %eq% plays$point_won_by)
