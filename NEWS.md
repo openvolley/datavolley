@@ -4,6 +4,7 @@ datavolley 0.13.0
 - adjustments to `team_touch_id` and `phase` to account for files in which only attacks have been scouted
 - `point_phase` (this is the "Point/Side out" column in the DataVolley codes list window) and `attack_phase` ("Attack after reception/dig") columns added to the play-by-play data
 - `dv_write` function added
+- additional fixes following the changes to text encoding handling in v0.12.0
 
 datavolley 0.12.0
 =================
