@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Find first attacks by the receiving team (i.e. attacks associated with a serve reception) — find_first_attack • datavolley</title>
+<title>Changelog • datavolley</title>
 
 
 <!-- jquery -->
@@ -35,9 +35,7 @@
 
 
 
-<meta property="og:title" content="Find first attacks by the receiving team (i.e. attacks associated with a serve reception) — find_first_attack" />
-<meta property="og:description" content="Find first attacks by the receiving team (i.e. attacks associated with a serve reception)" />
-<meta name="twitter:card" content="summary" />
+<meta property="og:title" content="Changelog" />
 
 
 
@@ -56,7 +54,7 @@
   </head>
 
   <body>
-    <div class="container template-reference-topic">
+    <div class="container template-news">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -103,50 +101,42 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Find first attacks by the receiving team (i.e. attacks associated with a serve reception)</h1>
-    
-    <div class="hidden name"><code>find_first_attack.Rd</code></div>
+      <h1>Changelog <small></small></h1>
+      
     </div>
 
-    <div class="ref-description">
-    <p>Find first attacks by the receiving team (i.e. attacks associated with a serve reception)</p>
-    </div>
-
-    <pre class="usage"><span class='fu'>find_first_attack</span>(<span class='no'>x</span>)</pre>
-
-    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
-    <table class="ref-arguments">
-    <colgroup><col class="name" /><col class="desc" /></colgroup>
-    <tr>
-      <th>x</th>
-      <td><p>data.frame: the plays component of a datavolley object, as returned by <code><a href='read_dv.html'>read_dv()</a></code></p></td>
-    </tr>
-    </table>
-
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
-
-    <p>named list with components "ix" (logical indices into the x object where the row corresponds to a first attack in a rally), "n" (number of receptions for which there was a first attack by the receiving team), "n_win" (the number of winning first attacks), "win_rate" (number of winning first attacks as a proportion of the total number of first attacks).</p>
-    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
-
-    <div class='dont-index'><p><code><a href='read_dv.html'>read_dv</a></code> <code><a href='plays.html'>plays</a></code></p></div>
-
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='read_dv.html'>read_dv</a></span>(<span class='fu'><a href='dv_example_file.html'>dv_example_file</a></span>(), <span class='kw'>insert_technical_timeouts</span><span class='kw'>=</span><span class='fl'>FALSE</span>)
-<span class='co'>## first attack win rate, by team</span>
-<span class='fu'><a href='https://rdrr.io/r/base/by.html'>by</a></span>(<span class='fu'><a href='plays.html'>plays</a></span>(<span class='no'>x</span>),<span class='fu'><a href='plays.html'>plays</a></span>(<span class='no'>x</span>)$<span class='no'>team</span>,<span class='kw'>function</span>(<span class='no'>z</span>)<span class='fu'>find_first_attack</span>(<span class='no'>z</span>)$<span class='no'>win_rate</span>)
-}</div></pre>
+    <div id="datavolley-0130" class="section level1">
+<h1 class="page-header">
+<a href="#datavolley-0130" class="anchor"></a>datavolley 0.13.0</h1>
+<ul>
+<li>adjustments to <code>team_touch_id</code> and <code>phase</code> to account for files in which only attacks have been scouted</li>
+<li>
+<code>point_phase</code> (this is the “Point/Side out” column in the DataVolley codes list window) and <code>attack_phase</code> (“Attack after reception/dig”) columns added to the play-by-play data</li>
+<li>
+<code>dv_write</code> function added</li>
+<li>additional fixes following the changes to text encoding handling in v0.12.0</li>
+</ul>
+</div>
+    <div id="datavolley-0120" class="section level1">
+<h1 class="page-header">
+<a href="#datavolley-0120" class="anchor"></a>datavolley 0.12.0</h1>
+<ul>
+<li>substantial changes to the way that text encoding is handled, including guessing the correct encoding with <code><a href="../reference/read_dv.html">read_dv(..., text_encoding = "guess")</a></code>. Text encoding should work better now, particular on Windows</li>
+<li>added a <code>date_format</code> parameter to <code>read_dv</code>, so that the user can specify the preferred date format to use when dates are ambiguous</li>
+</ul>
+</div>
   </div>
+
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#value">Value</a></li>
-      <li><a href="#see-also">See also</a></li>
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
+    <div id="tocnav">
+      <h2>Contents</h2>
+      <ul class="nav nav-pills nav-stacked">
+        <li><a href="#datavolley-0130">0.13.0</a></li>
+        <li><a href="#datavolley-0120">0.12.0</a></li>
+      </ul>
+    </div>
   </div>
+
 </div>
 
 

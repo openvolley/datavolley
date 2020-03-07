@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Find first attacks by the receiving team (i.e. attacks associated with a serve reception) — find_first_attack • datavolley</title>
+<title>The polygon coordinates for attack cones — dv_cone_polygons • datavolley</title>
 
 
 <!-- jquery -->
@@ -35,8 +35,8 @@
 
 
 
-<meta property="og:title" content="Find first attacks by the receiving team (i.e. attacks associated with a serve reception) — find_first_attack" />
-<meta property="og:description" content="Find first attacks by the receiving team (i.e. attacks associated with a serve reception)" />
+<meta property="og:title" content="The polygon coordinates for attack cones — dv_cone_polygons" />
+<meta property="og:description" content="The polygon coordinates for attack cones" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -103,38 +103,44 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Find first attacks by the receiving team (i.e. attacks associated with a serve reception)</h1>
+    <h1>The polygon coordinates for attack cones</h1>
     
-    <div class="hidden name"><code>find_first_attack.Rd</code></div>
+    <div class="hidden name"><code>dv_cone_polygons.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Find first attacks by the receiving team (i.e. attacks associated with a serve reception)</p>
+    <p>The polygon coordinates for attack cones</p>
     </div>
 
-    <pre class="usage"><span class='fu'>find_first_attack</span>(<span class='no'>x</span>)</pre>
+    <pre class="usage"><span class='fu'>dv_cone_polygons</span>(<span class='no'>zone</span>, <span class='kw'>end</span> <span class='kw'>=</span> <span class='st'>"upper"</span>, <span class='kw'>extended</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>x</th>
-      <td><p>data.frame: the plays component of a datavolley object, as returned by <code><a href='read_dv.html'>read_dv()</a></code></p></td>
+      <th>zone</th>
+      <td><p>string: one of "L", "R", "M"</p></td>
+    </tr>
+    <tr>
+      <th>end</th>
+      <td><p>string: use the "lower" or "upper" part of the figure</p></td>
+    </tr>
+    <tr>
+      <th>extended</th>
+      <td><p>logical: if <code>FALSE</code>, the polygons will only cover the actual court area; if <code>TRUE</code>, they will be extended to cover the court periphery as well</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>named list with components "ix" (logical indices into the x object where the row corresponds to a first attack in a rally), "n" (number of receptions for which there was a first attack by the receiving team), "n_win" (the number of winning first attacks), "win_rate" (number of winning first attacks as a proportion of the total number of first attacks).</p>
-    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
-
-    <div class='dont-index'><p><code><a href='read_dv.html'>read_dv</a></code> <code><a href='plays.html'>plays</a></code></p></div>
+    <p>A data.frame with columns <code>cone_number</code>, <code>x</code>, <code>y</code></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='read_dv.html'>read_dv</a></span>(<span class='fu'><a href='dv_example_file.html'>dv_example_file</a></span>(), <span class='kw'>insert_technical_timeouts</span><span class='kw'>=</span><span class='fl'>FALSE</span>)
-<span class='co'>## first attack win rate, by team</span>
-<span class='fu'><a href='https://rdrr.io/r/base/by.html'>by</a></span>(<span class='fu'><a href='plays.html'>plays</a></span>(<span class='no'>x</span>),<span class='fu'><a href='plays.html'>plays</a></span>(<span class='no'>x</span>)$<span class='no'>team</span>,<span class='kw'>function</span>(<span class='no'>z</span>)<span class='fu'>find_first_attack</span>(<span class='no'>z</span>)$<span class='no'>win_rate</span>)
+ <span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>ggplot2</span>)
+ <span class='no'>cxy</span> <span class='kw'>&lt;-</span> <span class='fu'>dv_cone_polygons</span>(<span class='st'>"M"</span>)
+ <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span>(<span class='no'>cxy</span>, <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span>(<span class='no'>x</span>, <span class='no'>y</span>, <span class='kw'>group</span> <span class='kw'>=</span> <span class='no'>cone_number</span>, <span class='kw'>fill</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/factor.html'>as.factor</a></span>(<span class='no'>cone_number</span>))) +
+   <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_polygon.html'>geom_polygon</a></span>() + <span class='fu'><a href='ggcourt.html'>ggcourt</a></span>()
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
@@ -142,7 +148,6 @@
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       <li><a href="#value">Value</a></li>
-      <li><a href="#see-also">See also</a></li>
       <li><a href="#examples">Examples</a></li>
     </ul>
 

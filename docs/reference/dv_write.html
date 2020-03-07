@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Find first attacks by the receiving team (i.e. attacks associated with a serve reception) — find_first_attack • datavolley</title>
+<title>Write a datavolley object to dvw file — dv_write • datavolley</title>
 
 
 <!-- jquery -->
@@ -35,8 +35,9 @@
 
 
 
-<meta property="og:title" content="Find first attacks by the receiving team (i.e. attacks associated with a serve reception) — find_first_attack" />
-<meta property="og:description" content="Find first attacks by the receiving team (i.e. attacks associated with a serve reception)" />
+<meta property="og:title" content="Write a datavolley object to dvw file — dv_write" />
+<meta property="og:description" content="Note that this is really rather experimental, and you probably shouldn't use it yet. Once complete, this function will allow a datavolley file to be read in via read_dv, modified by the user, and then rewritten back to a datavolley file.
+At this stage, most modifications to the datavolley object should make it back into the rewritten file. However, the scouted code (in the code column) is NOT yet updated to reflect changes that might have been made to other columns in the datavolley object." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -103,38 +104,49 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Find first attacks by the receiving team (i.e. attacks associated with a serve reception)</h1>
+    <h1>Write a datavolley object to dvw file</h1>
     
-    <div class="hidden name"><code>find_first_attack.Rd</code></div>
+    <div class="hidden name"><code>dv_write.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Find first attacks by the receiving team (i.e. attacks associated with a serve reception)</p>
+    <p>Note that this is really rather experimental, and you probably shouldn't use it yet. Once complete, this function will allow a datavolley file to be read in via <code><a href='read_dv.html'>read_dv</a></code>, modified by the user, and then rewritten back to a datavolley file.
+At this stage, most modifications to the datavolley object should make it back into the rewritten file. However, the scouted code (in the <code>code</code> column) is NOT yet updated to reflect changes that might have been made to other columns in the datavolley object.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>find_first_attack</span>(<span class='no'>x</span>)</pre>
+    <pre class="usage"><span class='fu'>dv_write</span>(<span class='no'>x</span>, <span class='no'>file</span>, <span class='kw'>text_encoding</span> <span class='kw'>=</span> <span class='st'>"UTF-8"</span>)
+
+<span class='fu'>write_dv</span>(<span class='no'>x</span>, <span class='no'>file</span>, <span class='kw'>text_encoding</span> <span class='kw'>=</span> <span class='st'>"UTF-8"</span>)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>x</th>
-      <td><p>data.frame: the plays component of a datavolley object, as returned by <code><a href='read_dv.html'>read_dv()</a></code></p></td>
+      <td><p>datvolley: a datavolley object as returned by <code><a href='read_dv.html'>read_dv</a></code></p></td>
+    </tr>
+    <tr>
+      <th>file</th>
+      <td><p>string: the filename to write to. If not supplied, no file will be written but the dvw content will be returned</p></td>
+    </tr>
+    <tr>
+      <th>text_encoding</th>
+      <td><p>string: the text encoding to use</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>named list with components "ix" (logical indices into the x object where the row corresponds to a first attack in a rally), "n" (number of receptions for which there was a first attack by the receiving team), "n_win" (the number of winning first attacks), "win_rate" (number of winning first attacks as a proportion of the total number of first attacks).</p>
+    <p>The dvw file contents as a character vector (invisibly)</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='read_dv.html'>read_dv</a></code> <code><a href='plays.html'>plays</a></code></p></div>
+    <div class='dont-index'><p><code><a href='read_dv.html'>read_dv</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='read_dv.html'>read_dv</a></span>(<span class='fu'><a href='dv_example_file.html'>dv_example_file</a></span>(), <span class='kw'>insert_technical_timeouts</span><span class='kw'>=</span><span class='fl'>FALSE</span>)
-<span class='co'>## first attack win rate, by team</span>
-<span class='fu'><a href='https://rdrr.io/r/base/by.html'>by</a></span>(<span class='fu'><a href='plays.html'>plays</a></span>(<span class='no'>x</span>),<span class='fu'><a href='plays.html'>plays</a></span>(<span class='no'>x</span>)$<span class='no'>team</span>,<span class='kw'>function</span>(<span class='no'>z</span>)<span class='fu'>find_first_attack</span>(<span class='no'>z</span>)$<span class='no'>win_rate</span>)
+  <span class='no'>x</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='read_dv.html'>read_dv</a></span>(<span class='fu'><a href='dv_example_file.html'>dv_example_file</a></span>())
+  <span class='no'>outfile</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/tempfile.html'>tempfile</a></span>()
+  <span class='fu'>dv_write</span>(<span class='no'>x</span>, <span class='no'>outfile</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
