@@ -173,7 +173,7 @@ dvw_match <- function(x, text_encoding, date_format) {
     mm <- x$meta$match
     if (is.null(mm)) stop("missing the meta$match component of the input object")
     if (!missing(text_encoding)) mm$text_encoding <- text_encoding
-    mm$date <- format(mm$date, date_format)
+    if (!is.na(mm$date)) mm$date <- format(mm$date, date_format)
     c("[3MATCH]", df2txt(mm), ";;12345;;;;;;")
 }
 
