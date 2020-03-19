@@ -36,6 +36,12 @@ test_that("dv_write behaves", {
     test_read_write_dvw <- function(filename) {
         ## read a file
         x0 <- read_dv(filename)
+        ## inject some extra bits for the purposes of testing
+        x0$meta$more$spectators <- 99L
+        x0$meta$more$receipts <- 123L
+        x0$meta$match$home_away <- "Home"
+        x0$meta$match$day_number <- 11L
+        x0$meta$match$match_number <- 22L
         ## write it
         outfile <- tempfile()
         dv_write(x0, file = outfile)

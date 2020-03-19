@@ -47,7 +47,12 @@ read_match <- function(txt, date_format = NULL) {
     names(p)[2] <- "time"
     names(p)[3] <- "season"
     names(p)[4] <- "league"
+    names(p)[5] <- "phase"
+    names(p)[6] <- "home_away"
+    names(p)[7] <- "day_number"
+    names(p)[8] <- "match_number"
     names(p)[9] <- "text_encoding"
+    names(p)[10] <- "regulation" ## 0 = indoor sideout, 1 = indoor rally point, 2 = beach rally point
     names(p)[11] <- "zones_or_cones" ## C or Z, e.g. 12/08/2018;;;;;;;;1;1;Z;0;
     msgs <- list()
     if (is.na(p$date)) {
@@ -75,7 +80,14 @@ read_match <- function(txt, date_format = NULL) {
         }
     }
     suppressWarnings(p$time <- lubridate::hms(p$time)) ## don't warn on time, because the plays object has it anyway
-    list(match=p,messages=msgs)
+    if (p$regulation %eq% 0) {
+        p$regulation <- "indoor sideout"
+    } else if (p$regulation %eq% 1) {
+        p$regulation <- "indoor rally point"
+    } else if (p$regulation %eq% 2) {
+        p$regulation <- "beach rally point"
+    }
+    list(match = p, messages = msgs)
 }
 
 read_more <- function(txt) {
@@ -85,6 +97,8 @@ read_more <- function(txt) {
     tryCatch(p <- read_semi_text(txt[idx+1], fallback = "read.table"), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
     for (k in c(1, 4:6)) p[, k] <- as.character(p[, k])
     names(p)[1] <- "referees"
+    names(p)[2] <- "spectators"
+    names(p)[3] <- "receipts"
     names(p)[4] <- "city"
     names(p)[5] <- "arena"
     names(p)[6] <- "scout"
@@ -121,6 +135,7 @@ read_teams <- function(txt) {
     names(p)[3] <- "sets_won"
     names(p)[4] <- "coach"
     names(p)[5] <- "assistant"
+    if (ncol(p) > 5) names(p)[6] <- "shirt_colour"
     p$home_away_team <- c("*","a")
     p$team_id <- as.character(p$team_id) ## force to be char
     suppressWarnings(p$sets_won <- as.integer(p$sets_won))
@@ -155,8 +170,10 @@ read_players <- function(txt,team,surname_case) {
     names(p)[9] <- "player_id"
     names(p)[10] <- "lastname"
     names(p)[11] <- "firstname"
+    names(p)[12] <- "nickname"
     names(p)[13] <- "special_role"
     names(p)[14] <- "role"
+    names(p)[15] <- "foreign"
     if (is.character(surname_case)) {
         p$lastname <- switch(tolower(surname_case),
                              upper = toupper(p$lastname),

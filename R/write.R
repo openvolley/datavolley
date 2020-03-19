@@ -174,6 +174,14 @@ dvw_match <- function(x, text_encoding, date_format) {
     if (is.null(mm)) stop("missing the meta$match component of the input object")
     if (!missing(text_encoding)) mm$text_encoding <- text_encoding
     if (!is.na(mm$date)) mm$date <- format(mm$date, date_format)
+    if (mm$regulation %eq% "indoor sideout") {
+        mm$regulation <- 0L
+    } else if (mm$regulation %eq% "beach rally point") {
+        mm$regulation <- 2L
+    } else {
+        ## if "indoor rally point", but also treat as the default
+        mm$regulation <- 1L
+    }
     c("[3MATCH]", df2txt(mm), ";;12345;;;;;;")
 }
 
