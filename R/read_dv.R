@@ -234,7 +234,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         out$meta <- edited_meta
     }
     file_type <- "indoor"
-    if (nrow(out$meta$players_h) == 2 && nrow(out$meta$players_h) == 2) {
+    if ((nrow(out$meta$players_h) == 2 && nrow(out$meta$players_h) == 2) || (!is.null(out$meta$match$regulation) && grepl("beach", out$meta$match$regulation))) {
         ## assume is a beach volley file
         file_type <- "beach"
     }
