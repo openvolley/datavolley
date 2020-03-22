@@ -26,4 +26,4 @@ Suggests:
 Encoding: UTF-8
 License: MIT + file LICENSE
 LazyData: true
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
