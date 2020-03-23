@@ -905,3 +905,36 @@ xy2subzone <- function(x, y) {
 ##cxy <- bind_rows(lapply(c("L", "M", "R"), function(z) dv_cone_polygons(z) %>% mutate(end = "upper", zone = z))) %>%
 ##    bind_rows(bind_rows(lapply(c("L", "M", "R"), function(z) dv_cone_polygons(z, end = "lower") %>% mutate(end = "lower", zone = z))))
 ##ggplot(cxy, aes(x, y, group = cone_number, fill = as.factor(cone_number))) + geom_polygon() + ggcourt() + facet_wrap(~end + zone)
+# x <- datavolley::dv_read("/home/ick003/Documents/Donnees/VolleyBall/Dropbox/Sent files/&qua04 state u18-boss women.dvw")
+dv_cmb <-function(x){
+    
+    df_cmb <- x$meta$attacks
+
+    df_cmb$X8 <- paste0(round(as.numeric(stringr::str_sub(df_cmb$X8,1,2))/2)*2, round(as.numeric(stringr::str_sub(df_cmb$X8,3,4))/4)*4)
+    
+    df_cmb <- aggregate(cbind(code ,description) ~ X8 + attacker_position, dplyr::select(df_cmb, code, X8, attacker_position, description), FUN = stringr::str_c, collapse = ", ")
+    
+    df_cmb$end_coordinate_y <- (as.numeric(stringr::str_sub(df_cmb$X8,1,2)))/50*3.5
+    
+    df_cmb$start_coordinate_y <-  df_cmb$end_coordinate_y - 0.3
+    
+    df_cmb$end_coordinate_x <- (as.numeric(stringr::str_sub(df_cmb$X8,3,4))-10)/80*3+0.5
+    df_cmb$start_coordinate_x <- 
+        dplyr::case_when(df_cmb$attacker_position == 2 ~ df_cmb$end_coordinate_x + 0.2,
+                         df_cmb$attacker_position == 4 ~ df_cmb$end_coordinate_x - 0.2,
+                         TRUE ~ df_cmb$end_coordinate_x)
+    
+    df_cmb$label_x <- df_cmb$start_coordinate_x
+    df_cmb$label_y <- df_cmb$start_coordinate_y - 0.1
+    
+    df_cmb$attacker_position <- factor(df_cmb$attacker_position, levels = c(4,3,2,7,8,9))
+    
+    gCMB <- ggplot2::ggplot() + datavolley::ggcourt(court = "lower", labels = "Attacking team", court_colour = "indoor") + 
+        ggplot2::geom_segment(data=df_cmb, ggplot2::aes(x = start_coordinate_x, y = start_coordinate_y, xend = end_coordinate_x, yend = end_coordinate_y),
+                              arrow = ggplot2::arrow(length = ggplot2::unit(0.2,"cm")), size=1) + 
+        ggrepel::geom_text_repel(data=df_cmb, ggplot2::aes(x = label_x, y = label_y, label  = code), size = 2, nudge_y = -0.5, segment.size = .2) + ggplot2::facet_wrap(~attacker_position)
+    
+    tCMB <- dplyr::select(x$meta$attacks, code, type,attacker_position, description)
+    return(list(plot_comb = gCMB, table_comb = tCMB))
+}
+
