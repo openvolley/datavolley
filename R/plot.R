@@ -901,18 +901,59 @@ xy2subzone <- function(x, y) {
 }
 
 
-##library(dplyr)
-##cxy <- bind_rows(lapply(c("L", "M", "R"), function(z) dv_cone_polygons(z) %>% mutate(end = "upper", zone = z))) %>%
-##    bind_rows(bind_rows(lapply(c("L", "M", "R"), function(z) dv_cone_polygons(z, end = "lower") %>% mutate(end = "lower", zone = z))))
-##ggplot(cxy, aes(x, y, group = cone_number, fill = as.factor(cone_number))) + geom_polygon() + ggcourt() + facet_wrap(~end + zone)
-# x <- datavolley::dv_read("/home/ick003/Documents/Donnees/VolleyBall/Dropbox/Sent files/&qua04 state u18-boss women.dvw")
-dv_cmb <-function(x){
+#' Returns the attack combinations used during the scouting of the game
+#'
+#' @param x datavolley: a datavolley object as returned by read_dv
+#'
+#' @return A list of two tibbles. One with the scouting attack combinations, and one with the scouted combinations for each team during the game.
+#'
+#' @examples
+#' \dontrun{
+#' library(ggplot2)
+#' library(ggrepel)
+#' library(dplyr)
+#' x <- dv_read(dv_example_file())
+#' dvc <- dv_combinations(x)
+#' 
+#' ## Example 1: List of possible attack combinations 
+#' 
+#' ggplot(data= dvc$table_comb) + 
+#'    ggcourt(court = "lower", labels = paste("Tempo: Tense"), court_colour = "indoor") + 
+#'    geom_segment(aes(x = start_coordinate_x, y = start_coordinate_y, 
+#'    xend = end_coordinate_x, yend = end_coordinate_y),
+#'                          arrow = arrow(length = unit(0.2,"cm")), size=1) + 
+#'    geom_text_repel(aes(x = start_coordinate_x, y = start_coordinate_y, label  = code), 
+#'    size = 3, nudge_y = -0.25, segment.size = .1) + 
+#'    facet_wrap(~ type)
+#'    
+#' ## Example 2: List and frequency of attacks run by home team per setter position on reception phase
+#' 
+#' freq_comb <- count(dplyr::filter(plays(x), skill == "Attack", phase == "Reception", 
+#' team == home_team(x)), 
+#' attack_code, home_setter_position)
+#' 
+#' freq_join <- tidyr::drop_na(dplyr::left_join(dvc$table_comb, freq_comb, 
+#' by = c("code" = "attack_code")), n)
+#' 
+#' ggplot(data = freq_join) + 
+#' ggcourt(court = "lower", labels = "", court_colour = "indoor") + 
+#' geom_segment(aes(x = start_coordinate_x, y = start_coordinate_y, 
+#' xend = end_coordinate_x, yend = end_coordinate_y),
+#'                          arrow = arrow(length = unit(0.2,"cm")), size=1)+
+#' geom_text_repel(aes(x = start_coordinate_x, y = start_coordinate_y, label  = code), 
+#' size = 3, nudge_y = -0.15, segment.size = .1) + 
+#' geom_text_repel(aes(x = end_coordinate_x, y = 3.75, label  = n), 
+#' size = 3, nudge_y = 0.5, direction = "x", segment.size = .1, vjust = 0) + 
+#' facet_wrap(~ factor(home_setter_position, levels = c(4,3,2,5,6,1))) + 
+#' ggtitle(paste(home_team(x), ": Offensive options on reception phase"))
+#' }
+#'
+#' @export
+dv_combinations <-function(x){
     
     df_cmb <- x$meta$attacks
 
     df_cmb$X8 <- paste0(round(as.numeric(stringr::str_sub(df_cmb$X8,1,2))/2)*2, round(as.numeric(stringr::str_sub(df_cmb$X8,3,4))/4)*4)
-    
-    df_cmb <- aggregate(cbind(code ,description) ~ X8 + attacker_position, dplyr::select(df_cmb, code, X8, attacker_position, description), FUN = stringr::str_c, collapse = ", ")
     
     df_cmb$end_coordinate_y <- (as.numeric(stringr::str_sub(df_cmb$X8,1,2)))/50*3.5
     
@@ -929,12 +970,16 @@ dv_cmb <-function(x){
     
     df_cmb$attacker_position <- factor(df_cmb$attacker_position, levels = c(4,3,2,7,8,9))
     
-    gCMB <- ggplot2::ggplot() + datavolley::ggcourt(court = "lower", labels = "Attacking team", court_colour = "indoor") + 
-        ggplot2::geom_segment(data=df_cmb, ggplot2::aes(x = start_coordinate_x, y = start_coordinate_y, xend = end_coordinate_x, yend = end_coordinate_y),
-                              arrow = ggplot2::arrow(length = ggplot2::unit(0.2,"cm")), size=1) + 
-        ggrepel::geom_text_repel(data=df_cmb, ggplot2::aes(x = label_x, y = label_y, label  = code), size = 2, nudge_y = -0.5, segment.size = .2) + ggplot2::facet_wrap(~attacker_position)
+    df_cmb$type <- factor(df_cmb$type, levels = c("H", "M", "Q", "T", "U", "N", "O"))
     
-    tCMB <- dplyr::select(x$meta$attacks, code, type,attacker_position, description)
-    return(list(plot_comb = gCMB, table_comb = tCMB))
+    tCMB <- dplyr::select(df_cmb, .data$code, .data$type, .data$side, .data$set_type, .data$attacker_position,
+                          .data$description, .data$start_coordinate_x, .data$start_coordinate_y,
+                          .data$end_coordinate_x, .data$end_coordinate_y)
+    
+    freq_cmb <- dplyr::left_join(df_cmb, 
+                     tidyr::pivot_wider(dplyr::count(dplyr::filter(x$plays, .data$skill == "Attack"), .data$attack_code, .data$team), names_from = "team", values_from = "n"), 
+                     by = c("code" = "attack_code"))
+    
+    return(list(table_comb = tCMB, table_freq_comb = freq_cmb))
 }
 
