@@ -125,9 +125,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         }
         ##cat(encoding,"\n")
         ## badchars/badwords indicate characters/words that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
-        badchars <- c(1025:7499,utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3")) ## cyrillic through to music, then some isolated ones
-        ## not sure that next one should be considered bad char
-        ##badchars <- c(badchars,utf8ToInt("\uf9"))##iconv("\xf9",from="latin2")))
+        badchars <- c(1328:7499,utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3")) ## armenian through to music, then some isolated ones
+        ## allow 1025:1327 - cyrillic
+        ## may need to consider removing penalty on armenian/arabic chars too
         ## 0x2000 to 0x206f (general punctuation) likely wrong, 0x01-0x07 are control characters we don't expect to see
         badchars <- c(badchars,0x2000:0x206f, 0x00:0x07)
         badwords <- tolower(c("S\u159RENSEN","S\u159gaard","S\u159ren","M\u159LLER","Ish\u159j","Vestsj\u107lland","KJ\u107R","M\u159rk","Hj\u159rn","\u139rhus")) ## these from windows-1252 (or ISO-8859-1) wrongly guessed as windows-1250
@@ -140,13 +140,15 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         badwords <- c(badwords, tolower("\u102\u104\u7a"), tolower("\u102\u104\u73"), tolower("\u102\u2c7\u7a"), tolower("\u102\u2c7\u73"))
         badwords <- c(badwords, tolower(c(intToUtf8(c(8222, 162)))))
         badwords <- c(badwords, tolower(c("\u192\u56", "\u192\u2021", "\u192\u67", "\u192\u6f", "\u192\u62", "\u192\u4e", "\u2018\u4f", "\u192\u70", "\u192\u43", "\u192\u76")))
+        badwords <- c(badwords, tolower(c("\uf7\u119\uee", "\u2d9\u119\uee", "\uf7\u155\u111", "\uf7\u10d\ued", "\uc2\ueb\u155\ue4\u10d"))) ## russian 1251 wrongly detected as 1250
+        badwords <- c(badwords, tolower(c("\ue8\ueb\ueb", "\ueb\uea", "\ue4\ue0"))) ## russian 1251 wrongly detected as 1258
         ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
-          test_with_enc <- function(enc_to_test) {
-              con <- file(filename, encoding = enc_to_test)
-              on.exit(close(con))
-              ## warn = FALSE (covers NULLs and missing final EOL, but not invalid text chars from mis-specified encoding)
-              tryCatch(paste(readLines(con, n = idx2, warn = FALSE)[idx1:idx2], collapse = ""), warning = function(w) NA_character_, error = function(e) NA_character_)
-          }
+        test_with_enc <- function(enc_to_test) {
+            con <- file(filename, encoding = enc_to_test)
+            on.exit(close(con))
+            ## warn = FALSE (covers NULLs and missing final EOL, but not invalid text chars from mis-specified encoding)
+            tryCatch(paste(readLines(con, n = idx2, warn = FALSE)[idx1:idx2], collapse = ""), warning = function(w) NA_character_, error = function(e) NA_character_)
+        }
         enctest <- sapply(encoding, test_with_enc)
         ##enctest <- sapply(encoding, function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
