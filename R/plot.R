@@ -906,7 +906,6 @@ xy2subzone <- function(x, y) {
 #' @param x datavolley: a datavolley object as returned by read_dv
 #'
 #' @return A list of two tibbles. One with the scouting attack combinations, and one with the scouted combinations for each team during the game.
-#'
 #' @examples
 #' \dontrun{
 #' library(ggplot2)
@@ -972,12 +971,12 @@ dv_combinations <-function(x){
     
     df_cmb$type <- factor(df_cmb$type, levels = c("H", "M", "Q", "T", "U", "N", "O"))
     
-    tCMB <- dplyr::select(df_cmb, .data$code, .data$type, .data$side, .data$set_type, .data$attacker_position,
-                          .data$description, .data$start_coordinate_x, .data$start_coordinate_y,
-                          .data$end_coordinate_x, .data$end_coordinate_y)
+    tCMB <- dplyr::select(df_cmb, rlang::.data$code, rlang::.data$type, rlang::.data$side, rlang::.data$set_type, rlang::.data$attacker_position,
+                          rlang::.data$description, rlang::.data$start_coordinate_x, rlang::.data$start_coordinate_y,
+                          rlang::.data$end_coordinate_x, rlang::.data$end_coordinate_y)
     
     freq_cmb <- dplyr::left_join(df_cmb, 
-                     tidyr::pivot_wider(dplyr::count(dplyr::filter(x$plays, .data$skill == "Attack"), .data$attack_code, .data$team), names_from = "team", values_from = "n"), 
+                     tidyr::pivot_wider(dplyr::count(dplyr::filter(x$plays, rlang::.data$skill == "Attack"), rlang::.data$attack_code, rlang::.data$team), names_from = "team", values_from = "n"), 
                      by = c("code" = "attack_code"))
     
     return(list(table_comb = tCMB, table_freq_comb = freq_cmb))

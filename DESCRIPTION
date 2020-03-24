@@ -14,10 +14,13 @@ Imports:
     plyr,
     raster,
     readr,
+    rlang,
     sp,
     stringi,
     stringr,
-    tibble
+    tibble,
+    tidyr,
+    tidyselect
 Suggests:
     dplyr,
     jsonlite,
