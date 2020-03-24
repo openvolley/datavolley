@@ -130,6 +130,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         ## may need to consider removing penalty on armenian/arabic chars too
         ## 0x2000 to 0x206f (general punctuation) likely wrong, 0x01-0x07 are control characters we don't expect to see
         badchars <- c(badchars,0x2000:0x206f, 0x00:0x07)
+        badchars <- c(badchars, "\u253c")
         badwords <- tolower(c("S\u159RENSEN","S\u159gaard","S\u159ren","M\u159LLER","Ish\u159j","Vestsj\u107lland","KJ\u107R","M\u159rk","Hj\u159rn","\u139rhus")) ## these from windows-1252 (or ISO-8859-1) wrongly guessed as windows-1250
         badwords <- c(badwords,tolower(c("\ud9ukas","Pawe\uf9","\ud9omacz",paste0("Mo\ufd","d\ufdonek"),"W\uf9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1252
         badwords <- c(badwords,tolower(c("\u3a9ukas","Pawe\u3c9","\u3a9omacz",paste0("Mo\u3cd","d\u3cdonek"),"W\u3c9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1253
@@ -141,8 +142,11 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         badwords <- c(badwords, tolower(c(intToUtf8(c(8222, 162)))))
         badwords <- c(badwords, tolower(c("\u192\u56", "\u192\u2021", "\u192\u67", "\u192\u6f", "\u192\u62", "\u192\u4e", "\u2018\u4f", "\u192\u70", "\u192\u43", "\u192\u76")))
         badwords <- c(badwords, tolower(c("\uf7\u119\uee", "\u2d9\u119\uee", "\uf7\u155\u111", "\uf7\u10d\ued", "\uc2\ueb\u155\ue4\u10d"))) ## russian 1251 wrongly detected as 1250
-        badwords <- c(badwords, tolower(c("\ue8\ueb\ueb", "\ueb\uea", "\ue4\ue0"))) ## russian 1251 wrongly detected as 1258
-        ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char))
+        badwords <- c(badwords, tolower(c("\ue8\ueb\ueb", "\ueb\uea", "\ue4\ue0", "\ue0\ue2", "\ue0\ue5", "\ue5\ue2", "\ued\uee", "\uee\uef", "\udf\uea"))) ## russian 1251 wrongly detected as 1258
+        badwords <- c(badwords, tolower(c("\u101\ue5", "\ue5\u101", "\u107\u10d", "\ud7\ue5", "\u122\u10d"))) ## russian 1251 wrongly detected as 1257
+        ##badwords <- c(badwords, tolower(c("\u10f\u17c\u2dd", "\u43f\u457\u405", "\u3bf\u38f\ubd", "\u5df\ubf\ubd"))) ## this is the unicode replacement char EF BF BD in windows-1250, 1251, 1253 (the encoding should be UTF-8). Note that 1252, 1254 seem to represent this as EF BF BD, so we can't detect that?? Doesn't seem to be reliable anyway
+        badwords <- c(badwords, tolower(c("\u56\u49\u444", "\u56\u49\uc6"))) ## windows-1252 wrongly detected as KOI8-R
+        ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char)) or paste0("\\u", sprintf("%x", utf8ToInt("dodgy")), collapse = "")
         test_with_enc <- function(enc_to_test) {
             con <- file(filename, encoding = enc_to_test)
             on.exit(close(con))
@@ -150,10 +154,11 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             tryCatch(paste(readLines(con, n = idx2, warn = FALSE)[idx1:idx2], collapse = ""), warning = function(w) NA_character_, error = function(e) NA_character_)
         }
         enctest <- sapply(encoding, test_with_enc)
-        ##enctest <- sapply(encoding, function(tryenc)iconv(tst,from=tryenc))
         encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
-        ##encerr2 <- vapply(encoding, function(tryenc)tryCatch({blah <- read_match(iconv(file_text[idx1:idx2],from=tryenc)); TRUE},error=function(e) FALSE),FUN.VALUE=TRUE)
-        ##encerrors[!encerr2] <- 999e3
+        ## what badwords are matching a given encoding?
+        ## cat("bw:\n")
+        ## print(lapply(enctest[names(enctest) == "windows-1250"], function(z) if (is.na(z)) Inf else which(sapply(badwords,grepl,tolower(z),fixed=TRUE))))
+        ## errors per encoding
         ##cat("encerrors:\n"); print(sort(encerrors))
         idx <- encerrors==min(encerrors)
         if (!any(idx)) stop("error in guessing text encoding")
