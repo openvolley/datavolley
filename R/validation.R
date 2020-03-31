@@ -353,33 +353,19 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         liberos_v <- x$meta$players_v$number[grepl("L", x$meta$players_v$special_role)]
         liberos_h <- x$meta$players_h$number[grepl("L", x$meta$players_h$special_role)]
         pp <- plays[plays$skill %in% c("Serve", "Attack", "Block", "Dig", "Freeball", "Reception", "Set"), ]
-        ##pp$labelh <- "home_team"
-        ##pp$labelv <- "visiting_team"
-        ##temp <- ldply(1:nrow(pp), function(z) {
-        ##    fcols <- if (pp$home_team[z] %eq% pp$team[z]) c(paste0("home_p", team_player_num), "labelh") else c(paste0("visiting_p", team_player_num), "labelv")
-        ##    out <- pp[z,fcols]
-        ##    names(out) <- c(paste0("player", team_player_num), "which_team")
-        ##    out
-        ##})
-        ## faster code, avoid the ldply
-        temp <- pp[, paste0("visiting_p", team_player_num)]
-        names(temp) <- paste0("player", team_player_num)
-        idx <- pp$team %eq% pp$home_team
-        temp[idx, ] <- pp[idx, paste0("home_p", team_player_num)]
-        temp$which_team <- "visiting_team"
-        temp$which_team[idx] <- "home_team"
-        temp <- as.data.frame(temp, stringsAsFactors = FALSE)
-        rownames(temp) <- NULL
-        ##rownames(temp) <- NULL
-        ##if (!identical(temp, temp2)) {
-        ##    cat(str(temp))
-        ##    cat(str(temp2))
-        ##    cat(str(all.equal(temp, temp2)))
-        ##    stop("no")
-        ##}
-        chk <- sapply(1:nrow(pp),function(z) !pp$player_number[z] %in% (if (temp$which_team[z]=="home_team") liberos_h else liberos_v) & (!pp$player_number[z] %in% temp[z,]))
-        if (any(chk))
-            out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],video_time=video_time_from_raw(x$raw[pp$file_line_number[chk]]),message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        if (nrow(pp) > 0) {
+            temp <- pp[, paste0("visiting_p", team_player_num)]
+            names(temp) <- paste0("player", team_player_num)
+            idx <- pp$team %eq% pp$home_team
+            temp[idx, ] <- pp[idx, paste0("home_p", team_player_num)]
+            temp$which_team <- "visiting_team"
+            temp$which_team[idx] <- "home_team"
+            temp <- as.data.frame(temp, stringsAsFactors = FALSE)
+            rownames(temp) <- NULL
+            chk <- sapply(1:nrow(pp),function(z) !pp$player_number[z] %in% (if (temp$which_team[z]=="home_team") liberos_h else liberos_v) & (!pp$player_number[z] %in% temp[z,]))
+            if (any(chk))
+                out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],video_time=video_time_from_raw(x$raw[pp$file_line_number[chk]]),message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+        }
 
         if (file_type == "indoor") {
             ## liberos doing stuff they oughtn't be doing
