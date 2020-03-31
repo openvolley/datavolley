@@ -24,13 +24,14 @@ roles_str2int <- function(x) {
 
 read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
     suppressWarnings(tryCatch({
-        out <- readr::read_delim(txt, delim = sep, col_names = FALSE, locale = readr::locale(encoding = "UTF-8"), ...)
+        ## quote = "" because no text in the dvw should be fully quoted, but might have quotes within team names
+        out <- readr::read_delim(txt, delim = sep, col_names = FALSE, quote = "", locale = readr::locale(encoding = "UTF-8"), ...)
         ## strip the extra attributes that readr adds, and convert from spec_tbl_df back to plain old tbl_df
         attr(out, "spec") <- NULL
         tibble::as_tibble(out)
     }, error = function(e) {
         if (fallback == "fread") {
-            data.table::fread(txt, data.table = FALSE, sep = sep, header = FALSE, na.strings = "NA", logical01 = FALSE)
+            data.table::fread(txt, data.table = FALSE, sep = sep, header = FALSE, na.strings = "NA", logical01 = FALSE) ## seems to cope with embedded quotes
         } else {
             read.table(text = txt, sep = sep, quote = "", stringsAsFactors = FALSE, header = FALSE)
         }
