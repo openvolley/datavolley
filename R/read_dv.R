@@ -331,6 +331,8 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             out$plays$set_number[(temp[si-1]+1):(temp[si]-1)] <- (si-1)
             out$plays$set_number[temp[si]] <- si ## +1 on the actual **1set line
         }
+        out$plays$home_team_score[which(out$plays$end_of_set)] <- NA_integer_
+        out$plays$visiting_team_score[which(out$plays$end_of_set)] <- NA_integer_
     }
 
     ## technical timeouts
