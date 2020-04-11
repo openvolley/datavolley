@@ -622,24 +622,30 @@ print.summary.datavolley <- function(x,...) {
 #' }
 #'
 #' @export
-dvlist_summary=function(z) {
-    out <- list(number_of_matches=length(z),number_of_sets=sum(vapply(z,function(z)sum(z$meta$teams$sets_won),FUN.VALUE=as.integer(1),USE.NAMES=FALSE)))
-    out$date_range <- range(ldply(z,function(q)as.Date(q$meta$match$date))$V1)
-    temp <- as.character(sapply(z,function(q) q$meta$teams$team))
+dvlist_summary <- function(z) {
+    out <- list(number_of_matches = length(z), number_of_sets = sum(vapply(z, function(z) as.integer(sum(z$meta$teams$sets_won)), FUN.VALUE = 1L, USE.NAMES = FALSE)))
+    out$date_range <- range(ldply(z, function(q) as.Date(q$meta$match$date))$V1)
+    temp <- as.character(sapply(z, function(q) q$meta$teams$team))
     teams <- as.data.frame(table(temp))
-    names(teams) <- c("team","played")
-    temp <- ldply(z,function(q)q$meta$teams[,c("team","won_match")])
-    teams <- suppressMessages(join(teams,ddply(temp,c("team"),function(q)data.frame(won=sum(q$won_match)))))
+    names(teams) <- c("team", "played")
+    temp <- ldply(z, function(q) q$meta$teams[, c("team", "won_match")])
+    teams <- suppressMessages(join(teams, ddply(temp, c("team"), function(q) data.frame(won=sum(q$won_match)))))
     teams$win_rate <- teams$won/teams$played
 
-    temp <- ddply(ldply(z,function(q){ temp <- q$meta$teams[,c("team","sets_won")]; temp$sets_played <- sum(q$meta$teams$sets_won); temp}),c("team"),function(z)data.frame(sets_played=sum(z$sets_played),sets_won=sum(z$sets_won)))##summarise,sets_played=sum(sets_played),sets_won=sum(sets_won))
+    temp <- ddply(ldply(z, function(q) {
+        temp <- q$meta$teams[, c("team", "sets_won")]
+        temp$sets_played <- sum(q$meta$teams$sets_won); temp
+    }), c("team"), function(z) data.frame(sets_played = sum(z$sets_played), sets_won = sum(z$sets_won)))
     temp$set_win_rate <- temp$sets_won/temp$sets_played
-    teams <- suppressMessages(join(teams,temp))
-
-    temp <- ldply(z,function(q){ s <- summary(q); s$sc <- colSums(s$set_scores); data.frame(team=s$teams$team,points_for=s$sc,points_against=s$sc[2:1])})
-    teams <- suppressMessages(join(teams,ddply(temp,c("team"),function(q)data.frame(points_for=as.integer(sum(q$points_for)),points_against=as.integer(sum(q$points_against))))))
+    teams <- suppressMessages(join(teams, temp))
+    temp <- ldply(z, function(q) {
+        s <- summary(q)
+        s$sc <- colSums(s$set_scores)
+        data.frame(team = s$teams$team, points_for = s$sc, points_against = s$sc[2:1])
+    })
+    teams <- suppressMessages(join(teams, ddply(temp, c("team"), function(q) data.frame(points_for = as.integer(sum(q$points_for)), points_against = as.integer(sum(q$points_against))))))
     teams$points_ratio <- teams$points_for/teams$points_against
-    teams <- teams[order(teams$team),] ##arrange(teams,team)
+    teams <- teams[order(teams$team), ]
     out$ladder <- teams
     class(out) <- "summary.datavolleylist"
     out
