@@ -137,6 +137,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         badwords <- c(badwords,tolower(c("\uc4\u15a","\u139\u2dd"))) ## utf-8 wrongly guessed as windows-1250
         badwords <- c(badwords, tolower(c("\uc4\u8d", "\uc5\ubd", "\uc4\u152"))) ## utf-8 wrongly guessed as windows-1252
         badwords <- c(badwords,tolower(c("Nicol\u148"))) ## windows-1252/iso-8859-1 wrongly guessed as windows-1250
+        badwords <- c(badwords, tolower(c("\u6a\u446\u72", "\u68\u446\u68", "\u76\u446\u6c", "\u6d\u44c\u6c", "\u72\u44c\u67", "\u70\u446\u68", "\u6b\u44c\u68"))) ## 1250 as 1251
         badwords <- c(badwords, tolower(c("\uc2\ue4\u77", "\uf1\u7b", "\ue5\ue4", "\ue5\ue3"))) ## japanese SHIFT-JIS wrongly guessed as macintosh
         badwords <- c(badwords, tolower("\u102\u104\u7a"), tolower("\u102\u104\u73"), tolower("\u102\u2c7\u7a"), tolower("\u102\u2c7\u73"))
         badwords <- c(badwords, tolower(c(intToUtf8(c(8222, 162)))))
