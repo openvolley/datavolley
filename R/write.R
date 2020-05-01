@@ -173,7 +173,9 @@ dvw_match <- function(x, text_encoding, date_format) {
     mm <- x$meta$match
     if (is.null(mm)) stop("missing the meta$match component of the input object")
     if (!missing(text_encoding)) mm$text_encoding <- text_encoding
-    if (!is.na(mm$date)) mm$date <- format(mm$date, date_format)
+    if (!is.na(mm$date)) {
+        if (!is.character(mm$date)) try(mm$date <- format(mm$date, date_format), silent = TRUE)
+    }
     if (mm$regulation %eq% "indoor sideout") {
         mm$regulation <- 0L
     } else if (mm$regulation %eq% "beach rally point") {
@@ -189,10 +191,16 @@ dvw_header <- function(x, text_encoding, date_format) {
     fm <- x$file_meta
     if (is.null(fm)) stop("missing file_meta component of the input object")
     tdnow <- Sys.time()
-    tdformat <- function(z) format(z, paste0(date_format, " %H.%M.%S"))
+    tdformat <- function(z) {
+        if (is.character(z)) {
+            z ## as-is
+        } else {
+            tryCatch(format(z, paste0(date_format, " %H.%M.%S")), error = function(e) NULL)
+        }
+    }
     c("[3DATAVOLLEYSCOUT]",
       paste0("FILEFORMAT: ", not_null_or(fm$fileformat, "2.0")),
-      paste0("GENERATOR-DAY: ", tdformat(not_null_or(fm$generator_day, tdnow))),
+      paste0("GENERATOR-DAY: ", not_null_or(tdformat(fm$generator_day), tdformat(tdnow))),
       paste0("GENERATOR-IDP: ", not_null_or(fm$generator_idp, "")),
       paste0("GENERATOR-PRG: ", not_null_or(fm$generator_prg, "")),
       paste0("GENERATOR-REL: ", not_null_or(fm$generator_rel, "")),
