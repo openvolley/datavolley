@@ -209,7 +209,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             if (!is.null(ignore_codes)) ignore_codes <- na.omit(ignore_codes)
             attacks <- plays[plays$skill %eq% "Attack", ]
             if (nrow(attacks) > 0) {
-                for (p in 1:6) attacks[, paste0("attacker_", p)] <- NA
+                for (p in 1:6) attacks[, paste0("attacker_", p)] <- NA_integer_
                 idx <- attacks$home_team %eq% attacks$team
                 attacks[idx, paste0("attacker_", 1:6)] <- attacks[idx, paste0("home_p", 1:6)]
                 attacks[!idx, paste0("attacker_", 1:6)] <- attacks[!idx, paste0("visiting_p", 1:6)]
