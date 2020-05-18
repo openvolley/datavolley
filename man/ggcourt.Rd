@@ -11,6 +11,7 @@ ggcourt(
   as_for_serve = FALSE,
   show_zone_lines = TRUE,
   show_minor_zones = FALSE,
+  show_3m_line = TRUE,
   grid_colour = "black",
   zone_colour = "grey70",
   minor_zone_colour = "grey80",
@@ -37,6 +38,8 @@ ggcourt(
 \item{show_zone_lines}{logical: if FALSE, just show the 3m line. If TRUE, also show the 3m x 3m zones}
 
 \item{show_minor_zones}{logical: add lines for the subzones (1.5m squares)?}
+
+\item{show_3m_line}{logical: if TRUE, show the 3m (10ft) line}
 
 \item{grid_colour}{string: colour to use for court sidelines, 3m line, and net}
 

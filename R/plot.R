@@ -42,6 +42,7 @@
 #' @param as_for_serve logical: if TRUE and \code{show_zones} is TRUE, show zones as for serving. Only zones 1,5,6,7,9 are meaningful in this case
 #' @param show_zone_lines logical: if FALSE, just show the 3m line. If TRUE, also show the 3m x 3m zones
 #' @param show_minor_zones logical: add lines for the subzones (1.5m squares)?
+#' @param show_3m_line logical: if TRUE, show the 3m (10ft) line
 #' @param grid_colour string: colour to use for court sidelines, 3m line, and net
 #' @param zone_colour string: colour to use for zone lines and labels
 #' @param minor_zone_colour string: colour to use for minor zone grid lines
@@ -132,13 +133,14 @@
 #' }
 #' 
 #' @export
-ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, background_only = FALSE, foreground_only = FALSE, ...) {
+ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, show_3m_line = TRUE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, background_only = FALSE, foreground_only = FALSE, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }
     court <- match.arg(tolower(court),c("full","lower","upper"))
     assert_that(is.flag(show_zones),!is.na(show_zones))
     assert_that(is.flag(show_minor_zones),!is.na(show_minor_zones))
+    assert_that(is.flag(show_3m_line),!is.na(show_3m_line))
     assert_that(is.flag(as_for_serve),!is.na(as_for_serve))
     assert_that(is.flag(fixed_aspect_ratio),!is.na(fixed_aspect_ratio))
     if (is.null(court_colour)) court_colour <- "none"
@@ -158,13 +160,22 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
         cfill <- ggplot2::annotate(geom = "rect", xmin = 0.5, xmax = 3.5, ymin = switch(court, upper = 3.5, 0.5), ymax = switch(court, lower = 3.5, 6.5), fill = court_colour)
     }
     ## horizontal grid lines
-    hl <- data.frame(x=c(0.5,3.5),y=c(0.5,0.5,2.5,2.5,3.5,3.5,4.5,4.5,6.5,6.5),id=c(1,1,2,2,3,3,4,4,5,5))
+    if (show_3m_line) {
+        hl <- data.frame(x=c(0.5,3.5),y=c(0.5,0.5,2.5,2.5,3.5,3.5,4.5,4.5,6.5,6.5),id=c(1,1,2,2,3,3,4,4,5,5))
+    } else {
+        hl <- data.frame(x=c(0.5,3.5),y=c(0.5,0.5,3.5,3.5,6.5,6.5),id=c(1,1,3,3,5,5))
+    }
     hl <- switch(court,
                  lower=hl[hl$y<4,],
                  upper=hl[hl$y>3,],
                  hl)
     hl <- ggplot2::geom_path(data=hl,ggplot2::aes_string(x="x",y="y",group="id"),colour=grid_colour,inherit.aes=FALSE)
-    hlz <- data.frame(x=c(0.5,3.5),y=c(1.5,1.5,5.5,5.5),id=c(6,6,7,7))
+    if (show_3m_line) {
+        hlz <- data.frame(x=c(0.5,3.5),y=c(1.5,1.5,5.5,5.5),id=c(6,6,7,7))
+    } else {
+        ## also include zone line along 3m line
+        hlz <- data.frame(x=c(0.5,3.5),y=c(1.5,1.5,2.5,2.5,4.5,4.5,5.5,5.5),id=c(6,6,6.3,6.3,6.6,6.6,7,7))
+    }
     hlz <- switch(court,
                  lower=hlz[hlz$y<4,],
                  upper=hlz[hlz$y>3,],
