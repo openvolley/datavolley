@@ -3,7 +3,7 @@
 #' Note that this is really rather experimental, and you probably shouldn't use it yet. Once complete, this function will allow a datavolley file to be read in via \code{\link{read_dv}}, modified by the user, and then rewritten back to a datavolley file.
 #' At this stage, most modifications to the datavolley object should make it back into the rewritten file. However, the scouted code (in the \code{code} column) is NOT yet updated to reflect changes that might have been made to other columns in the datavolley object.
 #'
-#' @param x datvolley: a datavolley object as returned by \code{\link{read_dv}}
+#' @param x datavolley: a datavolley object as returned by \code{\link{read_dv}}
 #' @param file string: the filename to write to. If not supplied, no file will be written but the dvw content will be returned
 #' @param text_encoding string: the text encoding to use
 #'

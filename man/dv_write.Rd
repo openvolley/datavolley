@@ -10,7 +10,7 @@ dv_write(x, file, text_encoding = "UTF-8")
 write_dv(x, file, text_encoding = "UTF-8")
 }
 \arguments{
-\item{x}{datvolley: a datavolley object as returned by \code{\link{read_dv}}}
+\item{x}{datavolley: a datavolley object as returned by \code{\link{read_dv}}}
 
 \item{file}{string: the filename to write to. If not supplied, no file will be written but the dvw content will be returned}
 
