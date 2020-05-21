@@ -83,8 +83,8 @@ skill_type_decode <- function(skill, type, full_line, line_num, file_type = "ind
 # @param evaluation_code string: one-character evaluation code, generally one of =/-+#!
 # @param show_map logical: if TRUE, return the whole table being used to map evaluation codes to summary phrases
 
-skill_evaluation_decoder <- function(style="default") {
-    style <- match.arg(tolower(style),c("default","volleymetrics"))
+skill_evaluation_decoder <- function(style = "default") {
+    style <- match.arg(tolower(style), c("default", "volleymetrics", "german"))
     ## reading this table is slow, so do it once and return the function
     dtbl <- read.table(text="skill^evaluation_code^evaluation
 S^=^Error
@@ -144,6 +144,10 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
         dtbl$evaluation[dtbl$skill=="D" & dtbl$evaluation_code=="!"] <- "Poor block cover"
         ## E/ is a reach
         dtbl$evaluation[dtbl$skill=="E" & dtbl$evaluation_code=="/"] <- "Error (reach over net)"
+    } else if (style == "german") {
+        ## swap B= Error and B/ Invasion
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="/"] <- "Error"
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="="] <- "Invasion"
     }
     ## extract the columns as vectors: faster
     dtbl_evaluation <- dtbl$evaluation
