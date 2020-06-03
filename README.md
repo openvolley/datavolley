@@ -22,7 +22,7 @@ VBStats](http://peranasports.com/software/vbstatshd/) software.
 
 **NOTE:** recent updates have included substantial changes to the way
 that text encoding is handled, including the way that the correct
-encoding is guessed with `read_dv(..., text_encoding = "guess")`. Text
+encoding is guessed with `dv_read(..., text_encoding = "guess")`. Text
 encoding should work better now, particular on Windows. Please [submit
 an issue](https://github.com/openvolley/datavolley/issues/new) if you
 find problems related to text encoding (e.g. player or team names not
@@ -41,7 +41,7 @@ Read one of the example data files bundled with the package:
 
 ``` r
 library(datavolley)
-x <- read_dv(dv_example_file(), insert_technical_timeouts = FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 summary(x)
 #> Match summary:
 #> Date: 2015-01-25
@@ -55,11 +55,11 @@ summary(x)
 
 Note that if you are working with files that were scouted by
 VolleyMetrics, they use some conventions in their files that differ from
-standard DataVolley usage. There is an option to tell `read_dv` to
+standard DataVolley usage. There is an option to tell `dv_read` to
 follow their conventions:
 
 ``` r
-x <- read_dv("/your/file.dvw", skill_evaluation_decode = "volleymetrics")
+x <- dv_read("/your/file.dvw", skill_evaluation_decode = "volleymetrics")
 ```
 
 Number of serves by team:
@@ -252,15 +252,19 @@ from each, and then join of those all together:
 
 ``` r
 lx <- list()
-for (fi in seq_along(d)) lx[[fi]] <- plays(read_dv(d[fi]))
-px <- do.call(rbind, lx)
+## read each file
+for (fi in seq_along(d)) lx[[fi]] <- dv_read(d[fi])
+## now extract the play-by-play component from each and bind them together
+px <- list()
+for (fi in seq_along(lx)) px[[fi]] <- plays(lx)
+px <- do.call(rbind, px)
 ```
 
 (Note, the idiomatic R way to do this would be to use `lapply` instead
-of a `for` loop:
+of `for` loops:
 
 ``` r
-lx <- lapply(d, read_dv)
+lx <- lapply(d, dv_read)
 px <- do.call(rbind, lapply(lx, plays))
 ```
 
@@ -288,10 +292,10 @@ px %>% dplyr::filter(skill == "Reception") %>% group_by(team) %>%
 
 ## Troubleshooting
 
-If you see unexpected behaviour, try `read_dv(..., do_warn = TRUE)` to
+If you see unexpected behaviour, try `dv_read(..., do_warn = TRUE, verbose = TRUE)` to
 obtain more diagnostic information during the process of reading and
 parsing the DataVolley file. Also check the text encoding specified to
-`read_dv` (did you specify one??)
+`dv_read` (did you specify one??)
 
 ## More
 
