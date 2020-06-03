@@ -48,7 +48,7 @@ dv_read(
 
 \item{do_transliterate}{logical: should we transliterate all text to ASCII? See details}
 
-\item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best (experimental). If encoding=="guess", the encoding will be guessed}
+\item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed}
 
 \item{date_format}{string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If \code{date_format} is something other than "guess", that date format will be preferred where dates are ambiguous}
 
