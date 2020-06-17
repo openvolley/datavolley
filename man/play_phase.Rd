@@ -15,8 +15,8 @@ play_phase(x, method = "default")
 character vector
 }
 \description{
-Phase is either "Serve", "Reception" (serve reception and the attack immediately following it),
-or "Transition" (play not associated with serve or reception)
+Phase is either "Serve", "Reception" (serve reception and the set and attack immediately following it, as well as the opposition block on that attack),
+or "Transition" (all play actions after that)
 }
 \examples{
 \dontrun{
