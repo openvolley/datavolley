@@ -244,7 +244,14 @@ read_video <- function(txt) {
         p <- tryCatch(
             suppressWarnings({
                 p <- read_semi_text(txt, sep = "=", fallback = "read.table")
-                colnames(p) <- c("camera", "file")
+                if (ncol(p) > 2) {
+                    ## grrr, video file (url?) had an = in it
+                    txt <- strsplit(txt, "\n")[[1]] ## re-split
+                    txt <- stringr::str_match(txt, "^([^=]*)=(.*)$")
+                    p <- data.frame(camera = txt[, 2], file = txt[, 3], stringsAsFactors = FALSE)
+                } else {
+                    colnames(p) <- c("camera", "file")
+                }
                 p
             }), error = function(e) {
             warning("could not read the [3VIDEO] section of the input file")
