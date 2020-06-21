@@ -535,6 +535,7 @@ dv_cone2xy <- function(start_zones, end_cones, end = "upper", xynames = c("ex", 
 #' }
 #' @export
 dv_xy <- function(zones, end = "lower", xynames = c("x", "y"), as_for_serve = FALSE, subzones) {
+    assert_that(is.numeric(zones))
     end <- match.arg(tolower(end), c("lower", "upper"))
     use_subz <- FALSE
     if (!missing(subzones) && !is.null(subzones)) {
