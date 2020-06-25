@@ -47,6 +47,8 @@ test_that("dv_write behaves", {
         dv_write(x0, file = outfile)
         ## read the one we just wrote
         x1 <- read_dv(outfile)
+        ## modify the match_id, they will be different because we changed bits that are used in the hash calculation
+        x0$meta$match_id <- x1$meta$match_id
         expect_dvws_equal(x0, x1)
     }
     test_read_write_dvw(dv_example_file(1))
