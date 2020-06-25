@@ -319,7 +319,7 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
     tryCatch(out$sets <- read_setter_calls(txt),
              error=function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
-    temp <- out$match[1:5]
+    temp <- out$match[1:8]
     temp$home_team <- out$teams$team[out$teams$home_away_team=="*"]
     temp$visiting_team <- out$teams$team[out$teams$home_away_team=="a"]
     out$match_id <- digest(temp)
