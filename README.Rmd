@@ -20,11 +20,12 @@ knitr::opts_chunk$set(
 
 An R package for reading DataVolley scouting files.
 
-See also this [DataVolley file validator](https://apps.untan.gl/dvalidate/) and [suite of analytical apps](https://apps.untan.gl/), which are built on the datavolley package.
+See also:
+
+- these [code snippets](https://openvolley.github.io/volley-analytics-snippets) for volleyball analytics in R with datavolley and the other openvolley packages
+- this [DataVolley file validator](https://apps.untan.gl/dvalidate/) and [suite of analytical apps](https://apps.untan.gl/), which are built on the datavolley package.
 
 The [peranavolley](https://github.com/openvolley/peranavolley) package provides similar functionality for reading files scouted by the [AOC VBStats](http://peranasports.com/software/vbstatshd/) software.
-
-**NOTE:** recent updates have included substantial changes to the way that text encoding is handled, including the way that the correct encoding is guessed with `dv_read(..., text_encoding = "guess")`. Text encoding should work better now, particular on Windows. Please [submit an issue](https://github.com/openvolley/datavolley/issues/new) if you find problems related to text encoding (e.g. player or team names not displaying correctly).
 
 ## Installation
 
