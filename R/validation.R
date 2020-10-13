@@ -3,6 +3,7 @@
 #' This function is automatically run as part of \code{read_dv} if \code{extra_validation} is greater than zero.
 #' The current validation messages/checks are:
 #' \itemize{
+#'   \item message "The total of the [home|visiting] team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the [home|visiting] team in the plays data"
 #'   \item message "Players xxx and yyy have the same player ID": player IDs should be unique, and so duplicated IDs will be flagged here
 #'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
 #'   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
@@ -129,6 +130,17 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
     }
     plays <- plays(x)
     if (nrow(plays) > 0) {
+        ## check that points-won in the plays component match the points in the meta$result component
+        chk <- sum(x$meta$result$score_home_team, na.rm = TRUE) == sum(x$plays$team == x$plays$home_team & x$plays$point, na.rm = TRUE)
+        if (!chk) {
+            msg <- "The total of the home team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the home team in the plays data"
+            out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
+        }
+        chk <- sum(x$meta$result$score_visiting_team, na.rm = TRUE) == sum(x$plays$team == x$plays$visiting_team & x$plays$point, na.rm = TRUE)
+        if (!chk) {
+            msg <- "The total of the visiting team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the visiting team in the plays data"
+            out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
+        }
         ## laglead adapted from dplyr lag and lead
         laglead <- function (x, n = -1L, default = NA) {
             if (length(n) != 1 || !is.numeric(n)) stop("n must be an integer scalar")
