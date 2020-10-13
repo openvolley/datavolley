@@ -183,8 +183,10 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 read_with_readr <- function(filename) {
     temp <- readLines(filename)
     skip <- which(temp == "[3SCOUT]")
-    if (length(skip) == 1) {
-        out <- suppressWarnings(suppressMessages(readr::read_delim(filename, delim = ";", skip = skip, progress = FALSE, col_names = FALSE, locale = readr::locale(encoding = "UTF-8"))))
+    if (length(skip) == 1 && skip < length(temp)) {
+        ## read direct from file, skipping the required number of lines. Note that this fails if we have embedded single-quotes in the file, because quoted newlines aren't counted in the line-skipping
+        ## out <- suppressWarnings(suppressMessages(readr::read_delim(filename, delim = ";", skip = skip, progress = FALSE, col_names = FALSE, locale = readr::locale(encoding = "UTF-8"))))
+        out <- suppressWarnings(suppressMessages(readr::read_delim(paste(temp[seq(skip+1, length(temp), by = 1L)], collapse = "\n"), delim = ";", progress = FALSE, col_names = FALSE, locale = readr::locale(encoding = "UTF-8"))))
         attr(out, "problems") <- NULL
         attr(out, "spec") <- NULL
         out <- as.data.frame(out, stringsAsFactors = FALSE) ## so that we don't get caught by e.g. tibble column indexing differences to data.frames
