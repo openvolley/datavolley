@@ -119,90 +119,36 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             ##if (any(xiso_idx))
             ##    encoding <- c(encoding,gsub("^x\\-iso","iso",encoding[xiso_idx]))
             ## add common ones
-            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS")) ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
+            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS", "CP932")) ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
             encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
             ##if (length(encoding)<=1) encoding <- iconvlist()
         }
-        ##cat(encoding,"\n")
-        ## badchars/badwords indicate characters/words that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
-        badchars <- c(1328:7499,utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3")) ## armenian through to music, then some isolated ones
-        ## allow 1025:1327 - cyrillic
-        ## may need to consider removing penalty on armenian/arabic chars too
-        ## 0x2000 to 0x206f (general punctuation) likely wrong, 0x01-0x07 are control characters we don't expect to see
-        badchars <- c(badchars,0x2000:0x206f, 0x00:0x07)
-        badchars <- c(badchars, "\u253c")
-        badchars <- c(badchars, 0x2500:0x25ff) ## box-drawing characters (seen with Japanese misidentified as Korean)
-        badwords <- tolower(c("S\u159RENSEN","S\u159gaard","S\u159ren","M\u159LLER","Ish\u159j","Vestsj\u107lland","KJ\u107R","M\u159rk","Hj\u159rn","\u139rhus")) ## these from windows-1252 (or ISO-8859-1) wrongly guessed as windows-1250
-        badwords <- c(badwords,tolower(c("\ud9ukas","Pawe\uf9","\ud9omacz",paste0("Mo\ufd","d\ufdonek"),"W\uf9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1252
-        badwords <- c(badwords,tolower(c("\u3a9ukas","Pawe\u3c9","\u3a9omacz",paste0("Mo\u3cd","d\u3cdonek"),"W\u3c9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1253
-        badwords <- c(badwords,tolower(c("\uc4\u15a","\u139\u2dd"))) ## utf-8 wrongly guessed as windows-1250
-        badwords <- c(badwords, tolower(c("\uc4\u8d", "\uc5\ubd", "\uc4\u152"))) ## utf-8 wrongly guessed as windows-1252
-        badwords <- c(badwords,tolower(c("Nicol\u148"))) ## windows-1252/iso-8859-1 wrongly guessed as windows-1250
-        badwords <- c(badwords, tolower(c("\u6a\u446\u72", "\u68\u446\u68", "\u76\u446\u6c", "\u6d\u44c\u6c", "\u72\u44c\u67", "\u70\u446\u68", "\u6b\u44c\u68"))) ## 1250 as 1251
-        badwords <- c(badwords, tolower(c("\uc2\ue4\u77", "\uf1\u7b", "\ue5\ue4", "\ue5\ue3"))) ## japanese SHIFT-JIS wrongly guessed as macintosh
-        badwords <- c(badwords, tolower("\u102\u104\u7a"), tolower("\u102\u104\u73"), tolower("\u102\u2c7\u7a"), tolower("\u102\u2c7\u73"))
-        badwords <- c(badwords, tolower(c(intToUtf8(c(8222, 162)))))
-        badwords <- c(badwords, tolower(c("\u192\u56", "\u192\u2021", "\u192\u67", "\u192\u6f", "\u192\u62", "\u192\u4e", "\u2018\u4f", "\u192\u70", "\u192\u43", "\u192\u76")))
-        badwords <- c(badwords, tolower(c("\uf7\u119\uee", "\u2d9\u119\uee", "\uf7\u155\u111", "\uf7\u10d\ued", "\uc2\ueb\u155\ue4\u10d"))) ## russian 1251 wrongly detected as 1250
-        badwords <- c(badwords, tolower(c("\ue8\ueb\ueb", "\ueb\uea", "\ue4\ue0", "\ue0\ue2", "\ue0\ue5", "\ue5\ue2", "\ued\uee", "\uee\uef", "\udf\uea"))) ## russian 1251 wrongly detected as 1258
-        badwords <- c(badwords, tolower(c("\u101\ue5", "\ue5\u101", "\u107\u10d", "\ud7\ue5", "\u122\u10d"))) ## russian 1251 wrongly detected as 1257
-        ##badwords <- c(badwords, tolower(c("\u10f\u17c\u2dd", "\u43f\u457\u405", "\u3bf\u38f\ubd", "\u5df\ubf\ubd"))) ## this is the unicode replacement char EF BF BD in windows-1250, 1251, 1253 (the encoding should be UTF-8). Note that 1252, 1254 seem to represent this as EF BF BD, so we can't detect that?? Doesn't seem to be reliable anyway
-        badwords <- c(badwords, tolower(c("\u56\u49\u444", "\u56\u49\uc6"))) ## windows-1252 wrongly detected as KOI8-R
-        ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char)) or paste0("\\u", sprintf("%x", utf8ToInt("dodgy")), collapse = "")
-        test_with_enc <- function(enc_to_test) {
-            con <- file(filename, encoding = enc_to_test)
-            on.exit(close(con))
-            ## warn = FALSE (covers NULLs and missing final EOL, but not invalid text chars from mis-specified encoding)
-            tryCatch(paste(readLines(con, n = idx2, warn = FALSE)[idx1:idx2], collapse = ""), warning = function(w) NA_character_, error = function(e) NA_character_)
+        encoding <- get_best_encodings(encoding, filename = filename, read_from = idx1, read_to = idx2)
+        if (length(encoding$encodings) < 1) stop("error in guessing text encoding")
+        if (encoding$error_score > 0) {
+            ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect2
+            ## now just brute force it over all possible encodings (will be slow)
+            encoding_brute <- get_best_encodings(iconvlist(), filename = filename, read_from = idx1, read_to = idx2)
+            if (length(encoding_brute$encodings) > 0 && encoding_brute$error_score < encoding$error_score) encoding <- encoding_brute
         }
-        enctest <- sapply(encoding, test_with_enc)
-        encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
-        ## what badwords are matching a given encoding?
-        ## cat("bw:\n")
-        ## print(lapply(enctest[names(enctest) == "windows-1250"], function(z) if (is.na(z)) Inf else which(sapply(badwords,grepl,tolower(z),fixed=TRUE))))
-        ## errors per encoding
-        ##cat("encerrors:\n"); print(sort(encerrors))
-        idx <- encerrors==min(encerrors)
-        if (!any(idx)) stop("error in guessing text encoding")
-        enctest <- enctest[idx]
-        encoding <- encoding[idx]
-                                        #cat(str(encoding))
-                                        #cat(str(encerrors[idx]))
-        ##cat(enctest,"\n\n\n")
-        ##cat(utf8ToInt(substr(enctest,946,946)),"\n")
-        other_enc <- c()
-        if (FALSE) {##(any(duplicated(enctest))) {
-            ## pick from the ones that give the most common output
-            un <- unique(enctest)
-            ui <- sapply(enctest,function(z)which(z==un))
-            tmp <- as.data.frame(table(ui),stringsAsFactors=FALSE)
-            umax <- as.numeric(tmp$ui[which.max(tmp$Freq)])
-            ## want encoding that has ui==umax
-            rset <- encoding[ui==umax]
-            ## pick windows- if there is one, else first
-            if (any(grepl("^windows",tolower(rset))))
-                encoding <- rset[grepl("^windows",tolower(rset))][1]
-            else
-                encoding <- rset[1]
-            other_enc <- setdiff(encoding,rset)
+        encoding <- encoding$encodings
+        ## so now we have a list of possible encodings
+        ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then just whatever was first
+        other_enc <- encoding
+        if (any(grepl("^windows",tolower(encoding)))) {
+            encoding <- encoding[grepl("^windows",tolower(encoding))][1]
+        } else if (any(tolower(encoding) %in% c("utf-8", "utf8"))) {
+            encoding <- encoding[tolower(encoding) %in% c("utf-8", "utf8")][1]
+        } else if (any(tolower(encoding) %in% c("us-ascii"))) {
+            encoding <- encoding[tolower(encoding) %in% c("us-ascii")][1]
         } else {
-            ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then just whatever was first
-            other_enc <- encoding
-            if (any(grepl("^windows",tolower(encoding)))) {
-                encoding <- encoding[grepl("^windows",tolower(encoding))][1]
-            } else if (any(tolower(encoding) %in% c("utf-8", "utf8"))) {
-                encoding <- encoding[tolower(encoding) %in% c("utf-8", "utf8")][1]
-            } else if (any(tolower(encoding) %in% c("us-ascii"))) {
-                encoding <- encoding[tolower(encoding) %in% c("us-ascii")][1]
-            } else {
-                encoding <- encoding[1]
-            }
-            other_enc <- setdiff(other_enc,encoding)
+            encoding <- encoding[1]
         }
+        other_enc <- setdiff(other_enc, encoding)
         if (verbose) {
-            message(sprintf("Using text encoding: %s",encoding))
-            if (length(other_enc)>0)
-                message(sprintf(" (Other possible options: %s)",paste(other_enc,collapse=", ")))
+            message(sprintf("Using text encoding: %s", encoding))
+            if (length(other_enc) > 0)
+                message(sprintf(" (Other possible options: %s)", paste(other_enc, collapse = ", ")))
         }
     }
     ## look for the "Secondo tocco di  la" with odd encoding on the trailing a
