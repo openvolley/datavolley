@@ -291,6 +291,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     ##badwords <- c(badwords, tolower(c("\u10f\u17c\u2dd", "\u43f\u457\u405", "\u3bf\u38f\ubd", "\u5df\ubf\ubd"))) ## this is the unicode replacement char EF BF BD in windows-1250, 1251, 1253 (the encoding should be UTF-8). Note that 1252, 1254 seem to represent this as EF BF BD, so we can't detect that?? Doesn't seem to be reliable anyway
     badwords <- c(badwords, tolower(c("\u56\u49\u444", "\u56\u49\uc6"))) ## windows-1252 wrongly detected as KOI8-R
     badwords <- c(badwords, tolower(c("\u171\ufc", "\u8e\u52"))) ## cp932 wrongly detected as ISO-8859-2 (there are heaps here)
+    badwords <- c(badwords, tolower(c("\uc9\u57\uc9", "\ue2\u2122"))) ## cp932 wrongly detected as macintosh
     ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char)) or paste0("\\u", sprintf("%x", utf8ToInt("dodgy")), collapse = "")
     test_with_enc <- function(enc_to_test) {
         con <- file(filename, encoding = enc_to_test)

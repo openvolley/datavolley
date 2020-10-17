@@ -211,9 +211,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                 thismsg <<- data.frame(file_line_number=length(file_text),video_time=NA_real_,message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
                 suppressWarnings(tmp <- file_text[grep("[3SCOUT]",file_text,fixed=TRUE):length(file_text)])
                 if (!do_warn) {
-                    suppressWarnings(this_main <<- read_main(paste0(tmp,collapse="\n")))
+                    suppressWarnings(this_main <<- read_main(file_text = tmp))
                 } else {
-                    this_main <<- read_main(paste0(tmp,collapse="\n"))
+                    this_main <<- read_main(file_text = tmp)
                 }
             } else {
                 stop("could not read file (error message was: ",e$message,")")
