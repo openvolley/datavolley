@@ -267,7 +267,7 @@ action_extra <- function(x) {
 get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read_to = 90) {
     if (read_to < read_from) stop("read_to cannot be less than read_from")
     ## badchars/badwords indicate characters/words that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
-    badchars <- c(1328:7499,utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3")) ## armenian through to music, then some isolated ones
+    badchars <- c(1328:7499, utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3"), 960) ## armenian through to music, then some isolated ones
     ## allow 1025:1327 - cyrillic
     ## may need to consider removing penalty on armenian/arabic chars too
     ## 0x2000 to 0x206f (general punctuation) likely wrong, 0x01-0x07 are control characters we don't expect to see
