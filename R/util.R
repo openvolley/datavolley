@@ -293,17 +293,21 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     badwords <- c(badwords, tolower(c("\u171\ufc", "\u8e\u52"))) ## cp932 wrongly detected as ISO-8859-2 (there are heaps here)
     badwords <- c(badwords, tolower(c("\uc9\u57\uc9", "\ue2\u2122"))) ## cp932 wrongly detected as macintosh
     ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char)) or paste0("\\u", sprintf("%x", utf8ToInt("dodgy")), collapse = "")
-    test_with_enc <- function(enc_to_test) {
-        con <- file(filename, encoding = enc_to_test)
-        on.exit(close(con))
-        ## warn = FALSE (covers NULLs and missing final EOL, but not invalid text chars from mis-specified encoding)
-        tryCatch(paste(readLines(con, n = read_to, warn = FALSE)[read_from:read_to], collapse = ""), warning = function(w) NA_character_, error = function(e) NA_character_)
+    read_with_enc <- function(filename, enc_to_test) {
+        ## read with specified encoding and convert to UTF8
+        tryCatch(enc::read_lines_enc(filename, file_encoding = enc_to_test), warning = function(w) NA_character_, error = function(e) NA_character_)
     }
-    enctest <- sapply(encodings_to_test, test_with_enc)
-    encerrors <- sapply(enctest, function(z)if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars)+10*sum(sapply(badwords,grepl,tolower(z),fixed=TRUE)))
+    testtxt <- lapply(encodings_to_test, read_with_enc, filename = filename)
+    encerrors <- sapply(testtxt, function(z) {
+        z <- paste(z[read_from:read_to], collapse = "")
+        if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars) + 10*sum(sapply(badwords, grepl, tolower(z), fixed = TRUE))
+    })
+    ## also check whether we get ~'s in the 3SCOUT section (will not get any if CP932 incorrectly detected as SHIFT-JIS, for example)
+    tilde_count <- sapply(testtxt, function(z) if (all(is.na(z))) 0L else sum(stringi::stri_count(z, fixed = "~")))
+    encerrors[which(tilde_count < 1)] <- encerrors[which(tilde_count < 1)] + 20L
     ## what badwords are matching a given encoding?
     ##cat("bw:\n")
-    ##print(lapply(enctest[names(enctest) == "windows-1250"], function(z) if (is.na(z)) Inf else which(sapply(badwords,grepl,tolower(z),fixed=TRUE))))
+    ##print(lapply(testtxt[names(testtxt) == "windows-1250"], function(z) if (is.na(z)) Inf else which(sapply(badwords,grepl,tolower(z),fixed=TRUE))))
     ## errors per encodings_to_test
     ##cat("encerrors:\n"); print(sort(encerrors))
     idx <- encerrors==min(encerrors)
