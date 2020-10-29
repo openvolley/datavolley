@@ -280,6 +280,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     badwords <- c(badwords,tolower(c("\uc4\u15a","\u139\u2dd"))) ## utf-8 wrongly guessed as windows-1250
     badwords <- c(badwords, tolower(c("\uc4\u8d", "\uc5\ubd", "\uc4\u152"))) ## utf-8 wrongly guessed as windows-1252
     badwords <- c(badwords,tolower(c("Nicol\u148"))) ## windows-1252/iso-8859-1 wrongly guessed as windows-1250
+    badwords <- c(badwords, c("\u6c\u2116", "\u6a\u2116", "\u77\u2116", "\u64\u2116\u62", "\u45a\u77", "\u45a\u6c", "\u63\u7a\u43a")) ## windows-1250 wrongly guessed as windows-1251
     badwords <- c(badwords, tolower(c("\u6a\u446\u72", "\u68\u446\u68", "\u76\u446\u6c", "\u6d\u44c\u6c", "\u72\u44c\u67", "\u70\u446\u68", "\u6b\u44c\u68"))) ## 1250 as 1251
     badwords <- c(badwords, tolower(c("\uc2\ue4\u77", "\uf1\u7b", "\ue5\ue4", "\ue5\ue3"))) ## japanese SHIFT-JIS wrongly guessed as macintosh
     badwords <- c(badwords, tolower("\u102\u104\u7a"), tolower("\u102\u104\u73"), tolower("\u102\u2c7\u7a"), tolower("\u102\u2c7\u73"))
@@ -292,7 +293,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     badwords <- c(badwords, tolower(c("\u56\u49\u444", "\u56\u49\uc6"))) ## windows-1252 wrongly detected as KOI8-R
     badwords <- c(badwords, tolower(c("\u171\ufc", "\u8e\u52"))) ## cp932 wrongly detected as ISO-8859-2 (there are heaps here)
     badwords <- c(badwords, tolower(c("\uc9\u57\uc9", "\ue2\u2122"))) ## cp932 wrongly detected as macintosh
-    ## get the \uxx numbers from sprintf("%x",utf8ToInt(dodgy_string_or_char)) or paste0("\\u", sprintf("%x", utf8ToInt("dodgy")), collapse = "")
+    ## get the \uxx numbers from sprintf("%x",utf8ToInt(tolower(dodgy_string_or_char))) or paste0("\\u", sprintf("%x", utf8ToInt(tolower("dodgy"))), collapse = "")
     read_with_enc <- function(filename, enc_to_test) {
         ## read with specified encoding and convert to UTF8
         tryCatch(enc::read_lines_enc(filename, file_encoding = enc_to_test), warning = function(w) NA_character_, error = function(e) NA_character_)
