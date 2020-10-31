@@ -117,6 +117,9 @@ read_result <- function(txt) {
     names(p)[4] <- "score_intermediate3"
     names(p)[5] <- "score"
     names(p)[6] <- "duration"
+    p$score_intermediate1 <- gsub("[[:space:]]+", "", p$score_intermediate1)
+    p$score_intermediate2 <- gsub("[[:space:]]+", "", p$score_intermediate2)
+    p$score_intermediate3 <- gsub("[[:space:]]+", "", p$score_intermediate3)
     p$score <- gsub("\\s+","",p$score)
     temp <- str_match(p$score,"(\\d+)\\-(\\d+)")
     p$score_home_team <- as.numeric(temp[,2])
@@ -335,44 +338,35 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
 
 
 get_player_name <- function(team,number,meta) {
-    out <- rep(as.character(NA),length(number))
+    out <- rep(NA_character_, length(number))
     idx <- team %eq% "*"
     if (any(idx)) {
         out[idx] <- mapvalues(number[idx],from=meta$players_h$number,to=meta$players_h$name,warn_missing=FALSE)
         invalid_number <- idx & out==number
         out[invalid_number] <- "unknown player"
-        ##if (any(invalid_number)) stop("invalid home team player number")
     }
     idx <- team %eq% "a"
     if (any(idx)) {
         out[idx] <- mapvalues(number[idx],from=meta$players_v$number,to=meta$players_v$name,warn_missing=FALSE)
         invalid_number <- idx & out==number
         out[invalid_number] <- "unknown player"
-        ##if (any(invalid_number)) stop("invalid visiting team player number")
     }
     out
 }
 
-get_player_id <- function(team,number,meta) {
-    out <- rep("unknown player",length(number))
+get_player_id <- function(team, number, meta) {
+    out <- rep("unknown player", length(number))
     idx <- team %eq% "*"
     if (any(idx)) {
         for (pn in which(meta$players_h$number %in% number[idx])) {
             out[idx & number %eq% meta$players_h$number[pn]] <- meta$players_h$player_id[pn]
         }
-        ## this does not work if player_id is same as player_number
-        ##out[idx] <- mapvalues(number[idx],from=meta$players_h$number,to=meta$players_h$player_id,warn_missing=FALSE)
-        ##invalid_number <- idx & out==number
-        ##out[invalid_number] <- "unknown player"
     }
     idx <- team %eq% "a"
     if (any(idx)) {
         for (pn in which(meta$players_v$number %in% number[idx])) {
             out[idx & number %eq% meta$players_v$number[pn]] <- meta$players_v$player_id[pn]
         }
-        ##out[idx] <- mapvalues(number[idx],from=meta$players_v$number,to=meta$players_v$player_id,warn_missing=FALSE)
-        ##invalid_number <- idx & out==number
-        ##out[invalid_number] <- "unknown player"
     }
     out
 }
