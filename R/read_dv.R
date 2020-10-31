@@ -350,13 +350,23 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         temp_point_id[k] <- pid
     }
     out$plays$point_id <- temp_point_id
-
     ## fill in setter position
+    temp_eos <- out$plays$end_of_set
+    eos_idx <- which(temp_eos)
+    out$plays$home_setter_position[eos_idx] <- NA_integer_
+    out$plays$home_setter_id[eos_idx] <- NA_character_
+    out$plays$visiting_setter_position[eos_idx] <- NA_integer_
+    out$plays$visiting_setter_id[eos_idx] <- NA_character_
     temp_home_setter_position <- out$plays$home_setter_position
     temp_visiting_setter_position <- out$plays$visiting_setter_position
     hsp <- temp_home_setter_position[1]
     vsp <- temp_visiting_setter_position[1]
     for (k in 2:nrow(out$plays)) {
+        if (isTRUE(temp_eos[k])) {
+            ## start of new set, don't let current setter positions flow from last set
+            hsp <- NA_integer_
+            vsp <- NA_integer_
+        }
         if (!is.na(temp_home_setter_position[k]))
             hsp <- temp_home_setter_position[k]
         temp_home_setter_position[k] <- hsp
