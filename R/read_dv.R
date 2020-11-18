@@ -26,7 +26,7 @@
 #' @examples
 #' \dontrun{
 #'   ## to read the example file bundled with the package
-#'   myfile <- example_dv_file()
+#'   myfile <- dv_example_file()
 #'   x <- read_dv(myfile, insert_technical_timeouts=FALSE)
 #'   summary(x)
 #'
