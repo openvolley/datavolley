@@ -354,9 +354,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     temp_eos <- out$plays$end_of_set
     eos_idx <- which(temp_eos)
     out$plays$home_setter_position[eos_idx] <- NA_integer_
-    out$plays$home_setter_id[eos_idx] <- NA_character_
     out$plays$visiting_setter_position[eos_idx] <- NA_integer_
-    out$plays$visiting_setter_id[eos_idx] <- NA_character_
     temp_home_setter_position <- out$plays$home_setter_position
     temp_visiting_setter_position <- out$plays$visiting_setter_position
     hsp <- temp_home_setter_position[1]
