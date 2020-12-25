@@ -479,26 +479,35 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         ##chk <- diff(plays$home_team_score)>1 | diff(plays$visiting_team_score)>1
         ##if (any(chk))
         if (length(chk)>0) {
-            chk <- chk+1
-            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Scores do not follow proper sequence (note that the error may be in the point before this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+            chk <- chk+1 
+           out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Scores do not follow proper sequence (note that the error may be in the point before this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
         }
 
         ## check for incorrect rotation changes
-        rotleft <- function(x) if (is.data.frame(x)) {out <- cbind(x[,-1],x[,1]); names(out) <- names(x); out} else c(x[-1],x[1])
-        isrotleft <- function(x,y) all(as.numeric(rotleft(x))==as.numeric(y)) ## is y a left-rotated version of x?
-        for (tm in c("*","a")) {
-            rot_cols <- if (tm=="a") paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
-            temp <- plays[!tolower(plays$skill) %eq% "technical timeout",]
-            rx <- temp[,rot_cols]
-            idx <- unname(c(FALSE,rowSums(abs(apply(rx,2,diff)))>0)) ## rows where rotation changed from previous
+        rotleft <- function(x) if (is.data.frame(x)) { out <- cbind(x[, -1], x[, 1]); names(out) <- names(x); out} else c(x[-1], x[1])
+        isrotleft <- function(x,y) all(as.numeric(rotleft(x)) == as.numeric(y)) ## is y a left-rotated version of x?
+        for (tm in c("*", "a")) {
+            rot_cols <- if (tm == "a") paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
+            temp <- plays[!tolower(plays$skill) %eq% "technical timeout", ]
+            rx <- temp[, rot_cols]
+            idx <- unname(c(FALSE, rowSums(abs(apply(rx, 2, diff))) > 0)) ## rows where rotation changed from previous
             idx[is.na(idx)] <- FALSE ## end of set, etc, ignore
             idx[temp$substitution] <- FALSE ## subs, ignore these here and they will be checked in the next section
+            ## ignore any changes at the very start of the set, since lineups can be modified here multiple times fairly arbitrarily
+            nsk <- rep(NA_integer_, nrow(temp))
+            skcount <- 0L
+            for (ii in seq_along(nsk)) {
+                if (temp$end_of_set[ii]) skcount <- 0L ## reset
+                if (!is.na(temp$skill[ii])) skcount <- skcount + 1L
+                nsk[ii] <- skcount
+            }
+            idx[nsk < 1L] <- FALSE
             for (k in which(idx)) {
-                if (!isrotleft(rx[k-1,],rx[k,]))
-                    out <- rbind(out,data.frame(file_line_number=temp$file_line_number[k],video_time=video_time_from_raw(x$raw[temp$file_line_number[k]]),message=paste0(if (tm=="a") "Visiting" else "Home"," team rotation has changed incorrectly"),file_line=x$raw[temp$file_line_number[k]],severity=3,stringsAsFactors=FALSE))
+                if (!isrotleft(rx[k - 1, ], rx[k, ]))
+                    out <- rbind(out, data.frame(file_line_number = temp$file_line_number[k], video_time = video_time_from_raw(x$raw[temp$file_line_number[k]]), message = paste0(if (tm == "a") "Visiting" else "Home"," team rotation has changed incorrectly"), file_line = x$raw[temp$file_line_number[k]], severity = 3, stringsAsFactors = FALSE))
             }
         }
-        
+
         ## check that players changed correctly on substitution
         ## e.g. *c02:01 means player 2 replaced by player 1
         idx <- which(plays$substitution & grepl("^.c",plays$code))
