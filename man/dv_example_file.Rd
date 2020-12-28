@@ -21,7 +21,7 @@ Example DataVolley files provided as part of the datavolley package
 }
 \examples{
 myfile <- dv_example_file()
-x <- read_dv(myfile, insert_technical_timeouts=FALSE)
+x <- read_dv(myfile, insert_technical_timeouts = FALSE)
 summary(x)
 
 }

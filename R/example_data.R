@@ -12,15 +12,15 @@
 #'
 #' @examples
 #' myfile <- dv_example_file()
-#' x <- read_dv(myfile, insert_technical_timeouts=FALSE)
+#' x <- read_dv(myfile, insert_technical_timeouts = FALSE)
 #' summary(x)
-#' 
+#'
 #' @export
 dv_example_file <- function(choice=1) {
     assert_that(is.numeric(choice))
     switch(as.character(choice),
-           "1"=system.file("extdata/example_data.dvw",package="datavolley"),
-           "2"=system.file("extdata/PM06.dvw",package="datavolley"),
+           "1" = system.file("extdata/example_data.dvw", package = "datavolley"),
+           "2" = system.file("extdata/PM06.dvw", package = "datavolley"),
            stop("unrecognized 'choice' value (", choice, ")")
            )
 }
