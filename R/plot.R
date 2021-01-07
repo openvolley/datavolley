@@ -50,7 +50,12 @@
 #' @param zone_font_size numeric: the font size of the zone labels
 #' @param label_font_size numeric: the font size of the labels
 #' @param label_colour string: colour to use for labels
-#' @param court_colour string: colour to use for the court. If \code{NULL}, the court is only plotted with lines (no colour fill) and so the \code{figure_colour} will show through. The string "indoor" can be used as a shortcut to set the court colour to orange, figure colour to blue, and lines and labels to white (similar to the typical indoor court colour scheme)
+#' @param court_colour string: colour to use for the court. If \code{NULL}, the court is only plotted with lines (no colour fill) and so the \code{figure_colour} will show through. Several special values are also supported here:
+#' \itemize{
+#'   \item \code{court_colour = "indoor"} can be used as a shortcut to set the court colour to orange, figure colour to blue, and lines and labels to white (similar to the typical indoor court colour scheme)
+#'   \item \code{court_colour = "beach"} can be used as a shortcut to set the court and figure colour to a sandy-coloured yellow, lines and labels to black, and with the 3m line not shown by default
+#'   \item \code{court_colour = "sand"} as for "beach" but with a sand texture image used as the court background
+#' }
 #' @param figure_colour string: colour to set the figure background to. If \code{NULL}, the background colour of the theme will be used (white, by default)
 #' @param background_only logical: if \code{TRUE}, only plot the background elements (including general plot attributes such as the theme)
 #' @param foreground_only logical: if \code{TRUE}, only plot the foreground elements (grid lines, labels, etc)
@@ -149,10 +154,27 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
     assert_that(is.string(figure_colour))
     assert_that(is.flag(background_only),!is.na(background_only))
     assert_that(is.flag(foreground_only),!is.na(foreground_only))
+    bgimg <- NULL
     if (tolower(court_colour) %eq% "indoor") {
         court_colour <- "#D98875"
         figure_colour <- "#26A9BD"
-        grid_colour <- label_colour <- "white"
+        if (missing(grid_colour)) grid_colour <- "white"
+        if (missing(label_colour)) label_colour <- "white"
+    } else if (tolower(court_colour) %in% c("beach", "sand")) {
+        if (tolower(court_colour) %eq% c("sand")) {
+            court_colour <- figure_colour <- NA_character_
+            sand <- jpeg::readJPEG(system.file("extdata/sand.jpg", package = "datavolley"), native = TRUE)
+            bgimg <- ggplot2::annotation_custom(grid::rasterGrob(sand), xmin = 0, xmax = 4, ymin = 0, ymax = 7)
+        } else {
+            court_colour <- figure_colour <- "#F7E0BE"
+        }
+        if (missing(grid_colour)) grid_colour <- "black"
+        if (missing(label_colour)) label_colour <- "black"
+        if (missing(zone_colour)) zone_colour <- "grey40"
+        if (missing(minor_zone_colour)) minor_zone_colour <- "grey60"
+        if (missing(show_3m_line)) show_3m_line <- FALSE
+        ##if (missing(show_zones)) show_zones <- FALSE
+        ##if (missing(show_zone_lines)) show_zone_lines <- FALSE
     }
     if (tolower(court_colour) %eq% "none") {
         cfill <- NULL
@@ -213,7 +235,7 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
     thm <- ggplot2::theme_classic(...)
     thm2 <- ggplot2::theme(axis.line = ggplot2::element_blank(),axis.text.x = ggplot2::element_blank(), axis.text.y = ggplot2::element_blank(),axis.ticks = ggplot2::element_blank(), axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank())
     thm3 <- if (!tolower(figure_colour) %eq% "none") ggplot2::theme(panel.background = ggplot2::element_rect(fill = figure_colour)) else NULL
-    out <- if (!foreground_only) list(cfill, thm, thm2, thm3) else list()
+    out <- if (!foreground_only) list(bgimg, cfill, thm, thm2, thm3) else list()
     if (!background_only) out <- c(out, list(net))
     if (fixed_aspect_ratio && !foreground_only) out <- c(out, list(ggplot2::coord_fixed()))
     if (show_minor_zones && !background_only) out <- c(out, list(hlm, vlm))

@@ -55,7 +55,12 @@ ggcourt(
 
 \item{label_colour}{string: colour to use for labels}
 
-\item{court_colour}{string: colour to use for the court. If \code{NULL}, the court is only plotted with lines (no colour fill) and so the \code{figure_colour} will show through. The string "indoor" can be used as a shortcut to set the court colour to orange, figure colour to blue, and lines and labels to white (similar to the typical indoor court colour scheme)}
+\item{court_colour}{string: colour to use for the court. If \code{NULL}, the court is only plotted with lines (no colour fill) and so the \code{figure_colour} will show through. Several special values are also supported here:
+\itemize{
+  \item \code{court_colour = "indoor"} can be used as a shortcut to set the court colour to orange, figure colour to blue, and lines and labels to white (similar to the typical indoor court colour scheme)
+  \item \code{court_colour = "beach"} can be used as a shortcut to set the court and figure colour to a sandy-coloured yellow, lines and labels to black, and with the 3m line not shown by default
+  \item \code{court_colour = "sand"} as for "beach" but with a sand texture image used as the court background
+}}
 
 \item{figure_colour}{string: colour to set the figure background to. If \code{NULL}, the background colour of the theme will be used (white, by default)}
 
