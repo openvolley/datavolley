@@ -299,10 +299,31 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
     msgs <- join_messages(msgs, tempteams$messages)
     if (any(is.na(out$teams$sets_won))) {
         ## hmm, can we fill this in from the out$result section?
+
+        regn <- out$match$regulation
+        if (!is.null(regn)) {
+            last_set_min_score <- 15L
+            if (regn %in% "indoor rally point") {
+                min_score <- 25L
+                last_set <- 5L
+            } else if (regn %in% "indoor sideout") {
+                min_score <- 25L
+                last_set <- 5L
+            } else if (grepl("beach", regn)) {
+                min_score <- 21L
+                last_set <- 3L
+            } else {
+                regn <- NULL
+            }
+        }
         try({
             temp <- out$result[which(out$result$played), ]
-            temp$home_won <- ifelse(temp$score_home_team > temp$score_visiting_team, 1, 0)
-            out$teams$sets_won <- c(sum(temp$home_won), nrow(temp) - sum(temp$home_won))
+            temp$set_number <- seq_len(nrow(temp))
+            ## home team won
+            temp$home_won <- ifelse(temp$score_home_team > (temp$score_visiting_team + 1L) & (temp$score_home_team >= min_score | (temp$set_number == last_set & temp$score_home_team >= last_set_min_score)), 1L, NA_integer_)
+            ## visiting team won
+            temp$home_won <- ifelse(temp$score_visiting_team > (temp$score_home_team + 1L) & (temp$score_visiting_team >= min_score | (temp$set_number == last_set & temp$score_visiting_team >= last_set_min_score)), 0L, temp$home_won)
+            out$teams$sets_won <- c(sum(temp$home_won == 1L, na.rm = TRUE), sum(temp$home_won == 0L, na.rm = TRUE))
         }, silent = TRUE)
     }
     temp <- tryCatch(diff(out$teams$sets_won), error = function(e) NA)
