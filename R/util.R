@@ -264,7 +264,7 @@ action_extra <- function(x) {
            "")
 }
 
-get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read_to = 90) {
+get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read_to = 90, expect_tildes = TRUE) {
     if (read_to < read_from) stop("read_to cannot be less than read_from")
     ## badchars/badwords indicate characters/words that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
     badchars <- c(1328:7499, utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3"), 960) ## armenian through to music, then some isolated ones
@@ -299,13 +299,17 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
         tryCatch(enc::read_lines_enc(filename, file_encoding = enc_to_test), warning = function(w) NA_character_, error = function(e) NA_character_)
     }
     testtxt <- lapply(encodings_to_test, read_with_enc, filename = filename)
-    encerrors <- sapply(testtxt, function(z) {
-        z <- paste(z[read_from:read_to], collapse = "")
-        if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars) + 10*sum(sapply(badwords, grepl, tolower(z), fixed = TRUE))
+    suppressWarnings({
+        encerrors <- sapply(testtxt, function(z) {
+            z <- paste(z[read_from:read_to], collapse = "")
+            if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars) + 10*sum(sapply(badwords, grepl, tolower(z), fixed = TRUE))
+        })
     })
-    ## also check whether we get ~'s in the 3SCOUT section (will not get any if CP932 incorrectly detected as SHIFT-JIS, for example)
-    tilde_count <- sapply(testtxt, function(z) if (all(is.na(z))) 0L else sum(stringi::stri_count(z, fixed = "~")))
-    encerrors[which(tilde_count < 1)] <- encerrors[which(tilde_count < 1)] + 20L
+    if (expect_tildes) {
+        ## also check whether we get ~'s in the 3SCOUT section (will not get any if CP932 incorrectly detected as SHIFT-JIS, for example)
+        tilde_count <- sapply(testtxt, function(z) if (all(is.na(z))) 0L else sum(stringi::stri_count(z, fixed = "~")))
+        encerrors[which(tilde_count < 1)] <- encerrors[which(tilde_count < 1)] + 20L
+    }
     ## what badwords are matching a given encoding?
     ##cat("bw:\n")
     ##print(lapply(testtxt[names(testtxt) == "windows-1250"], function(z) if (is.na(z)) Inf else which(sapply(badwords,grepl,tolower(z),fixed=TRUE))))

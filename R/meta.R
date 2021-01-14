@@ -11,6 +11,16 @@ roles_int2str <- function(x) {
     out
 }
 
+## simpler
+##roles_int2str <- function(x) {
+##    idx <- as.integer(x)
+##    out <- rep(NA_character_, length(x))
+##    rmap <- c("libero", "outside", "opposite", "middle", "setter", "unknown")
+##    out[idx %in% 1:6] <- rmap[idx[idx %in% 1:6]]
+##    out
+##}
+
+
 roles_str2int <- function(x) {
     out <- rep(0L, length(x))
     out[x %eq% "libero"] <- 1L
@@ -203,6 +213,7 @@ read_players <- function(txt,team,surname_case) {
     p$starting_position_set3 <- as.character(p$starting_position_set3)
     p$starting_position_set4 <- as.character(p$starting_position_set4)
     p$starting_position_set5 <- as.character(p$starting_position_set5)
+    p$foreign[is.na(p$foreign)] <- FALSE
     p
 }
 
