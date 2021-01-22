@@ -74,6 +74,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         is_vm <- tryCatch(identical(get("dtbl", envir = environment(skill_evaluation_decode)), get("dtbl", envir = environment(skill_evaluation_decoder(style = "volleymetrics")))), error = function(e) FALSE)
         if (is_vm) date_format <- "mdy"
     }
+    ## note that we use a preferred date format of mdy for volleymetrics files here, but if a user has opened and re-saved the file with different date format, this will be wrong ...
     if (!missing(edited_meta)) {
         assert_that(is.list(edited_meta))
         ## test for names? c("match", "more", "result", "teams", "players_h", "players_v", "attacks", "sets", "match_id", "filename")
@@ -169,10 +170,12 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     } else {
         temp <- read_filemeta(file_text, date_format = date_format)
     }
+    ## if the last-change date was unambiguous, the match date should follow this
+    if (!is.null(temp$lastchange_date_format)) date_format <- c(temp$lastchange_date_format, date_format)
     ## insert preferred date_format so it can be used if this object gets passed to dv_write
     ##  this isn't the ideal solution, because they actual date format in the file might not actually follow the preferred date_format
     ##  but it's a start
-    temp$file_meta$preferred_date_format <- date_format
+    temp$file_meta$preferred_date_format <- if (length(date_format) > 0) date_format[1] else NULL
     out$file_meta <- temp$file_meta
     out$messages <- temp$messages
     if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE)

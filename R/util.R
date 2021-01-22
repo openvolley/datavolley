@@ -195,6 +195,7 @@ most_common_value <- function(x) {
     ux[which.max(tabulate(match(x, ux)))]
 }
 
+## preferred can have more than one entry, treated in order of preference
 manydates <- function(z, preferred = NULL) {
     suppressWarnings(
         tries <- list(ymd = unique(as.Date(na.omit(c(lubridate::ymd(z), lubridate::parse_date_time(z, "Ymd HMS"))))),
@@ -203,8 +204,9 @@ manydates <- function(z, preferred = NULL) {
     )
     if (!is.null(preferred)) {
         preferred <- tolower(preferred)
-        chk <- tries[[tolower(preferred)]]
-        if (!is.null(chk) && length(chk) > 0) return(chk)
+        for (pref in preferred) {
+            if (length(tries[[pref]]) > 0) return(tries[[pref]])
+        }
     }
     unique(c(tries$ymd, tries$dmy, tries$mdy))
 }
@@ -219,10 +221,23 @@ manydatetimes <- function(z, preferred = NULL) {
     )
     if (!is.null(preferred)) {
         preferred <- tolower(preferred)
-        chk <- tries[[tolower(preferred)]]
-        if (!is.null(chk) && length(chk) > 0) return(chk)
+        for (pref in preferred) {
+            if (length(tries[[pref]]) > 0) return(tries[[pref]])
+        }
     }
     unique(c(tries$ymd, tries$dmy, tries$mdy))
+}
+
+unambiguous_datetime <- function(z) {
+    suppressWarnings(
+        tries <- list(ymd = unique(na.omit(c(lubridate::parse_date_time(z, "Ymd HMS")))),
+                      dmy = unique(na.omit(c(lubridate::parse_date_time(z, "dmY HMS")))),
+                      mdy = unique(na.omit(c(lubridate::parse_date_time(z, "mdY HMS")))))
+    )
+    ## do we have an unambiguous date? i.e. only one format gives a valid date
+    unambiguous <- Filter(length, tries)
+    unambiguous <- unique(data.frame(format = names(unambiguous), date = as.Date(as.numeric(unambiguous), origin = "1970-01-01")))
+    if (nrow(unambiguous) == 1) unambiguous$format else NULL
 }
 
 #' Generate a short, human-readable text summary of one or more actions

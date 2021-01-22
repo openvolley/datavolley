@@ -20,12 +20,12 @@
 #' @export
 dv_write <- function(x, file, text_encoding = "UTF-8") {
     if (!inherits(x, "datavolley")) stop("x must be a datavolley object")
-    dateformat <- if (!is.null(x$file_meta$preferred_date_format)) {
-                      if (tolower(x$file_meta$preferred_date_format) %eq% "mdy") {
+    dateformat <- if (length(x$file_meta$preferred_date_format) > 0) {
+                      if (tolower(x$file_meta$preferred_date_format[1]) %eq% "mdy") {
                           "%m/%d/%Y"
-                      } else if (tolower(x$file_meta$preferred_date_format) %eq% "dmy") {
+                      } else if (tolower(x$file_meta$preferred_date_format[1]) %eq% "dmy") {
                           "%d/%m/%Y"
-                      } else if (tolower(x$file_meta$preferred_date_format) %eq% "ymd") {
+                      } else if (tolower(x$file_meta$preferred_date_format[1]) %eq% "ymd") {
                           "%Y/%m/%d"
                       } else {
                           "%d/%m/%Y"

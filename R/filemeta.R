@@ -37,8 +37,11 @@ read_filemeta <- function(txt, date_format = NULL) {
         if (length(dt)==1) p$generator_day <- dt
     }
     if ("lastchange_day" %in% names(p)) {
+        ## the format of the match date should be the same as the format of LASTCHANGE-DAY
+        ## is it unambiguous?
+        udtf <- unambiguous_datetime(p$lastchange_day)
         dt <- manydatetimes(p$lastchange_day, preferred = date_format)
         if (length(dt)==1) p$lastchange_day <- dt
     }
-    list(file_meta=p, messages=do.call(rbind, lapply(msgs, as.data.frame)))
+    list(file_meta=p, messages=do.call(rbind, lapply(msgs, as.data.frame)), lastchange_date_format = udtf)
 }

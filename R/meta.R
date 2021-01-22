@@ -51,10 +51,10 @@ read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
 
 ## match details
 read_match <- function(txt, date_format = NULL) {
-    idx <- grep("[3MATCH]",txt,fixed=TRUE)
+    idx <- grep("[3MATCH]", txt, fixed = TRUE)
     ##tryCatch(p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE),
     ##         error=function(e) { stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") })
-    tryCatch(p <- read_semi_text(txt[idx+1], fallback = "read.table"), error=function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+    tryCatch(p <- read_semi_text(txt[idx + 1], fallback = "read.table"), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
     names(p)[1] <- "date"
     names(p)[2] <- "time"
     names(p)[3] <- "season"
@@ -68,26 +68,26 @@ read_match <- function(txt, date_format = NULL) {
     names(p)[11] <- "zones_or_cones" ## C or Z, e.g. 12/08/2018;;;;;;;;1;1;Z;0;
     msgs <- list()
     if (is.na(p$date)) {
-        msgs <- collect_messages(msgs,"Match information is missing the date",idx+1,txt[idx+1],severity=2)
+        msgs <- collect_messages(msgs, "Match information is missing the date", idx + 1, txt[idx + 1], severity = 2)
         date_was_missing <- TRUE
     } else {
         ## date can be in various formats
         temp <- manydates(p$date, preferred = date_format)
-        if (length(temp)<1) {
+        if (length(temp) < 1) {
             ## no recognizable date
             temp <- as.Date(NA)
-        } else if (length(temp)>1) {
+        } else if (length(temp) > 1) {
             ## ambiguous date format
-            msgs <- collect_messages(msgs,"Ambiguous date, using DMY format",idx+1,txt[idx+1],severity=2)
+            msgs <- collect_messages(msgs, "Ambiguous date, using DMY format", idx + 1, txt[idx + 1], severity = 2)
             temp <- temp[1] ##** can we do better here?
         }
         p$date <- temp
         if (is.na(p$date)) {
-            msgs <- collect_messages(msgs,"Cannot parse the date in the match information",idx+1,txt[idx+1],severity=2)
+            msgs <- collect_messages(msgs, "Cannot parse the date in the match information", idx + 1, txt[idx + 1], severity = 2)
         } else {
-            if (p$date<(as.Date(lubridate::now(tzone="UTC"))-365*10)) {
+            if (p$date < (as.Date(lubridate::now(tzone = "UTC")) - 365 * 10)) {
                 ## date is more than ten years ago!
-                msgs <- collect_messages(msgs,paste0("The date of the match (",format(p$date),") is more than 10 years ago, is it correct?"),idx+1,txt[idx+1],severity=2)
+                msgs <- collect_messages(msgs, paste0("The date of the match (", format(p$date), ") is more than 10 years ago, is it correct?"), idx + 1, txt[idx + 1], severity = 2)
             }
         }
     }
