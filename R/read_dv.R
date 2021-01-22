@@ -86,7 +86,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## read raw lines in
     file_text <- readLines(filename,warn=FALSE)
     assert_that(is.character(encoding))
-    if (length(encoding)>1 || identical(tolower(encoding),"guess")) {
+    if (length(encoding)>1 || identical(tolower(encoding), "guess")) {
         ## try to guess encoding based on the first few lines of the file
         ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
         idx1 <- suppressWarnings(grep("[3MATCH]",file_text,fixed=TRUE))
@@ -124,6 +124,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
             ##if (length(encoding)<=1) encoding <- iconvlist()
         }
+        encoding <- unique(encoding)
         encoding <- get_best_encodings(encoding, filename = filename, read_from = idx1, read_to = idx2)
         if (length(encoding$encodings) < 1) stop("error in guessing text encoding")
         if (encoding$error_score > 0) {
