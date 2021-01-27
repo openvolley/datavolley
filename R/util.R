@@ -236,7 +236,7 @@ unambiguous_datetime <- function(z) {
     )
     ## do we have an unambiguous date? i.e. only one format gives a valid date
     unambiguous <- Filter(length, tries)
-    unambiguous <- unique(data.frame(format = names(unambiguous), date = as.Date(as.numeric(unambiguous), origin = "1970-01-01")))
+    unambiguous <- unique(data.frame(format = names(unambiguous), date = as.Date(as.numeric(unambiguous), origin = "1970-01-01"), stringsAsFactors = FALSE))
     if (nrow(unambiguous) == 1) unambiguous$format else NULL
 }
 
