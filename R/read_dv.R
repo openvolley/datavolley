@@ -51,7 +51,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     assert_that(is.flag(verbose), !is.na(verbose))
     assert_that(is.string(date_format))
     date_format <- match.arg(tolower(date_format), c("guess", "dmy", "ymd", "mdy"))
-    if (date_format %eq% "guess") date_format <- NULL
+    date_format_suggested <- NULL
     assert_that(is.numeric(extra_validation),extra_validation %in% 0:3)
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
@@ -65,14 +65,14 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             }, error = function(e) FALSE)
             skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
         }
-        if (skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format)) date_format <- "mdy"
+        if (skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
         skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }
     assert_that(is.function(skill_evaluation_decode))
-    if (is.null(date_format)) {
+    if (is.null(date_format_suggested)) {
         ## check if the decoder function is the volleymetrics one
         is_vm <- tryCatch(identical(get("dtbl", envir = environment(skill_evaluation_decode)), get("dtbl", envir = environment(skill_evaluation_decoder(style = "volleymetrics")))), error = function(e) FALSE)
-        if (is_vm) date_format <- "mdy"
+        if (is_vm) date_format_suggested <- "mdy"
     }
     ## note that we use a preferred date format of mdy for volleymetrics files here, but if a user has opened and re-saved the file with different date format, this will be wrong ...
     if (!missing(edited_meta)) {
@@ -167,12 +167,15 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     }
     ## file metadata
     if (!do_warn) {
-        suppressWarnings(temp <- read_filemeta(file_text, date_format = date_format))
+        suppressWarnings(temp <- read_filemeta(file_text, date_format = if (date_format == "guess") date_format_suggested else date_format))
     } else {
-        temp <- read_filemeta(file_text, date_format = date_format)
+        temp <- read_filemeta(file_text, date_format = if (date_format == "guess") date_format_suggested else date_format)
     }
-    ## if the last-change date was unambiguous, the match date should follow this
-    if (!is.null(temp$lastchange_date_format)) date_format <- c(temp$lastchange_date_format, date_format)
+    ## if the last-change date was unambiguous, the match date should follow this (it doesn't always, but it's often true)
+    ## at this point: date_format is the date_format specified by the user (or default "guess")
+    ## date_format_suggested is either NULL or "mdy" if we have suggested the volleymetrics format
+    date_format <- c(setdiff(date_format, "guess"), temp$lastchange_date_format, date_format_suggested) ## in order of preference, some of those might be NULL
+    if (length(date_format) < 1) date_format <- NULL
     ## insert preferred date_format so it can be used if this object gets passed to dv_write
     ##  this isn't the ideal solution, because they actual date format in the file might not actually follow the preferred date_format
     ##  but it's a start

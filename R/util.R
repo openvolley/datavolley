@@ -196,11 +196,24 @@ most_common_value <- function(x) {
 }
 
 ## preferred can have more than one entry, treated in order of preference
+## parse datetimes and dates, removing any that resolve to future
+parse_dt <- function(dstr, format, allow_future_dates = FALSE) {
+    out <- unique(na.omit(c(lubridate::parse_date_time(dstr, format))))
+    if (!allow_future_dates) out <- out[difftime(Sys.time(), out, units = "days") > -5] ## not more than 5 days into the future
+    out
+}
+
+parse_d <- function(dstr, pfun, allow_future_dates = FALSE) {
+    out <- pfun(dstr)
+    if (!allow_future_dates) out <- out[difftime(Sys.time(), out, units = "days") > -5] ## not more than 5 days into the future
+    out
+}
+
 manydates <- function(z, preferred = NULL) {
     suppressWarnings(
-        tries <- list(ymd = unique(as.Date(na.omit(c(lubridate::ymd(z), lubridate::parse_date_time(z, "Ymd HMS"))))),
-                      dmy = unique(as.Date(na.omit(c(lubridate::dmy(z), lubridate::parse_date_time(z, "dmY HMS"))))),
-                      mdy = unique(as.Date(na.omit(c(lubridate::mdy(z), lubridate::parse_date_time(z, "mdY HMS"))))))
+        tries <- list(ymd = unique(as.Date(na.omit(c(parse_d(z, lubridate::ymd), parse_dt(z, "Ymd HMS"))))),
+                      dmy = unique(as.Date(na.omit(c(parse_d(z, lubridate::dmy), parse_dt(z, "dmY HMS"))))),
+                      mdy = unique(as.Date(na.omit(c(parse_d(z, lubridate::mdy), parse_dt(z, "mdY HMS"))))))
     )
     if (!is.null(preferred)) {
         preferred <- tolower(preferred)
@@ -214,11 +227,7 @@ manydates <- function(z, preferred = NULL) {
 manydatetimes <- function(z, preferred = NULL) {
     ## don't use lubridate::ymd_hms etc here, because they will fall foul of e.g.
     ##  https://github.com/tidyverse/lubridate/issues/552
-    suppressWarnings(
-        tries <- list(ymd = unique(na.omit(c(lubridate::parse_date_time(z, "Ymd HMS")))),
-                      dmy = unique(na.omit(c(lubridate::parse_date_time(z, "dmY HMS")))),
-                      mdy = unique(na.omit(c(lubridate::parse_date_time(z, "mdY HMS")))))
-    )
+    suppressWarnings(tries <- list(ymd = parse_dt(z, "Ymd HMS"), dmy = parse_dt(z, "dmY HMS"), mdy = parse_dt(z, "mdY HMS")))
     if (!is.null(preferred)) {
         preferred <- tolower(preferred)
         for (pref in preferred) {
@@ -229,11 +238,7 @@ manydatetimes <- function(z, preferred = NULL) {
 }
 
 unambiguous_datetime <- function(z) {
-    suppressWarnings(
-        tries <- list(ymd = unique(na.omit(c(lubridate::parse_date_time(z, "Ymd HMS")))),
-                      dmy = unique(na.omit(c(lubridate::parse_date_time(z, "dmY HMS")))),
-                      mdy = unique(na.omit(c(lubridate::parse_date_time(z, "mdY HMS")))))
-    )
+    suppressWarnings(tries <- list(ymd = parse_dt(z, format = "Ymd HMS"), dmy = parse_dt(z, format = "dmY HMS"), mdy = parse_dt(z, format = "mdY HMS")))
     ## do we have an unambiguous date? i.e. only one format gives a valid date
     unambiguous <- Filter(length, tries)
     unambiguous <- unique(data.frame(format = names(unambiguous), date = as.Date(as.numeric(unambiguous), origin = "1970-01-01"), stringsAsFactors = FALSE))

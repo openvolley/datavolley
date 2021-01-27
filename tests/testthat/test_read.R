@@ -38,12 +38,12 @@ test_that("supplying a preferred date format works", {
     tf <- tempfile()
     writeLines(x$raw, tf)
     chk <- read_dv(tf)
-    ## the last-generated date in this file is unambiguously mdy, so that will be used even if other date formats are specified
+    ## the last-generated date in this file is unambiguously mdy, so that will be used unless a date format has been specified
     expect_equal(chk$meta$match$date, lubridate::ymd("2015-08-12")) ## by default
     chk <- read_dv(tf, date_format = "mdy")
     expect_equal(chk$meta$match$date, lubridate::ymd("2015-08-12"))
     chk <- read_dv(tf, date_format = "dmy")
-    expect_equal(chk$meta$match$date, lubridate::ymd("2015-08-12"))
+    expect_equal(chk$meta$match$date, lubridate::ymd("2015-12-08"))
     chk <- read_dv(tf, date_format = "ymd")
     ## can't be this format, so it's ignored
     expect_equal(chk$meta$match$date, lubridate::ymd("2015-08-12"))
