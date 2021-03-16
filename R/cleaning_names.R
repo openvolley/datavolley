@@ -91,13 +91,12 @@ remap_team_names <- function(x,remap,fixed=TRUE) {
 #' }
 #'
 #' @export
-check_player_names=function(x, distance_threshold=4) {
-    if (!(inherits(x,"datavolley") | (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
-        stop("x must be a datavolley object or list of such objects")
-    if (inherits(x,"datavolley")) x <- list(x)
-    names_ok <- do.call(rbind, lapply(x, function(z)
-        rbind(data.frame(team=home_team(z), team_id=home_team_id(z), player_name=z$meta$players_h$name, player_id=z$meta$players_h$player_id, stringsAsFactors=FALSE),
-              data.frame(team=visiting_team(z), team_id=visiting_team_id(z), player_name=z$meta$players_v$name, player_id=z$meta$players_v$player_id, stringsAsFactors=FALSE))))
+check_player_names <- function(x, distance_threshold = 4) {
+    if (!(inherits(x, "datavolley") || (is.list(x) && all(sapply(x, function(z) inherits(z, "datavolley")))))) stop("x must be a datavolley object or list of such objects")
+    if (inherits(x, "datavolley")) x <- list(x)
+    names_ok <- do.call(rbind, lapply(x, function(z) 
+        rbind(data.frame(team = home_team(z), team_id = home_team_id(z), player_name = z$meta$players_h$name, player_id = z$meta$players_h$player_id, stringsAsFactors = FALSE),
+              data.frame(team = visiting_team(z), team_id = visiting_team_id(z), player_name = z$meta$players_v$name, player_id = z$meta$players_v$player_id, stringsAsFactors = FALSE))))
     blah <- plyr::ddply(names_ok, c("team", "team_id", "player_name", "player_id"), function(z) table(z$player_name))
     names(blah)[5] <- "count"
     blah$count <- as.integer(blah$count)
@@ -105,17 +104,13 @@ check_player_names=function(x, distance_threshold=4) {
     ndist <- adist(tolower(blah$player_name))
     mask <- lower.tri(ndist)
     mask[!mask] <- NA
-    ndist <- ndist*mask
-    susidx <- which(!is.na(ndist) & ndist<distance_threshold, arr.ind=TRUE)
-    susout <- data.frame()
-    if (nrow(susidx)>0) {
-        for (k in 1:nrow(susidx)) {
-            susout <- rbind(susout,
-                            data.frame(team1=blah$team[susidx[k,1]], team_id1=blah$team_id[susidx[k,1]], player1=blah$player_name[susidx[k,1]], player_id1=blah$player_id[susidx[k,1]], count1=blah$count[susidx[k,1]],
-                                       team2=blah$team[susidx[k,2]], team_id2=blah$team_id[susidx[k,2]], player2=blah$player_name[susidx[k,2]], player_id2=blah$player_id[susidx[k,2]], count2=blah$count[susidx[k,2]],stringsAsFactors=FALSE))
-        }
+    ndist <- ndist * mask
+    susidx <- which(!is.na(ndist) & ndist < distance_threshold, arr.ind = TRUE)
+    if (nrow(susidx) > 0) {
+        data.frame(team1 = blah$team[susidx[, 1]], team_id1 = blah$team_id[susidx[, 1]], player1 = blah$player_name[susidx[, 1]], player_id1 = blah$player_id[susidx[, 1]], count1 = blah$count[susidx[, 1]], team2 = blah$team[susidx[, 2]], team_id2 = blah$team_id[susidx[, 2]], player2 = blah$player_name[susidx[, 2]], player_id2 = blah$player_id[susidx[, 2]], count2 = blah$count[susidx[, 2]],stringsAsFactors = FALSE)
+    } else {
+        data.frame()
     }
-    susout
 }
 
 
