@@ -245,7 +245,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
-    out$plays <- cbind(this_main[, c("time", "video_time")], out$plays, this_main[, c(paste0("home_p", team_player_num), paste0("visiting_p", team_player_num), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase")])
+    out$plays <- cbind(this_main[, c("time", "video_file_number", "video_time")], out$plays, this_main[, c(paste0("home_p", team_player_num), paste0("visiting_p", team_player_num), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase")])
     ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
     cxy <- dv_index2xy() ## grid of coords in our ggcourt space
     temp <- out$plays$start_coordinate

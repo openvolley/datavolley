@@ -237,7 +237,7 @@ read_main <- function(filename, file_text) {
     names(x)[9] <- "set"
     names(x)[10] <- "home_rot"
     names(x)[11] <- "visiting_rot"
-    ##names(x)[12] <- ## seems to also be set number?
+    names(x)[12] <- "video_file_number"
     names(x)[13] <- "video_time"
     names(x)[15:20] <- paste("home_p",1:6,sep="") ## home team, court positons 1-6, entries are player numbers
     names(x)[21:26] <- paste("visiting_p",1:6,sep="") ## visiting team

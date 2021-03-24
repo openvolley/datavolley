@@ -244,7 +244,7 @@ dvw_scout <- function(x, text_encoding = text_encoding) {
              "set_number", ## col 9
              "home_setter_position", ## 10
              "visiting_setter_position", # 11
-             "na_col", ##names(x)[12] <- ## is always 1 or NA?
+             "video_file_number", ## 12
              "video_time", ## 13
              "na_col", ## 14 need to check this one
              paste("home_p", 1:6, sep = ""), ## 15-20, home team, court positons 1-6, entries are player numbers
