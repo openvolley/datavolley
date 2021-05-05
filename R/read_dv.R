@@ -497,6 +497,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## add play phase
     out$plays$phase <- play_phase(out$plays)
 
+    ## add scores at START of point
+    out$plays$home_score_start_of_point <- ifelse(out$plays$point_won_by %eq% out$plays$home_team, as.integer(out$plays$home_team_score - 1L), as.integer(out$plays$home_team_score))
+    out$plays$visiting_score_start_of_point <- ifelse(out$plays$point_won_by %eq% out$plays$visiting_team, as.integer(out$plays$visiting_team_score - 1L), as.integer(out$plays$visiting_team_score))
+
     ## now call custom code parser, if it was provided
     if (!missing(custom_code_parser) && !is.null(custom_code_parser)) {
         cx <- custom_code_parser(out)
