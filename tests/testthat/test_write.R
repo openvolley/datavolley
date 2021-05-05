@@ -20,6 +20,7 @@ test_that("dv_write behaves", {
             ## drop trailing empty line in dvw1 if it exists
             if (!nzchar(dvw1$raw[length(dvw1$raw)])) dvw1$raw <- dvw1$raw[-length(dvw1$raw)]
         }
+        dvw1$file_meta$preferred_date_format <- dvw2$file_meta$preferred_date_format <- NULL
         dvw2$file_meta$lastchange_day <- dvw1$file_meta$lastchange_day
         dvw2$file_meta$lastchange_idp <- dvw1$file_meta$lastchange_idp
         dvw2$file_meta$lastchange_prg <- dvw1$file_meta$lastchange_prg
@@ -31,6 +32,7 @@ test_that("dv_write behaves", {
         dvw2$meta$match$text_encoding <- NA_character_
 
         dvw2$meta$filename <- dvw1$meta$filename
+        print(all.equal(dvw1, dvw2))
         expect_equal(dvw1, dvw2)
     }
     test_read_write_dvw <- function(filename) {
