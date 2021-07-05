@@ -535,11 +535,17 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                 rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
                 next
             }
-            sub_out <- as.numeric(sub(":.*$","",sub("^.c","",plays$code[k]))) ## outgoing player
-            sub_in <- as.numeric(sub("^.*:","",plays$code[k])) ## incoming player
-            if (!sub_out %in% prev_rot || !sub_in %in% new_rot || sub_in %in% prev_rot || sub_out %in% new_rot) {
-                rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
+            if (!grepl("^.c[[:digit:]]+:[[:digit:]]+", plays$code[k])) {
+                rot_errors[[length(rot_errors) + 1]] <- data.frame(file_line_number = plays$file_line_number[k], video_time = video_time_from_raw(x$raw[plays$file_line_number[k]]), message = paste0("The substitution code (", plays$code[k], ") does not follow the expected format"), file_line = x$raw[plays$file_line_number[k]], severity = 3, stringsAsFactors = FALSE)
                 next
+            } else {
+                subtxt <- strsplit(sub("^.c", "", plays$code[k]), ":")[[1]]
+                sub_out <- as.numeric(subtxt[1]) ## outgoing player
+                sub_in <- as.numeric(subtxt[2]) ## incoming player
+                if (!sub_out %in% prev_rot || !sub_in %in% new_rot || sub_in %in% prev_rot || sub_out %in% new_rot) {
+                    rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
+                    next
+                }
             }
         }
         if (length(rot_errors)>0) out <- rbind(out,do.call(rbind,rot_errors))
