@@ -152,7 +152,8 @@ read_teams <- function(txt) {
     names(p)[5] <- "assistant"
     if (ncol(p) > 5) names(p)[6] <- "shirt_colour"
     p$home_away_team <- c("*","a")
-    p$team_id <- as.character(p$team_id) ## force to be char
+    p$team_id <- str_trim(as.character(p$team_id)) ## force to be char
+    p$team <- str_trim(p$team)
     suppressWarnings(p$sets_won <- as.integer(p$sets_won))
     ## check for identical team names
     if (p$team[1] %eq% p$team[2]) {
@@ -200,6 +201,8 @@ read_players <- function(txt,team,surname_case) {
     }
     p$firstname[is.na(p$firstname)] <- ""
     p$lastname[is.na(p$lastname)] <- ""
+    p$firstname <- str_trim(p$firstname)
+    p$lastname <- str_trim(p$lastname)
     p$name <- str_trim(paste(p$firstname, p$lastname, sep = " "))
     ## fallback for un-named players
     idx <- which(!nzchar(p$name))
@@ -207,12 +210,12 @@ read_players <- function(txt,team,surname_case) {
     ##p$role <- plyr::mapvalues(p$role, from = 1:6, to = c("libero", "outside", "opposite", "middle", "setter", "unknown"), warn_missing = FALSE)
     ##p$role[p$role %in% c("0")] <- NA_character_
     p$role <- roles_int2str(p$role)
-    p$player_id <- as.character(p$player_id)
-    p$starting_position_set1 <- as.character(p$starting_position_set1)
-    p$starting_position_set2 <- as.character(p$starting_position_set2)
-    p$starting_position_set3 <- as.character(p$starting_position_set3)
-    p$starting_position_set4 <- as.character(p$starting_position_set4)
-    p$starting_position_set5 <- as.character(p$starting_position_set5)
+    p$player_id <- str_trim(as.character(p$player_id))
+    p$starting_position_set1 <- str_trim(as.character(p$starting_position_set1))
+    p$starting_position_set2 <- str_trim(as.character(p$starting_position_set2))
+    p$starting_position_set3 <- str_trim(as.character(p$starting_position_set3))
+    p$starting_position_set4 <- str_trim(as.character(p$starting_position_set4))
+    p$starting_position_set5 <- str_trim(as.character(p$starting_position_set5))
     p$foreign[is.na(p$foreign)] <- FALSE
     p
 }
