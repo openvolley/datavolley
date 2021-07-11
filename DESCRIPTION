@@ -23,8 +23,12 @@ Suggests:
     dplyr,
     jsonlite,
     testthat,
-    ggplot2
+    ggplot2,
+    knitr,
+    rmarkdown,
+    covr
 Encoding: UTF-8
 License: MIT + file LICENSE
 LazyData: true
 RoxygenNote: 7.1.1
+VignetteBuilder: knitr
