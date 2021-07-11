@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">datavolley</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.15.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.16.7</span>
       </span>
     </div>
 
@@ -80,9 +80,12 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
+</li>
+<li>
+  <a href="../articles/datavolley.html">Get started</a>
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -141,7 +144,7 @@
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='va'>myfile</span> <span class='op'>&lt;-</span> <span class='fu'>dv_example_file</span><span class='op'>(</span><span class='op'>)</span>
-<span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='read_dv.html'>read_dv</a></span><span class='op'>(</span><span class='va'>myfile</span>, insert_technical_timeouts<span class='op'>=</span><span class='cn'>FALSE</span><span class='op'>)</span>
+<span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='read_dv.html'>read_dv</a></span><span class='op'>(</span><span class='va'>myfile</span>, insert_technical_timeouts <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/base/summary.html'>summary</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
 </div><div class='output co'>#&gt; Match summary:
 #&gt; Date: 2015-01-25

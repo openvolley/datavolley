@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Default attack codes table — dv_default_attack_codes • datavolley</title>
+<title>Read a team roster (*.sq) file — dv_read_sq • datavolley</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Default attack codes table — dv_default_attack_codes" />
-<meta property="og:description" content="Default attack codes table" />
+<meta property="og:title" content="Read a team roster (*.sq) file — dv_read_sq" />
+<meta property="og:description" content="Read a team roster (*.sq) file" />
 
 
 
@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">datavolley</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.15.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.16.7</span>
       </span>
     </div>
 
@@ -80,9 +80,12 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
+</li>
+<li>
+  <a href="../articles/datavolley.html">Get started</a>
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
@@ -106,22 +109,62 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Default attack codes table</h1>
+    <h1>Read a team roster (*.sq) file</h1>
     
-    <div class="hidden name"><code>dv_default_attack_codes.Rd</code></div>
+    <div class="hidden name"><code>dv_read_sq.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Default attack codes table</p>
+    <p>Read a team roster (*.sq) file</p>
     </div>
 
-    <pre class="usage"><span class='fu'>dv_default_attack_codes</span><span class='op'>(</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>dv_read_sq</span><span class='op'>(</span>
+  <span class='va'>filename</span>,
+  do_transliterate <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  encoding <span class='op'>=</span> <span class='st'>"guess"</span>,
+  date_format <span class='op'>=</span> <span class='st'>"guess"</span>,
+  surname_case <span class='op'>=</span> <span class='st'>"asis"</span>,
+  verbose <span class='op'>=</span> <span class='cn'>FALSE</span>
+<span class='op'>)</span></pre>
 
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>filename</th>
+      <td><p>string: file name to read</p></td>
+    </tr>
+    <tr>
+      <th>do_transliterate</th>
+      <td><p>logical: should we transliterate all text to ASCII?</p></td>
+    </tr>
+    <tr>
+      <th>encoding</th>
+      <td><p>character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed</p></td>
+    </tr>
+    <tr>
+      <th>date_format</th>
+      <td><p>string: the expected date format (used for dates of birth). One of "ymd", "mdy", "dmy", or "guess". If <code>date_format</code> is something other than "guess", that date format will be preferred where dates are ambiguous</p></td>
+    </tr>
+    <tr>
+      <th>surname_case</th>
+      <td><p>string or function: should we change the case of player surnames? If <code>surname_case</code> is a string, valid values are "upper","lower","title", or "asis"; otherwise <code>surname_case</code> may be a function that will be applied to the player surname strings</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>logical: if <code>TRUE</code>, show progress</p></td>
+    </tr>
+    </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A data.frame</p>
+    <p>A list with two components: "team" and "players", both of which are data frames</p>
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'>dv_read_sq</span><span class='op'>(</span><span class='st'>"/path/to/my/roster_file"</span><span class='op'>)</span>
+<span class='op'>}</span>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
