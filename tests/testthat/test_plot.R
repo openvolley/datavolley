@@ -62,4 +62,7 @@ test_that("coordinate utilities work as expected", {
     temp <- dv_xy(zones = tempz$zone, end = "upper", as_for_serve = TRUE, subzone = tempz$subzone)
     expect_equal(temp$x, rowSums(expand.grid(c(0.8, NA, NA, NA, 3.2, 2, 2.6, NA, 1.4), c(-0.25, -0.25, 0.25, 0.25))))
     expect_identical(temp$y, rowSums(expand.grid(c(6.5, NA, NA, NA, 6.5, 6.5, 6.5, NA, 6.5), c(0.25, -0.25, -0.25, 0.25))))
+
+    ## serving zones to coords
+    expect_equal(dv_xy2zone(x = c(0.95, 1.15, 1.4, 2), y = 6.5, as_for_serve = TRUE), c(1L, 9L, 9L, 6L))
 })

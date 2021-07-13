@@ -258,7 +258,9 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
     }
     if (show_zones && !background_only) {
         xoff <- if (as_for_serve) 0.5 else 0.4
-        szx <- if (as_for_serve) c(3,1,2,1.5,2.5)+0.5 else c(3,3,2,1,1,2,1,2,3)
+        szx <- if (as_for_serve) ##c(3,1,2,1.5,2.5)+xoff ## with 1, 6, 5 as for attack/rec
+                   c(3.2, 0.8, 2.0, 1.4, 2.6) + xoff ## with 5 equi-spaced zones along the baseline
+               else c(3,3,2,1,1,2,1,2,3)
         szy <- if (as_for_serve) c(1,1,1,1,1)-0.25 else c(1,3,3,3,1,1,2,2,2)
         ezx <- 4-szx
         ezy <- 3+4-szy
@@ -872,7 +874,8 @@ dv_xy2zone <- function(x, y = NULL, as_for_serve = FALSE) {
         y <- pmax(1, pmin(6, round(y)))
         zm[(y - 1)*3 + x]
     } else {
-        x <- pmax(2, pmin(6, round(x*2))) - 1 # round to 0.5m bins
+        x <- .bincode(x, breaks = c(-Inf, seq(1.1, 2.9, by = 0.6), Inf), include.lowest = TRUE)
+        ## theoretically you can't serve from x < 0.5 or x > 3.5, but we assign those extended positions to the outermost zones here
         ## positions 7 and 9 lie in between 5-6 and 6-1
         zm <- c(5L, 7L, 6L, 9L, 1L)
         out <- zm[x]

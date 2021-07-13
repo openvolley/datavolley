@@ -141,15 +141,15 @@ dv_court <- function(plot_package = "base", court="full", show_zones=TRUE, label
     ## net
     plot_lines(c(0.25, 3.75), c(3.5, 3.5), col = grid_colour, lwd = 2)
     if (!is.null(labels)) {
-        if (court %in% c("full","lower")) {
+        if (court %in% c("full", "lower")) {
             ly <- if (as_for_serve) 0.1 else 0.4
             text(2, ly, labels[1])
         }
-        if (court %in% c("full","upper")) {
+        if (court %in% c("full", "upper")) {
             lb <- if (court=="full") {
                      labels[2]
                  } else {
-                     if (length(labels)==2) labels[2] else labels[1]
+                     if (length(labels) == 2) labels[2] else labels[1]
                  }
             ly <- if (as_for_serve) 6.9 else 6.6
             text(2, ly, lb)
@@ -157,17 +157,17 @@ dv_court <- function(plot_package = "base", court="full", show_zones=TRUE, label
     }
     if (show_zones) {
         xoff <- if (as_for_serve) 0.5 else 0.4
-        szx <- if (as_for_serve) c(3,1,2,1.5,2.5)+0.5 else c(3,3,2,1,1,2,1,2,3)
-        szy <- if (as_for_serve) c(1,1,1,1,1)-0.25 else c(1,3,3,3,1,1,2,2,2)
-        ezx <- 4-szx
-        ezy <- 3+4-szy
-        lb <- if (as_for_serve) c(1,5,6,7,9) else 1:9
+        szx <- if (as_for_serve) c(3.2, 0.8, 2.0, 1.4, 2.6) + xoff else c(3, 3, 2, 1, 1, 2, 1, 2, 3)
+        szy <- if (as_for_serve) c(1, 1, 1, 1, 1) - 0.25 else c(1, 3, 3, 3, 1, 1, 2, 2, 2)
+        ezx <- 4 - szx
+        ezy <- 3 + 4 - szy
+        lb <- if (as_for_serve) c(1, 5, 6, 7, 9) else 1:9
         ## these need to be added one by one, otherwise doesn't work with e.g. facet_wrap plots
         if (court %in% c("full","lower")) {
-            text(x = szx-xoff, y = szy-0.4, labels = lb, col = zone_colour, adj = c(0.5, 0.5), font = 3, cex = 0.6)
+            text(x = szx - xoff, y = szy - 0.4, labels = lb, col = zone_colour, adj = c(0.5, 0.5), font = 3, cex = 0.6)
         }
         if (court %in% c("full","upper")) {
-            text(x = ezx-xoff, y = ezy-0.4, labels = lb, col = zone_colour, adj = c(0.5, 0.5), font = 3, cex = 0.6)
+            text(x = ezx - xoff, y = ezy - 0.4, labels = lb, col = zone_colour, adj = c(0.5, 0.5), font = 3, cex = 0.6)
         }
     }
     invisible(NULL)
