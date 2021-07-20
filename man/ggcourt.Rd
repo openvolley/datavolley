@@ -23,6 +23,7 @@ ggcourt(
   figure_colour = NULL,
   background_only = FALSE,
   foreground_only = FALSE,
+  line_width = 0.5,
   ...
 )
 }
@@ -68,7 +69,9 @@ ggcourt(
 
 \item{foreground_only}{logical: if \code{TRUE}, only plot the foreground elements (grid lines, labels, etc)}
 
-\item{...}{: additional parameters passed to \code{ggplot2::theme_classic(...)}}
+\item{line_width}{numeric: line width (passed as the size parameter to e.g. \code{ggplot2::geom_path})}
+
+\item{...}{: additional parameters passed to \code{ggplot2::theme_classic}}
 }
 \value{
 ggplot layer

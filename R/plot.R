@@ -59,7 +59,8 @@
 #' @param figure_colour string: colour to set the figure background to. If \code{NULL}, the background colour of the theme will be used (white, by default)
 #' @param background_only logical: if \code{TRUE}, only plot the background elements (including general plot attributes such as the theme)
 #' @param foreground_only logical: if \code{TRUE}, only plot the foreground elements (grid lines, labels, etc)
-#' @param ... : additional parameters passed to \code{ggplot2::theme_classic(...)}
+#' @param line_width numeric: line width (passed as the size parameter to e.g. \code{ggplot2::geom_path})
+#' @param ... : additional parameters passed to \code{ggplot2::theme_classic}
 #'
 #' @return ggplot layer
 #'
@@ -138,22 +139,23 @@
 #' }
 #' 
 #' @export
-ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, show_3m_line = TRUE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, background_only = FALSE, foreground_only = FALSE, ...) {
+ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, show_3m_line = TRUE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, background_only = FALSE, foreground_only = FALSE, line_width = 0.5, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }
-    court <- match.arg(tolower(court),c("full","lower","upper"))
-    assert_that(is.flag(show_zones),!is.na(show_zones))
-    assert_that(is.flag(show_minor_zones),!is.na(show_minor_zones))
-    assert_that(is.flag(show_3m_line),!is.na(show_3m_line))
-    assert_that(is.flag(as_for_serve),!is.na(as_for_serve))
-    assert_that(is.flag(fixed_aspect_ratio),!is.na(fixed_aspect_ratio))
+    court <- match.arg(tolower(court), c("full", "lower", "upper"))
+    assert_that(is.flag(show_zones), !is.na(show_zones))
+    assert_that(is.flag(show_minor_zones), !is.na(show_minor_zones))
+    assert_that(is.flag(show_3m_line), !is.na(show_3m_line))
+    assert_that(is.flag(as_for_serve), !is.na(as_for_serve))
+    assert_that(is.flag(fixed_aspect_ratio), !is.na(fixed_aspect_ratio))
     if (is.null(court_colour)) court_colour <- "none"
     if (is.null(figure_colour)) figure_colour <- "none"
     assert_that(is.string(court_colour))
     assert_that(is.string(figure_colour))
-    assert_that(is.flag(background_only),!is.na(background_only))
-    assert_that(is.flag(foreground_only),!is.na(foreground_only))
+    assert_that(is.flag(background_only), !is.na(background_only))
+    assert_that(is.flag(foreground_only), !is.na(foreground_only))
+    assert_that(is.scalar(line_width), !is.na(line_width))
     bgimg <- NULL
     if (tolower(court_colour) %eq% "indoor") {
         court_colour <- "#D98875"
@@ -183,57 +185,59 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
     }
     ## horizontal grid lines
     if (show_3m_line) {
-        hl <- data.frame(x=c(0.5,3.5),y=c(0.5,0.5,2.5,2.5,3.5,3.5,4.5,4.5,6.5,6.5),id=c(1,1,2,2,3,3,4,4,5,5))
+        hl <- data.frame(x = c(0.5, 3.5), y = c(0.5, 0.5, 2.5, 2.5, 3.5, 3.5, 4.5, 4.5, 6.5, 6.5), id = c(1, 1, 2, 2, 3, 3, 4, 4, 5, 5))
     } else {
-        hl <- data.frame(x=c(0.5,3.5),y=c(0.5,0.5,3.5,3.5,6.5,6.5),id=c(1,1,3,3,5,5))
+        hl <- data.frame(x = c(0.5, 3.5), y = c(0.5, 0.5, 3.5, 3.5, 6.5, 6.5), id = c(1, 1, 3, 3, 5, 5))
     }
     hl <- switch(court,
-                 lower=hl[hl$y<4,],
-                 upper=hl[hl$y>3,],
+                 lower = hl[hl$y < 4, ],
+                 upper = hl[hl$y > 3, ],
                  hl)
-    hl <- ggplot2::geom_path(data=hl,ggplot2::aes_string(x="x",y="y",group="id"),colour=grid_colour,inherit.aes=FALSE)
+    hl <- ggplot2::geom_path(data = hl, ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = grid_colour, size = line_width, inherit.aes = FALSE)
     if (show_3m_line) {
-        hlz <- data.frame(x=c(0.5,3.5),y=c(1.5,1.5,5.5,5.5),id=c(6,6,7,7))
+        hlz <- data.frame(x = c(0.5, 3.5), y = c(1.5, 1.5, 5.5, 5.5), id = c(6, 6, 7, 7))
     } else {
         ## also include zone line along 3m line
-        hlz <- data.frame(x=c(0.5,3.5),y=c(1.5,1.5,2.5,2.5,4.5,4.5,5.5,5.5),id=c(6,6,6.3,6.3,6.6,6.6,7,7))
+        hlz <- data.frame(x = c(0.5, 3.5), y = c(1.5, 1.5, 2.5, 2.5, 4.5, 4.5, 5.5, 5.5), id = c(6, 6, 6.3, 6.3, 6.6, 6.6, 7, 7))
     }
     hlz <- switch(court,
-                 lower=hlz[hlz$y<4,],
-                 upper=hlz[hlz$y>3,],
+                 lower = hlz[hlz$y < 4, ],
+                 upper = hlz[hlz$y > 3, ],
                  hlz)
-    hlz <- ggplot2::geom_path(data=hlz,ggplot2::aes_string(x="x",y="y",group="id"),colour=zone_colour,inherit.aes=FALSE)
+    hlz <- ggplot2::geom_path(data = hlz, ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = zone_colour, size = line_width, inherit.aes = FALSE)
     ## vertical grid lines
-    vl <- data.frame(y=c(0.5,6.5),x=c(0.5,0.5,3.5,3.5),id=c(1,1,2,2))
+    vl <- data.frame(y = c(0.5, 6.5), x = c(0.5, 0.5, 3.5, 3.5), id = c(1, 1, 2, 2))
     vl$y <- switch(court,
-                   lower=mapvalues(vl$y,6.5,3.5),
-                   upper=mapvalues(vl$y,0.5,3.5),
+                   lower = mapvalues(vl$y, 6.5, 3.5),
+                   upper = mapvalues(vl$y, 0.5, 3.5),
                    vl$y)
-    vl <- ggplot2::geom_path(data=vl,ggplot2::aes_string(x="x",y="y",group="id"),colour=grid_colour,inherit.aes=FALSE)
-    vlz <- data.frame(y=c(0.5,6.5),x=c(1.5,1.5,2.5,2.5),id=c(3,3,4,4))
+    vl <- ggplot2::geom_path(data = vl, ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = grid_colour, size = line_width, inherit.aes = FALSE)
+    vlz <- data.frame(y = c(0.5, 6.5), x = c(1.5, 1.5, 2.5, 2.5), id = c(3, 3, 4, 4))
     vlz$y <- switch(court,
-                   lower=mapvalues(vlz$y,6.5,3.5),
-                   upper=mapvalues(vlz$y,0.5,3.5),
+                   lower = mapvalues(vlz$y, 6.5, 3.5),
+                   upper = mapvalues(vlz$y, 0.5, 3.5),
                    vlz$y)
-    vlz <- ggplot2::geom_path(data=vlz,ggplot2::aes_string(x="x",y="y",group="id"),colour=zone_colour,inherit.aes=FALSE)
+    vlz <- ggplot2::geom_path(data = vlz,ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = zone_colour, size = line_width, inherit.aes = FALSE)
     ## minor grid lines
     if (show_minor_zones) {
-        hlm <- data.frame(x=c(0.5,3.5),y=c(1,1,1.5,1.5,2,2,2.5,2.5,3,3,4,4,4.5,4.5,5,5,5.5,5.5,6,6),id=c(1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10))
+        hlm <- data.frame(x = c(0.5, 3.5),
+                          y = c(1, 1, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3, 4, 4, 4.5, 4.5, 5, 5, 5.5, 5.5, 6, 6),
+                          id=c(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10))
         hlm <- switch(court,
-                      lower=hlm[hlm$y<4,],
-                      upper=hlm[hlm$y>3,],
+                      lower = hlm[hlm$y < 4,],
+                      upper = hlm[hlm$y > 3,],
                       hlm)
-        hlm <- ggplot2::geom_path(data=hlm,ggplot2::aes_string(x="x",y="y",group="id"),colour=minor_zone_colour,inherit.aes=FALSE)
-        vlm <- data.frame(y=c(0.5,6.5),x=c(1,1,1.5,1.5,2,2,2.5,2.5,3,3),id=c(1,1,2,2,3,3,4,4,5,5))
+        hlm <- ggplot2::geom_path(data = hlm,ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = minor_zone_colour, size = line_width, inherit.aes = FALSE)
+        vlm <- data.frame(y = c(0.5, 6.5), x = c(1, 1, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3), id = c(1, 1, 2, 2, 3, 3, 4, 4, 5, 5))
         vlm$y <- switch(court,
-                        lower=mapvalues(vlm$y,6.5,3.5),
-                        upper=mapvalues(vlm$y,0.5,3.5),
+                        lower = mapvalues(vlm$y, 6.5, 3.5),
+                        upper = mapvalues(vlm$y, 0.5, 3.5),
                         vlm$y)
-        vlm <- ggplot2::geom_path(data=vlm,ggplot2::aes_string(x="x",y="y",group="id"),colour=minor_zone_colour,inherit.aes=FALSE)
+        vlm <- ggplot2::geom_path(data = vlm, ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = minor_zone_colour, size = line_width, inherit.aes = FALSE)
     }
-    net <- ggplot2::geom_path(data=data.frame(x=c(0.25,3.75),y=c(3.5,3.5)),ggplot2::aes_string(x="x",y="y"),colour=grid_colour,size=2,inherit.aes=FALSE) ## net
+    net <- ggplot2::geom_path(data = data.frame(x = c(0.25, 3.75), y = c(3.5, 3.5)), ggplot2::aes_string(x = "x", y = "y"), colour = grid_colour, size = 4 * line_width, inherit.aes = FALSE) ## net
     thm <- ggplot2::theme_classic(...)
-    thm2 <- ggplot2::theme(axis.line = ggplot2::element_blank(),axis.text.x = ggplot2::element_blank(), axis.text.y = ggplot2::element_blank(),axis.ticks = ggplot2::element_blank(), axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank())
+    thm2 <- ggplot2::theme(axis.line = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(), axis.text.y = ggplot2::element_blank(), axis.ticks = ggplot2::element_blank(), axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank())
     thm3 <- if (!tolower(figure_colour) %eq% "none") ggplot2::theme(panel.background = ggplot2::element_rect(fill = figure_colour)) else NULL
     out <- if (!foreground_only) list(bgimg, cfill, thm, thm2, thm3) else list()
     if (!background_only) out <- c(out, list(net))
@@ -244,7 +248,7 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
     if (!is.null(labels) && !background_only) {
         if (court %in% c("full","lower")) {
             ly <- if (as_for_serve) 0.1 else 0.4
-            out <- c(out,ggplot2::annotate("text", x = 2, y = ly, label = labels[1], size = label_font_size*0.35278, colour = label_colour))
+            out <- c(out, ggplot2::annotate("text", x = 2, y = ly, label = labels[1], size = label_font_size*0.35278, colour = label_colour))
         }
         if (court %in% c("full","upper")) {
             lb <- if (court=="full") {
@@ -260,11 +264,11 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
         xoff <- if (as_for_serve) 0.5 else 0.4
         szx <- if (as_for_serve) ##c(3,1,2,1.5,2.5)+xoff ## with 1, 6, 5 as for attack/rec
                    c(3.2, 0.8, 2.0, 1.4, 2.6) + xoff ## with 5 equi-spaced zones along the baseline
-               else c(3,3,2,1,1,2,1,2,3)
-        szy <- if (as_for_serve) c(1,1,1,1,1)-0.25 else c(1,3,3,3,1,1,2,2,2)
-        ezx <- 4-szx
-        ezy <- 3+4-szy
-        lb <- if (as_for_serve) c(1,5,6,7,9) else 1:9
+               else c(3, 3, 2, 1, 1, 2, 1, 2, 3)
+        szy <- if (as_for_serve) c(1, 1, 1, 1, 1)-0.25 else c(1, 3, 3, 3, 1, 1, 2, 2, 2)
+        ezx <- 4 - szx
+        ezy <- 3 + 4 - szy
+        lb <- if (as_for_serve) c(1, 5, 6, 7, 9) else 1:9
         ## these need to be added one by one, otherwise doesn't work with e.g. facet_wrap plots
         if (court %in% c("full","lower")) {
             for (ii in seq_len(length(lb))) {
