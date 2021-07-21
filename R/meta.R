@@ -36,7 +36,7 @@ read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
     suppressWarnings(tryCatch({
         ## quote = "" because no text in the dvw should be fully quoted, but might have quotes within team names
         if (length(txt) == 1 && !grepl("\n", txt)) txt <- paste0(txt, "\n") ## to force read_delim to treat it as literal text
-        out <- readr::read_delim(txt, delim = sep, col_names = FALSE, quote = "", locale = readr::locale(encoding = "UTF-8"), ...)
+        out <- readr::read_delim(I(txt), delim = sep, col_names = FALSE, quote = "", locale = readr::locale(encoding = "UTF-8"), ...)
         ## strip the extra attributes that readr adds, and convert from spec_tbl_df back to plain old tbl_df
         attr(out, "spec") <- NULL
         tibble::as_tibble(out)
