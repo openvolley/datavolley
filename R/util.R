@@ -225,6 +225,8 @@ manydates <- function(z, preferred = NULL) {
 }
 
 manydatetimes <- function(z, preferred = NULL) {
+    z <- z[!is.na(z) & nzchar(z)]
+    if (length(z) < 1) return(as.POSIXct(NULL))
     ## don't use lubridate::ymd_hms etc here, because they will fall foul of e.g.
     ##  https://github.com/tidyverse/lubridate/issues/552
     suppressWarnings(tries <- list(ymd = parse_dt(z, "Ymd HMS"), dmy = parse_dt(z, "dmY HMS"), mdy = parse_dt(z, "mdY HMS")))
