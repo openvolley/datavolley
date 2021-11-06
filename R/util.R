@@ -210,6 +210,8 @@ parse_d <- function(dstr, pfun, allow_future_dates = FALSE) {
 }
 
 manydates <- function(z, preferred = NULL) {
+    z <- z[!is.na(z) & nzchar(z)]
+    if (length(z) < 1) return(as.Date(NULL))
     suppressWarnings(
         tries <- list(ymd = unique(as.Date(na.omit(c(parse_d(z, lubridate::ymd), parse_dt(z, "Ymd HMS"))))),
                       dmy = unique(as.Date(na.omit(c(parse_d(z, lubridate::dmy), parse_dt(z, "dmY HMS"))))),
@@ -221,6 +223,7 @@ manydates <- function(z, preferred = NULL) {
             if (length(tries[[pref]]) > 0) return(tries[[pref]])
         }
     }
+    if (length(tries$ymd) < 1 && length(tries$dmy) < 1 && length(tries$mdy) < 1) return(as.Date(NULL))
     unique(c(tries$ymd, tries$dmy, tries$mdy))
 }
 
@@ -236,6 +239,7 @@ manydatetimes <- function(z, preferred = NULL) {
             if (length(tries[[pref]]) > 0) return(tries[[pref]])
         }
     }
+    if (length(tries$ymd) < 1 && length(tries$dmy) < 1 && length(tries$mdy) < 1) return(as.POSIXct(NULL))
     unique(c(tries$ymd, tries$dmy, tries$mdy))
 }
 
