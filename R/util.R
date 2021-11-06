@@ -211,7 +211,7 @@ parse_d <- function(dstr, pfun, allow_future_dates = FALSE) {
 
 manydates <- function(z, preferred = NULL) {
     z <- z[!is.na(z) & nzchar(z)]
-    if (length(z) < 1) return(as.Date(NULL))
+    if (length(z) < 1) return(as.Date(integer(), origin = "1970-01-01"))
     suppressWarnings(
         tries <- list(ymd = unique(as.Date(na.omit(c(parse_d(z, lubridate::ymd), parse_dt(z, "Ymd HMS"))))),
                       dmy = unique(as.Date(na.omit(c(parse_d(z, lubridate::dmy), parse_dt(z, "dmY HMS"))))),
@@ -223,13 +223,13 @@ manydates <- function(z, preferred = NULL) {
             if (length(tries[[pref]]) > 0) return(tries[[pref]])
         }
     }
-    if (length(tries$ymd) < 1 && length(tries$dmy) < 1 && length(tries$mdy) < 1) return(as.Date(NULL))
+    if (length(tries$ymd) < 1 && length(tries$dmy) < 1 && length(tries$mdy) < 1) return(as.Date(integer(), origin = "1970-01-01"))
     unique(c(tries$ymd, tries$dmy, tries$mdy))
 }
 
 manydatetimes <- function(z, preferred = NULL) {
     z <- z[!is.na(z) & nzchar(z)]
-    if (length(z) < 1) return(as.POSIXct(NULL))
+    if (length(z) < 1) return(as.POSIXct(integer(), origin = "1970-01-01"))
     ## don't use lubridate::ymd_hms etc here, because they will fall foul of e.g.
     ##  https://github.com/tidyverse/lubridate/issues/552
     suppressWarnings(tries <- list(ymd = parse_dt(z, "Ymd HMS"), dmy = parse_dt(z, "dmY HMS"), mdy = parse_dt(z, "mdY HMS")))
@@ -239,7 +239,7 @@ manydatetimes <- function(z, preferred = NULL) {
             if (length(tries[[pref]]) > 0) return(tries[[pref]])
         }
     }
-    if (length(tries$ymd) < 1 && length(tries$dmy) < 1 && length(tries$mdy) < 1) return(as.POSIXct(NULL))
+    if (length(tries$ymd) < 1 && length(tries$dmy) < 1 && length(tries$mdy) < 1) return(as.POSIXct(integer(), origin = "1970-01-01"))
     unique(c(tries$ymd, tries$dmy, tries$mdy))
 }
 
