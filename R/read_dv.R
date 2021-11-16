@@ -101,8 +101,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                 idx <- suppressWarnings(grep("[3MATCH]", file_text, fixed=TRUE))
                 setdiff(as.character(read.table(text=file_text[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)$V9), "1") ## 1 seems to be used to indicate the default locale encoding, which doesn't help us
             }), error=function(e) NULL)
+            encoding <- stri_enc_detect2(tst)[[1]]$Encoding
             if (!is.null(textenc)) {
                 enclist <- intersect(paste0(c("windows-", "cp"), tolower(textenc)), tolower(iconvlist()))
+                enclist <- intersect(enclist, tolower(encoding)) ## don't use the embedded encoding if it isn't the suggested list from stri_enc_detect2
                 if (length(enclist)>0) {
                     try({
                         out <- read_dv(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], date_format = date_format, extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose, edited_meta=edited_meta)
@@ -114,7 +116,6 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                     ## if that fails, we'll drop through to our previous guessing code
                 }
             }
-            encoding <- stri_enc_detect2(tst)[[1]]$Encoding
             ## stri might return "x-iso*" encodings, but iconvlist() doesn't have them. Can these be treated just as iso*?
             ##xiso_idx <- grepl("^x\\-iso",encoding,ignore.case=TRUE)
             ##if (any(xiso_idx))
