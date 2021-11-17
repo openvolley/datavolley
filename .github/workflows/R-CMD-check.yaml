@@ -39,6 +39,10 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      - name: "Install Mac system libs"
+        if: runner.os == 'macOS'
+        run: brew install pkg-config gdal proj geos
+
       - uses: r-lib/actions/setup-r-dependencies@v1
         with:
           extra-packages: rcmdcheck
