@@ -36,6 +36,7 @@ read_filemeta <- function(txt, date_format = NULL) {
         dt <- manydatetimes(p$generator_day, preferred = date_format)
         if (length(dt)==1) p$generator_day <- dt
     }
+    udtf <- NULL
     if ("lastchange_day" %in% names(p)) {
         ## the format of the match date should be the same as the format of LASTCHANGE-DAY
         ## is it unambiguous?
