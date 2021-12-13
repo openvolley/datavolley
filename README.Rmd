@@ -34,8 +34,9 @@ The [peranavolley](https://github.com/openvolley/peranavolley) package provides 
 ## Installation
 
 ```{r eval=FALSE}
-
-install.packages("datavolley", repos = "https://openvolley.r-universe.dev")
+options(repos = c(openvolley = "https://openvolley.r-universe.dev",
+                  CRAN = "https://cloud.r-project.org"))
+install.packages("datavolley")
 
 ## or
 
