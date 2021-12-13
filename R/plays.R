@@ -287,6 +287,8 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     done <- grepl("\\*\\*\\dset",in_code) ## end-of-set markers
     out_end_of_set[done] <- TRUE
 
+    ## scouted codes where the player was unknown are indicated by $$ for the player number, e.g. *$$B
+    unknown_player_skill_regexp <- "^[a\\*]\\$\\$[SREABDF]"
     ## custom codes
     ## not sure if numbers are always 2 digits??
     ##out_custom_code <- substr(in_code,16,9999)
@@ -300,9 +302,9 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
                                     substr(temp, 13, 9999)
                                 })
     ## rotation errors
-    ## ">ROT<" ">ROTAZ" ">ROTAZIONE" ">ROT" ">FALLOROT" ">FORMAZIONE"
+    ## ">ROT<" ">ROTAZ" ">ROTAZIONE" ">ROT" ">FALLOROT" ">FORMAZIONE" ">>ROT" ">>>ROT"
     ## plusliga files: ROTE in custom notes
-    thisidx <- grepl("^.\\$\\$R",in_code) | grepl("^>(ROT|FALLOROT|FORMAZIONE)",in_code) | grepl("ROT",out_custom_code)
+    thisidx <- grepl("^[>]+(ROT|FALLOROT|FORMAZIONE)", in_code) | grepl("ROT", out_custom_code)
     ## these lines are followed by a $$& line, so don't do anything here for the time being
     out_skill[thisidx] <- "Rotation error"
     out_evaluation[thisidx] <- "Error"
@@ -310,16 +312,16 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     ## but do assign team here where possible
     out_team[thisidx & grepl("^a",in_code)] <- "a"
     out_team[thisidx & grepl("^\\*",in_code)] <- "*"
-    
+
     ## sanctions that look like ">RED"
     ## actually anything starting with ">", are sanctions, rotation errors (dealt with above), etc
     ## from Italian league files:
     ##">RED<"  ">RED"  ">ROSSO"
     ## ">CHECK_RIPETE"    ">FALLO"   ">CONTESA"  ">CHECK_CONTESA" look like challenge notes
     ## ">SECONDI"   ??
-    idx <- !done & (grepl("^>",in_code) | grepl("RED",out_custom_code))
+    idx <- !done & (grepl("^[>]+", in_code) | grepl("(RED|YELLOW)", out_custom_code))
     done[idx] <- TRUE
-    
+
     ## team handling
     tm <- substr(in_code[!done],1,1)
     oktm <- tm=="a" | tm=="*"
@@ -356,12 +358,12 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         out_visiting_setter_position[thisidx] <- as.numeric(temp[,2])
         done[thisidx] <- TRUE
     }
-    
+
     thisidx <- grepl("^.[PC]",in_code)
     ## substitution of setter (P) or other player (C)
     out_substitution[thisidx] <- TRUE
     done[thisidx] <- TRUE
-    
+
     thisidx <- grepl("^.\\$\\$&",in_code)
     ## green code: win or loss of a point in an undefined way
     ## team marker here says which team played the ball
@@ -369,27 +371,27 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     ## so don't set out_point here
     done[thisidx] <- TRUE
 
-    thisidx <- grepl("^.\\$\\$[SE]",in_code)
-    ## sanction
+    ## sanctions
     ## not handled yet
     ## e.g.
-    ##a$$SQ-;;;;;;;16.45.22;4;1;4;1;7138;;16;15;9;6;7;8;2;18;8;10;7;1;
-    ##a$$EH=~~~~~~~~~RED;s;;;;;;16.45.22;4;1;4;1;7138;;16;15;9;6;7;8;2;18;8;10;7;1;
-    if (any(thisidx)) {
-        myidx <- which(thisidx)
-        ## don't issue a message ...
-        ##msgs <- collect_messages(msgs,"Unhandled code, likely a sanction",code_line_num[myidx],full_lines[myidx],severity=1)
-    }
-    done[thisidx] <- TRUE
+    ## a$$EH=~~~~~~~~~RED
+    ## >a02REDCARD
+    ## >aBANQREDCARD
+    ## 13-YELLOW
+    ## *11YELLOWCARD
+    ## >JAUNE
+    ## those starting with > have already been dealt with
 
     ## occasionally see green codes but without the "&"
-    thisidx <- grepl("^.\\$\\$[^&]",in_code) & !done
+    ## can have e.g. *$$B for a block action by an unknown player
+    unknown_player_idx <- grepl(unknown_player_skill_regexp, in_code)
+    thisidx <- grepl("^.\\$\\$[^&]",in_code) & !done & !unknown_player_idx
     if (any(thisidx)) {
         thisidx <- which(thisidx)
         msgs <- collect_messages(msgs,"Unrecognized code (if this is a green code (\"$$\") it should be \"$$&\")",code_line_num[thisidx],full_lines[thisidx],severity=2)
         done[thisidx] <- TRUE
     }
-    
+
     thisidx <- grepl("^.T",in_code)
     ## timeout by this team
     out_timeout[thisidx] <- TRUE
@@ -399,33 +401,31 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     thisidx <- grepl("^.c",in_code)
     ## substitution
     out_substitution[thisidx] <- TRUE
-    done[thisidx] <- TRUE    
+    done[thisidx] <- TRUE
 
-## moved earlier    
-##    ## custom codes
-##    ## not sure if numbers are always 2 digits??
-##    ##out_custom_code <- substr(in_code,16,9999)
-##    temp <- sub("^.\\d+","",in_code) ## drop leading [a*] and digits
-##    out_custom_code <- substr(temp,13,9999)
-            
     notdone <- which(!done)
     for (ci in notdone) {
         code <- in_code[ci]
+        fullcode <- code
         thischar <- substr(code,2,2)
-        ##player_number <- str_match(code,".(\\d+)") ##player_number <- as.numeric(player_number[2])
-        tmp <- regexpr("^.(\\d+)",code)
-        if (tmp!=1) {
-            msgs <- collect_messages(msgs,"Player number should start at the second character",code_line_num[ci],full_lines[ci],severity=2)
-            player_number <- NA
+        ## allow for $$ being used for the number of an unknown player
+        if (grepl(unknown_player_skill_regexp, code)) {
+            player_number <- NA_integer_
+            code <- sub("^.\\$\\$", "", code)
         } else {
-            player_number <- as.numeric(substr(code,2,attr(tmp,"match.length")[1]))
-            if (is.na(player_number)) {
-                msgs <- collect_messages(msgs,"Could not read numeric player number",code_line_num[ci],full_lines[ci],severity=2)
+            tmp <- regexpr("^.(\\d+)", code)
+            if (tmp != 1) {
+                msgs <- collect_messages(msgs,"Player number should start at the second character",code_line_num[ci],full_lines[ci],severity=2)
+                player_number <- NA_integer_
+            } else {
+                player_number <- as.numeric(substr(code, 2, attr(tmp, "match.length")[1]))
+                if (is.na(player_number)) {
+                    msgs <- collect_messages(msgs,"Could not read numeric player number",code_line_num[ci],full_lines[ci],severity=2)
+                }
             }
+            code <- sub("^.\\d+", "", code)
         }
         out_player_number[ci] <- player_number
-        fullcode <- code
-        code <- sub("^.\\d+","",code)
         skill <- substr(code,1,1)
         tmp <- skill_decode(skill,fullcode,full_lines[ci],code_line_num[ci])
         out_skill[ci] <- tmp$decoded
@@ -798,10 +798,11 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     idx <- !is.na(out_player_number)
     out_player_name[idx] <- get_player_name(out_team[idx],out_player_number[idx],meta)
     out_player_id[idx] <- get_player_id(out_team[idx],out_player_number[idx],meta)
-    dudidx <- (!is.na(out_player_number) & is.na(out_player_name)) | grepl("unknown player",out_player_name,ignore.case=TRUE)
+    dudidx <- (!is.na(out_player_number) & is.na(out_player_name)) | grepl("unknown player", out_player_name, ignore.case = TRUE)
     if (any(dudidx))
         msgs <- collect_messages(msgs,paste0("Player number ",out_player_number[dudidx]," could not be resolved to a player name/id"),code_line_num[dudidx],full_lines[dudidx],severity=2)
-
+    ## $$ in the player number slot is used to indicate an unknown player
+    out_player_name[grepl(unknown_player_skill_regexp, in_code) & is.na(out_player_name)] <- "unknown player"
     ## order messages by line number
     #if (length(msgs$text)>0) {
     #    idx <- order(msgs$line)

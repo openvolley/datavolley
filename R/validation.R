@@ -366,7 +366,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         ## player not in recorded rotation making a play (other than by libero)
         liberos_v <- x$meta$players_v$number[grepl("L", x$meta$players_v$special_role)]
         liberos_h <- x$meta$players_h$number[grepl("L", x$meta$players_h$special_role)]
-        pp <- plays[plays$skill %in% c("Serve", "Attack", "Block", "Dig", "Freeball", "Reception", "Set"), ]
+        pp <- plays[plays$skill %in% c("Serve", "Attack", "Block", "Dig", "Freeball", "Reception", "Set") & !is.na(plays$player_number) & !plays$player_name %eq% "Unknown player", ]
         if (nrow(pp) > 0) {
             temp <- pp[, paste0("visiting_p", team_player_num)]
             names(temp) <- paste0("player", team_player_num)
