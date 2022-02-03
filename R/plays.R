@@ -80,9 +80,6 @@ attack_code_map <- function(type,start_zone) {
 #' @return a dataframe of attacks.
 #'
 #' @seealso \code{\link{read_dv}}
-#' @examples
-#' create_meta_attacks(plays)
-#'
 #' @export create_meta_attacks
 create_meta_attacks <- function(plays){
     attack_df = plays[plays$skill %eq% "Attack",]
