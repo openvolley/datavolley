@@ -28,6 +28,79 @@ attack_map <- function(type,skill) {
            paste0("Unknown ",skill," type"))
 }
 
+#' Translate attack type and starting zone into an attack code.
+#'
+#' If your DataVolley files does not have attack codes ready, (for example, if you are using Click&Scout), this function will take the starting zone and tempo of the attack to map it to an attack code.
+#'
+#' @param type string: 
+#' @param start_zone string:  
+#' @return a vector of attack codes.
+#'
+#' @seealso \code{\link{read_dv}}
+#' @examples
+#' type = c("H", "Q", "T")
+#' start_zone = c("8", "3", "4")
+#' attack_code_map(type, start_zone)
+#'
+#' @export attack_code_map
+attack_code_map <- function(type,start_zone) {
+    if(length(type) == 1){
+    switch(type,
+           H=switch(start_zone, "2" = "V6","3" = "V3","4" = "V5", "9"="V8", "8" = "VP", "7" = "V0", paste0("Unknown high ball attack from ",start_zone)),
+           M=switch(start_zone, "2" = "X4","3" = "X3","4" = "X9", "8" = "XP", paste0("Unknown half ball attack from ",start_zone)),
+           Q=switch(start_zone, "2" = "X2","3" = "X1","4" = "X7","9" = "XO", paste0("Unknown quick ball attack from ",start_zone)),
+           T=switch(start_zone, "2" = "X6","3" = "X3","4" = "X5", "9"="X8", "7" = "X0", paste0("Unknown half ball attack from ",start_zone)),
+           U=switch(start_zone, "2" = "C6","4" = "C5", "9"="C8", "7" = "C0", paste0("Unknown medium ball attack from ",start_zone)),
+           N=switch(start_zone, "2" = "CF","3" = "CB",paste0("Unknown slide attack from ",start_zone)),
+           O=paste0("Other attack from ",start_zone),
+           paste0("Unknown attack from ",start_zone))
+    }
+    if(length(type) > 1){
+     m = cbind(matrix(type, ncol = 1), matrix(start_zone, ncol = 1))
+        apply(m, 1, function(x) switch(x[1],
+               H=switch(x[2], "2" = "V6","3" = "V3","4" = "V5", "9"="V8", "8" = "VP", "7" = "V0", paste0("Unknown high ball attack from ",x[2])),
+               M=switch(x[2], "2" = "X4","3" = "X3","4" = "X9", "8" = "XP", paste0("Unknown half ball attack from ",x[2])),
+               Q=switch(x[2], "2" = "X2","3" = "X1","4" = "X7","9" = "XO", paste0("Unknown quick ball attack from ",x[2])),
+               T=switch(x[2], "2" = "X6","3" = "X3","4" = "X5", "9"="X8", "7" = "X0", paste0("Unknown half ball attack from ",x[2])),
+               U=switch(x[2], "2" = "C6","4" = "C5", "9"="C8", "7" = "C0", paste0("Unknown medium ball attack from ",x[2])),
+               N=switch(x[2], "2" = "CF","3" = "CB",paste0("Unknown slide attack from ",x[2])),
+               O=paste0("Other attack from ",x[2]),
+               paste0("Unknown attack from ",x[2]))
+        )
+    }
+}
+
+#' Create a meta attack data.frame from the plays object if it is missing
+#'
+#' If your DataVolley files does not have a meta attack dataframe, 
+#' (for example, if you are using Click&Scout), this function will take the
+#'  plays object to create one..
+#'
+#' @param plays data.frame: 
+#' @return a dataframe of attacks.
+#'
+#' @seealso \code{\link{read_dv}}
+#' @examples
+#' create_meta_attacks(plays)
+#'
+#' @export create_meta_attacks
+create_meta_attacks <- function(plays){
+    attack_df = plays[plays$skill %eq% "Attack",]
+    attack_df$side = NA
+    attack_df$type = substr(attack_df$code,5,5)
+    attack_df$description = NA
+    attack_df$X6 = NA
+    attack_df$X7 = NA
+    attack_df$X8 = NA
+    attack_df$set_type = NA
+    attack_df$X10 = NA
+    attack_df$X11 = NA
+    attack_df$code = attack_df$attack_code
+    attack_df$attacker_position = attack_df$start_zone
+    
+    unique(attack_df[,c("code", "attacker_position", "side", "type", "description", "X6", "X7", "X8", "set_type", "X10", "X11")])
+}
+
 serve_map <- function(type, skill, file_type = "indoor") {
     if (grepl("beach", file_type)) {
         switch(type,
