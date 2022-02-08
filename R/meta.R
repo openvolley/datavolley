@@ -199,6 +199,8 @@ read_players <- function(txt,team,surname_case) {
     } else if (is.function(surname_case)) {
         p$lastname <- surname_case(p$lastname)
     }
+    p$nickname <- str_trim(p$nickname)
+    p$nickname[is.na(p$nickname)] <- ""
     p$firstname[is.na(p$firstname)] <- ""
     p$lastname[is.na(p$lastname)] <- ""
     p$firstname <- str_trim(p$firstname)
