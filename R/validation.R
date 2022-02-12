@@ -449,9 +449,9 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         temp$point_lost_by[idx] <- temp$visiting_team[idx]
         temp$ok <- rep(TRUE, nrow(temp))
         idx <- temp$won_by_home
-        temp$ok[idx] <- temp$home_team_diff[idx]==1
+        temp$ok[idx] <- temp$home_team_diff[idx]==1 & temp$visiting_team_diff[idx]==0
         idx <- !temp$won_by_home
-        temp$ok[idx] <- temp$visiting_team_diff[idx]==1
+        temp$ok[idx] <- temp$visiting_team_diff[idx]==1 & temp$home_team_diff[idx]==0
         ## these won't be valid for first point of each set other than first set
         for (ss in 2:5) {
             idx <- temp$set_number==ss
