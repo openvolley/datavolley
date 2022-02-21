@@ -12,7 +12,7 @@ attack_code_map(type, start_zone)
 \item{start_zone}{string:}
 }
 \value{
-a vector of attack codes.
+a list of attack codes, set_types, etc.
 }
 \description{
 If your DataVolley files does not have attack codes ready, (for example, if you are using Click&Scout), this function will take the starting zone and tempo of the attack to map it to an attack code.
