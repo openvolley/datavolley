@@ -34,7 +34,7 @@ attack_map <- function(type,skill) {
 #'
 #' @param type string: 
 #' @param start_zone string:  
-#' @return a list of attack codes, set_types, etc.
+#' @return a vector of attack codes, set_types, etc.
 #'
 #' @seealso \code{\link{read_dv}}
 #' @examples
@@ -42,8 +42,8 @@ attack_map <- function(type,skill) {
 #' start_zone = c("8", "3", "4")
 #' attack_code_map(type, start_zone)
 #'
-#' @export attack_code_map
-attack_code_map <- function(type,start_zone) {
+#' @export dv_attack_code_map
+dv_attack_code_map <- function(type,start_zone) {
     if(length(type) == 1){
     m = switch(type,
            H=switch(start_zone, "2" = "V6","3" = "V3","4" = "V5", "9"="V8", "8" = "VP", "7" = "V0", paste0("Unknown high ball attack from ",start_zone)),
@@ -54,45 +54,6 @@ attack_code_map <- function(type,start_zone) {
            N=switch(start_zone, "2" = "CF","3" = "CB",paste0("Unknown slide attack from ",start_zone)),
            O=paste0("Other attack from ",start_zone),
            paste0("Unknown attack from ",start_zone))
-
-        atk_loc = ifelse(m %in% c("V5", "X5", "C5") , 4912, 
-                         ifelse(m %in% c("V6", "X6", "C6") , 4988, 
-                                ifelse(m %in% c("V8", "X8", "C8") , 4186, 
-                                       ifelse(m %in% c("V0", "X0", "C0") , 4114, 
-                                              ifelse(m %in% c("VP", "XP") , 4150, 
-                                                     ifelse(m %in% c("V3", "X3") , 4950, 
-                                                            ifelse(m %in% c("X1") , 4956, 
-                                                                   ifelse(m %in% c("X2") , 4868, 
-                                                                          ifelse(m %in% c("X7") , 4932, 
-                                                                                 ifelse(m %in% c("XO") , 3769, 
-                                                                                        ifelse(m %in% c("CF") , 4976, 
-                                                                                               ifelse(m %in% c("CB"), 4970, 
-                                                                                                      NA_real_
-                                                                                               ))))))))))))
-        atk_side =  ifelse(m %in% c("V5", "X5", "C5") , "R", 
-                           ifelse(m %in% c("V6", "X6", "C6"), "L", 
-                                  ifelse( m %in% c("V8", "X8", "C8") , "C", 
-                                          ifelse(m %in% c("V0", "X0", "C0") , "C", 
-                                                 ifelse(m %in% c("VP", "XP") , "C",
-                                                        ifelse(m %in% c("V3", "X3") , "C", 
-                                                               ifelse(m %in% c("X1", "X7") , "R",
-                                                                      ifelse(m %in% c("X2") , "L", 
-                                                                             ifelse(m %in% c("XO") , "C", 
-                                                                                    ifelse(m %in% c("CF") , "L", 
-                                                                                           ifelse(m %in% c("CB") , "L", 
-                                                                                                  NA_character_)))))))))))
-        
-        set_type =  ifelse(m %in% c("V5", "X5", "C5") , "F", 
-                           ifelse(m %in% c("V6", "X6", "C6") , "B", 
-                                  ifelse(m %in% c("V8", "X8", "C8") , "B", 
-                                         ifelse(m %in% c("V0", "X0", "C0") , "F", 
-                                                ifelse(m %in% c("VP", "XP") , "P", 
-                                                       ifelse(m %in% c("V3", "X3") , "-", 
-                                                              ifelse(m %in% c("X1","X2", "X7") , "C",
-                                                                     ifelse(m %in% c("XO") , "B", 
-                                                                            ifelse(m %in% c("CF") , "C", 
-                                                                                   ifelse(m %in% c("CB") , "C",
-                                                                                          NA_character_))))))))))
     }
     if(length(type) > 1){
      mt = cbind(matrix(type, ncol = 1), matrix(start_zone, ncol = 1))
@@ -100,60 +61,219 @@ attack_code_map <- function(type,start_zone) {
                H=switch(x[2], "2" = "V6","3" = "V3","4" = "V5", "9"="V8", "8" = "VP", "7" = "V0", paste0("Unknown high ball attack from ",x[2])),
                M=switch(x[2], "2" = "X4","3" = "X3","4" = "X9", "8" = "XP", paste0("Unknown half ball attack from ",x[2])),
                Q=switch(x[2], "2" = "X2","3" = "X1","4" = "X7","9" = "XO", paste0("Unknown quick ball attack from ",x[2])),
-               T=switch(x[2], "2" = "X6","3" = "X3","4" = "X5", "9"="X8", "7" = "X0", paste0("Unknown half ball attack from ",x[2])),
+               T=switch(x[2], "2" = "X6","3" = "X3","4" = "X5", "9"="X8", "7" = "X0","8" = "XP", paste0("Unknown half ball attack from ",x[2])),
                U=switch(x[2], "2" = "C6","4" = "C5", "9"="C8", "7" = "C0", paste0("Unknown medium ball attack from ",x[2])),
                N=switch(x[2], "2" = "CF","3" = "CB",paste0("Unknown slide attack from ",x[2])),
                O=paste0("Other attack from ",x[2]),
                paste0("Unknown attack from ",x[2]))
         )
-
-        
-        atk_loc = sapply(m, function(x)
-            ifelse(x %in% c("V5", "X5", "C5") , 4912, 
-                   ifelse(x %in% c("V6", "X6", "C6") , 4988, 
-                          ifelse(x %in% c("V8", "X8", "C8") , 4186, 
-                                 ifelse(x %in% c("V0", "X0", "C0") , 4114, 
-                                        ifelse(x %in% c("VP", "XP") , 4150, 
-                                               ifelse(x %in% c("V3", "X3") , 4950, 
-                                                      ifelse(x %in% c("X1") , 4956, 
-                                                             ifelse(x %in% c("X2") , 4868, 
-                                                                    ifelse(x %in% c("X7") , 4932, 
-                                                                           ifelse(x %in% c("XO") , 3769, 
-                                                                                  ifelse(x %in% c("CF") , 4976, 
-                                                                                         ifelse(x %in% c("CB"), 4970, 
-                                                                                                NA_real_
-                                                                                         )))))))))))))
-        atk_side = sapply(m, function(x) 
-            ifelse(x %in% c("V5", "X5", "C5") , "R", 
-                           ifelse(x %in% c("V6", "X6", "C6"), "L", 
-                                  ifelse( x %in% c("V8", "X8", "C8") , "C", 
-                                          ifelse(x %in% c("V0", "X0", "C0") , "C", 
-                                                 ifelse(x %in% c("VP", "XP") , "C",
-                                                        ifelse(x %in% c("V3", "X3") , "C", 
-                                                               ifelse(x %in% c("X1", "X7") , "R",
-                                                                      ifelse(x %in% c("X2") , "L", 
-                                                                             ifelse(x %in% c("XO") , "C", 
-                                                                                    ifelse(x %in% c("CF") , "L", 
-                                                                                           ifelse(x %in% c("CB") , "L", 
-                                                                                                  NA_character_))))))))))))
-        
-        set_type = sapply(m, function(x)
-            ifelse(x %in% c("V5", "X5", "C5") , "F", 
-                           ifelse(x %in% c("V6", "X6", "C6") , "B", 
-                                  ifelse(x %in% c("V8", "X8", "C8") , "B", 
-                                         ifelse(x %in% c("V0", "X0", "C0") , "F", 
-                                                ifelse(x %in% c("VP", "XP") , "P", 
-                                                       ifelse(x %in% c("V3", "X3") , "-", 
-                                                              ifelse(x %in% c("X1","X2", "X7") , "C",
-                                                                     ifelse(x %in% c("XO") , "B", 
-                                                                            ifelse(x %in% c("CF") , "C", 
-                                                                                   ifelse(x %in% c("CB") , "C",
-                                                                                          NA_character_)))))))))))
-        
     }
-   
+    return(m)
+}
+
+#' @export dv_attack_code2loc
+dv_attack_code2loc <- function(code) {
+  if(length(code) == 1){
+    m = code
+    atk_loc = ifelse(m %in% c("V5", "X5", "C5") , 4912, 
+                     ifelse(m %in% c("V6", "X6", "C6") , 4988, 
+                            ifelse(m %in% c("V8", "X8", "C8") , 4186, 
+                                   ifelse(m %in% c("V0", "X0", "C0") , 4114, 
+                                          ifelse(m %in% c("VP", "XP") , 4150, 
+                                                 ifelse(m %in% c("V3", "X3") , 4950, 
+                                                        ifelse(m %in% c("X1") , 4956, 
+                                                               ifelse(m %in% c("X2") , 4868, 
+                                                                      ifelse(m %in% c("X7") , 4932, 
+                                                                             ifelse(m %in% c("XO") , 3769, 
+                                                                                    ifelse(m %in% c("CF") , 4976, 
+                                                                                           ifelse(m %in% c("CB", "CD"), 4970, 
+                                                                                                  ifelse(m %in% c("PP"), 4964,  
+                                                                                                         ifelse(m %in% c("P2", "PR"), 4964,  
+                                                                                                  NA_real_
+                                                                                           ))))))))))))))
     
-    return(list(attack_code = m, X8 = atk_loc, set_type = set_type, side = atk_side))
+  }
+  if(length(code) > 1){
+
+    m = code
+
+    atk_loc = sapply(m, function(x)
+      ifelse(x %in% c("V5", "X5", "C5") , 4912, 
+             ifelse(x %in% c("V6", "X6", "C6") , 4988, 
+                    ifelse(x %in% c("V8", "X8", "C8") , 4186, 
+                           ifelse(x %in% c("V0", "X0", "C0") , 4114, 
+                                  ifelse(x %in% c("VP", "XP") , 4150, 
+                                         ifelse(x %in% c("V3", "X3") , 4950, 
+                                                ifelse(x %in% c("X1") , 4956, 
+                                                       ifelse(x %in% c("X2") , 4868, 
+                                                              ifelse(x %in% c("X7") , 4932, 
+                                                                     ifelse(x %in% c("XO") , 3769, 
+                                                                            ifelse(x %in% c("CF") , 4976, 
+                                                                                   ifelse(x %in% c("CB", "CD"), 4970, 
+                                                                                          ifelse(x %in% c("PP"), 4964,  
+                                                                                                 ifelse(x %in% c("P2", "PR"), 4964,  
+                                                                                                        NA_real_
+                                                                                                 )))))))))))))))
+    
+  }
+  return(atk_loc)
+}
+
+#' @export dv_attack_code2desc
+dv_attack_code2desc <- function(code) {
+  if(length(code) == 1){
+    m = code
+    atk_desc = ifelse(m %in% c("X5") , "Shoot in 4", 
+                      ifelse(m %in% c("X6") , "Shoot in 2", 
+                             ifelse(m %in% c("X8") , "Shoot in 1", 
+                                    ifelse(m %in% c("X0") , "Shoot in 5", 
+                                           ifelse(m %in% c("XP") , "Pipe", 
+                                                  ifelse(m %in% c("X3") , "Meter ball in 3", 
+                                                         ifelse(m %in% c("X1") , "Quick", 
+                                                                ifelse(m %in% c("X2") , "Quick set behind", 
+                                                                       ifelse(m %in% c("X7") , "Quick - push", 
+                                                                              ifelse(m %in% c("XO") , "Pipe behind", 
+                                                                                     ifelse(m %in% c("X9") , "Interval ball in 4", 
+                                                                                            ifelse(m %in% c("CB", "CD"), "Slide close",
+                                                                                                   ifelse(m %in% c("V5") , "High set in 4", 
+                                                                                                          ifelse(m %in% c("V6") , "High set in 2", 
+                                                                                                                 ifelse(m %in% c("V8") , "High set in 1", 
+                                                                                                                        ifelse(m %in% c("V0") , "High set in 5", 
+                                                                                                                               ifelse(m %in% c("VP") , "High Pipe", 
+                                                                                                                                      ifelse(m %in% c("V3") , "High set in 3", 
+                                                                                                                                             ifelse(m %in% c("VO") , "High pipe behind", 
+                                                                                                                                                    ifelse(m %in% c("C0") , "Medium ball in 5", 
+                                                                                                                                                           ifelse(m %in% c("C5") , "Medium ball in 4", 
+                                                                                                                                                                  ifelse(m %in% c("C6") , "Medium ball in 2", 
+                                                                                                                                                                         ifelse(m %in% c("C8") , "Medium ball in 1", 
+                                                                                                                                                                                ifelse(m %in% c("CF"), "Slide far",
+                                                                                                                                                                                       ifelse(m %in% c("PP"), "Setter tip",  
+                                                                                                                                                                                              ifelse(m %in% c("P2"), "Second hit to opponent court",
+                                                                                                                                                                                                     ifelse(m %in% c("PR"), "Attack on opponent freeball",  
+                                                                                                                                                                                                     NA_real_
+                                                                                                                                                                                                     )))))))))))))))))))))))))))
+    
+    
+  }
+  if(length(code) > 1){
+    
+    m = code
+    
+    atk_desc = sapply(m, function(x)
+      ifelse(x %in% c("X5") , "Shoot in 4", 
+             ifelse(x %in% c("X6") , "Shoot in 2", 
+                    ifelse(x %in% c("X8") , "Shoot in 1", 
+                           ifelse(x %in% c("X0") , "Shoot in 5", 
+                                  ifelse(x %in% c("XP") , "Pipe", 
+                                         ifelse(x %in% c("X3") , "Meter ball in 3", 
+                                                ifelse(x %in% c("X1") , "Quick", 
+                                                       ifelse(x %in% c("X2") , "Quick set behind", 
+                                                              ifelse(x %in% c("X7") , "Quick - push", 
+                                                                     ifelse(x %in% c("XO") , "Pipe behind", 
+                                                                            ifelse(x %in% c("X9") , "Interval ball in 4", 
+                                                                                   ifelse(x %in% c("CB", "CD"), "Slide close",
+                                                                                          ifelse(x %in% c("V5") , "High set in 4", 
+                                                                                                 ifelse(x %in% c("V6") , "High set in 2", 
+                                                                                                        ifelse(x %in% c("V8") , "High set in 1", 
+                                                                                                               ifelse(x %in% c("V0") , "High set in 5", 
+                                                                                                                      ifelse(x %in% c("VP") , "High Pipe", 
+                                                                                                                             ifelse(x %in% c("V3") , "High set in 3", 
+                                                                                                                                    ifelse(x %in% c("VO") , "High pipe behind", 
+                                                                                                                                           ifelse(x %in% c("C0") , "Medium ball in 5", 
+                                                                                                                                                  ifelse(x %in% c("C5") , "Medium ball in 4", 
+                                                                                                                                                         ifelse(x %in% c("C6") , "Medium ball in 2", 
+                                                                                                                                                                ifelse(x %in% c("C8") , "Medium ball in 1", 
+                                                                                                                                                                       ifelse(x %in% c("CF"), "Slide far",
+                                                                                                                                                                              ifelse(x %in% c("PP"), "Setter tip",  
+                                                                                                                                                                                     ifelse(x %in% c("P2"), "Second hit to opponent court",
+                                                                                                                                                                                            ifelse(x %in% c("PR"), "Attack on opponent freeball",  
+                                                                                                                                                                                                   NA_real_
+                                                                                                                                                                                            ))))))))))))))))))))))))))))
+    
+    
+  }
+  return(atk_desc)
+}
+
+#' @export dv_attack_code2side
+dv_attack_code2side <- function(code) {
+  if(length(code) == 1){
+  
+    m = code
+    
+    atk_side =  ifelse(m %in% c("V5", "X5", "C5") , "R", 
+                       ifelse(m %in% c("V6", "X6", "C6"), "L", 
+                              ifelse( m %in% c("V8", "X8", "C8") , "C", 
+                                      ifelse(m %in% c("V0", "X0", "C0") , "C", 
+                                             ifelse(m %in% c("VP", "XP") , "C",
+                                                    ifelse(m %in% c("V3", "X3") , "C", 
+                                                           ifelse(m %in% c("X1", "X7") , "R",
+                                                                  ifelse(m %in% c("X2") , "L", 
+                                                                         ifelse(m %in% c("XO", "P2", "PR") , "C", 
+                                                                                ifelse(m %in% c("CF") , "L", 
+                                                                                       ifelse(m %in% c("CB", "CD", "PP") , "L", 
+                                                                                              NA_character_)))))))))))
+    
+  }
+  if(length(code) > 1){
+    m = code
+
+        atk_side = sapply(m, function(x) 
+      ifelse(x %in% c("V5", "X5", "C5") , "R", 
+             ifelse(x %in% c("V6", "X6", "C6"), "L", 
+                    ifelse( x %in% c("V8", "X8", "C8") , "C", 
+                            ifelse(x %in% c("V0", "X0", "C0") , "C", 
+                                   ifelse(x %in% c("VP", "XP") , "C",
+                                          ifelse(x %in% c("V3", "X3") , "C", 
+                                                 ifelse(x %in% c("X1", "X7") , "R",
+                                                        ifelse(x %in% c("X2") , "L", 
+                                                               ifelse(x %in% c("XO", "P2", "PR") , "C", 
+                                                                      ifelse(x %in% c("CF") , "L", 
+                                                                             ifelse(x %in% c("CB", "CD", "PP") , "L", 
+                                                                                    NA_character_))))))))))))
+    
+  }
+  return(atk_side)
+}
+
+#' @export dv_attack_code2settype
+dv_attack_code2settype <- function(code) {
+  if(length(code) == 1){
+    
+    m = code
+    
+    set_type =  ifelse(m %in% c("V5", "X5", "C5") , "F", 
+                       ifelse(m %in% c("V6", "X6", "C6") , "B", 
+                              ifelse(m %in% c("V8", "X8", "C8") , "B", 
+                                     ifelse(m %in% c("V0", "X0", "C0") , "F", 
+                                            ifelse(m %in% c("VP", "XP") , "P", 
+                                                   ifelse(m %in% c("V3", "X3", "P2", "PR") , "-", 
+                                                          ifelse(m %in% c("X1","X2", "X7") , "C",
+                                                                 ifelse(m %in% c("XO") , "B", 
+                                                                        ifelse(m %in% c("CF") , "C", 
+                                                                               ifelse(m %in% c("CB", "CD") , "C",
+                                                                                      ifelse(m %in% c("PP") , "S",
+                                                                                      NA_character_)))))))))))
+  }
+  if(length(code) > 1){
+     m =code
+    
+    set_type = sapply(m, function(x)
+      ifelse(x %in% c("V5", "X5", "C5") , "F", 
+             ifelse(x %in% c("V6", "X6", "C6") , "B", 
+                    ifelse(x %in% c("V8", "X8", "C8") , "B", 
+                           ifelse(x %in% c("V0", "X0", "C0") , "F", 
+                                  ifelse(x %in% c("VP", "XP") , "P", 
+                                         ifelse(x %in% c("V3", "X3", "P2", "PR") , "-", 
+                                                ifelse(x %in% c("X1","X2", "X7") , "C",
+                                                       ifelse(x %in% c("XO") , "B", 
+                                                              ifelse(x %in% c("CF") , "C", 
+                                                                     ifelse(x %in% c("CB", "CD") , "C",
+                                                                            ifelse(x %in% c("PP") , "S",
+                                                                            NA_character_))))))))))))
+    
+  }
+  return(set_type)
 }
 
 #' Create a meta attack data.frame from the plays object if it is missing
@@ -166,12 +286,12 @@ attack_code_map <- function(type,start_zone) {
 #' @return a dataframe of attacks.
 #'
 #' @seealso \code{\link{read_dv}}
-#' @export create_meta_attacks
-create_meta_attacks <- function(plays){
+#' @export dv_create_meta_attacks
+dv_create_meta_attacks <- function(plays){
     attack_df = plays[plays$skill %eq% "Attack",]
     attack_df$side = if("side" %in% names(attack_df)) attack_df$side else NA
     attack_df$type = substr(attack_df$code,5,5)
-    attack_df$description = NA
+    attack_df$description = attack_df$attack_description
     attack_df$X6 = NA
     attack_df$X7 = NA
     attack_df$X8 = if("X8" %in% names(attack_df)) attack_df$X8 else NA
