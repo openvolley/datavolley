@@ -686,6 +686,55 @@ dv_flip_y <- function(y) 7-y
 dv_flip_index <- function(index) 10101-index
 
 
+#' Find coordinates that need flipping
+#'
+#' The orientation of coordinates (e.g. is a serve going from the lower part of the court to the upper, or vice-versa?) depends on how the scout entered them. This function finds coordinates that require flipping, so that all attacks/serves/whatever can be plotted with the same orientation
+#'
+#' @param x datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}
+#' @param target_start_end string: "lower" or "upper"
+#'
+#' @return A logical index with length equal to the number of rows of \code{x}. TRUE indicates rows of \code{x} that need their coordinates flipped
+#'
+#' @seealso \code{\link{dv_flip_xy}}
+#'
+#' @export
+dv_find_to_flip_coordinates <- function(x, target_start_end = "lower") {
+    target_start_end <- match.arg(target_start_end, c("lower", "upper"))
+    ## first by start y, expect it to be on target_start_end of the court
+    flipidx <- x[["start_coordinate_y"]] > 3.5
+    if (target_start_end == "upper") flipidx <- !flipidx
+    ## but start y == 3.5 is ambiguous, it's on the net
+    flipidx[abs(x[["start_coordinate_y"]] - 3.5) < 1e-06] <- NA
+    if (any(is.na(flipidx))) {
+        ## do these by side, if possible
+        fxy <- dv_flip_xy(x[, c("start_coordinate_x", "start_coordinate_y")]) ## flipped
+        expected_side <- dv_xy(x$start_zone, end = target_start_end)
+        srv <- x$skill %in% c("Serve", "Reception")
+        expected_side[srv, ] <- dv_xy(x$start_zone[srv], end = target_start_end, as_for_serve = TRUE)
+        expected_side$x[expected_side$x == 2] <- NA ## ignore central zones
+        expected_side <- expected_side$x > 2 ## TRUE = R, FALSE = L, NA = middle
+        side_now <- x[["start_coordinate_x"]] > 2
+        side_if_flipped <- fxy[[1]] > 2
+        ## flip if sides don't match but would if flipped
+        is_side <- is.na(flipidx) & !is.na(expected_side) & !is.na(side_if_flipped) & !is.na(side_now)
+        flipidx[is_side & expected_side == side_if_flipped] <- TRUE
+        flipidx[is_side & expected_side == side_now] <- FALSE
+    }
+    if (any(is.na(flipidx))) {
+        ## anything remaining NA can only be done by end coordinate, which will usually be on the non-target_start_end
+        ## EXCEPT e.g. if the coordinates show an attack that has rebounded off the block, but these should hopefully be rare (already dealt wtih above)
+        if (target_start_end == "lower") {
+            flipidx[is.na(flipidx) & !is.na(x[["end_coordinate_y"]]) & x[["end_coordinate_y"]] < 3.5] <- TRUE
+        } else {
+            flipidx[is.na(flipidx) & !is.na(x[["end_coordinate_y"]]) & x[["end_coordinate_y"]] > 3.5] <- TRUE
+        }
+    }
+    ## anything left over, don't flip
+    flipidx[is.na(flipidx)] <- FALSE
+    flipidx
+}
+
+
 #' The polygon coordinates for attack cones
 #'
 #' @param zone string: one of "L", "R", "M"
