@@ -173,10 +173,10 @@ dv_attack_code2side <- function(code) {
 #' @return A named vector of sides ("F", "B", "C", "P", "S", "-")
 #'
 #' @examples
-#' dv_attack_code2settype(code = c("X5", "X7", "PP"))
+#' dv_attack_code2set_type(code = c("X5", "X7", "PP"))
 #'
 #' @export
-dv_attack_code2settype <- function(code) {
+dv_attack_code2set_type <- function(code) {
     if (length(code) < 1) stop("non-empty code required")
     stmap <- function(z) {
         ifelse(z %in% c("V5", "X5", "C5") , "F",
@@ -200,24 +200,23 @@ dv_attack_code2settype <- function(code) {
 #' If your DataVolley file does not have a meta attack dataframe (for example, if you are using Click&Scout), this function will create one from the information in the plays object.
 #'
 #' @param plays data.frame: the plays component of a datavolley object, as returned by \code{\link{dv_read}}
-#' @return A dataframe of attacks.
+#' @return A data.frame of attacks.
 #'
 #' @export
 dv_create_meta_attacks <- function(plays){
-    attack_df = plays[plays$skill %eq% "Attack",]
-    attack_df$side = if("side" %in% names(attack_df)) attack_df$side else NA
-    attack_df$type = substr(attack_df$code,5,5)
-    attack_df$description = attack_df$attack_description
-    attack_df$X6 = NA
-    attack_df$X7 = NA
-    attack_df$X8 = if("X8" %in% names(attack_df)) attack_df$X8 else NA
-    attack_df$set_type = attack_df$set_type
-    attack_df$X10 = NA
-    attack_df$X11 = NA
-    attack_df$code = attack_df$attack_code
-    attack_df$attacker_position = attack_df$start_zone
-    
-    unique(attack_df[,c("code", "attacker_position", "side", "type", "description", "X6", "X7", "X8", "set_type", "X10", "X11")])
+    attack_df <- plays[plays$skill %eq% "Attack",]
+    attack_df$side <- if("side" %in% names(attack_df)) attack_df$side else NA
+    attack_df$type <- substr(attack_df$code,5,5)
+    attack_df$description <- attack_df$attack_description
+    attack_df$X6 <- NA
+    attack_df$X7 <- NA
+    attack_df$X8 <- if("X8" %in% names(attack_df)) attack_df$X8 else NA
+    attack_df$set_type <- attack_df$set_type
+    attack_df$X10 <- NA
+    attack_df$X11 <- NA
+    attack_df$code <- attack_df$attack_code
+    attack_df$attacker_position <- attack_df$start_zone
+    unique(as.data.frame(attack_df[, c("code", "attacker_position", "side", "type", "description", "X6", "X7", "X8", "set_type", "X10", "X11")]))
 }
 
 serve_map <- function(type, skill, file_type = "indoor") {

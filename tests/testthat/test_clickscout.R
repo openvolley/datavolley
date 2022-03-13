@@ -27,9 +27,13 @@ test_that("click n scout utilities work as expected", {
     expect_identical(dv_attack_code2side("CB"), c(CB = "L"))
     expect_identical(dv_attack_code2side(c("CB", "CD", "P2", "XYZ", NA_character_)), setNames(c("L", "L", "C", NA_character_, NA_character_), c("CB", "CD", "P2", "XYZ", NA_character_)))
 
-    expect_error(dv_attack_code2settype())
-    expect_error(dv_attack_code2settype(c()))
-    expect_identical(dv_attack_code2settype("V0"), c(V0 = "F"))
-    expect_identical(dv_attack_code2settype(c("V0", "X0", "XP", "X1", "PR", "XYZ", NA_character_)), setNames(c("F", "F", "P", "C", "-", NA_character_, NA_character_), c("V0", "X0", "XP", "X1", "PR", "XYZ", NA_character_)))
+    expect_error(dv_attack_code2set_type())
+    expect_error(dv_attack_code2set_type(c()))
+    expect_identical(dv_attack_code2set_type("V0"), c(V0 = "F"))
+    expect_identical(dv_attack_code2set_type(c("V0", "X0", "XP", "X1", "PR", "XYZ", NA_character_)), setNames(c("F", "F", "P", "C", "-", NA_character_, NA_character_), c("V0", "X0", "XP", "X1", "PR", "XYZ", NA_character_)))
 
+    x <- dv_read(dv_example_file(1), insert_technical_timeouts = FALSE)
+    ma <- dv_create_meta_attacks(plays(x))
+    expect_true(is.data.frame(ma))
+    expect_equal(nrow(ma), 28)
 })
