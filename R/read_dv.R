@@ -281,22 +281,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         out$messages <- rbind.fill(out$messages, data.frame(file_line_number = NA_integer_, video_time = NA_real_, message = "Could not find any end-of-set markers (e.g. \"**1set\") in the input file", file_line = NA_character_, stringsAsFactors = FALSE))
         out$plays$set_number <- 1L
     } else {
-        if (FALSE) {
-            out$plays$set_number <- NA
-            temp <- c(0L, which(out$plays$end_of_set))
-            for (si in 2:length(temp)) {
-                out$plays$set_number[(temp[si-1]+1):(temp[si]-1)] <- (si-1)
-                ## on the actual **Xset line, DV increments the set number column, except for the last **Xset entry in the file (the last file line)
-                out$plays$set_number[temp[si]] <- si
-            }
-            ## now fix the last **Xset entry in the file
-            out$plays$set_number[temp[si]] <- si-1L
-        } else {
-            temp <- c(0L, which(out$plays$end_of_set))
-            out$plays$set_number <- sapply(seq_len(nrow(out$plays)), function(z) sum(z >= temp))
-            ## now fix the last **Xset entry in the file
-            if (tail(temp, 1) == nrow(out$plays)) out$plays$set_number[nrow(out$plays)] <- out$plays$set_number[nrow(out$plays)] - 1L
-        }
+        temp <- c(0L, which(out$plays$end_of_set))
+        out$plays$set_number <- sapply(seq_len(nrow(out$plays)), function(z) sum(z >= temp))
+        ## now fix the last **Xset entry in the file
+        if (tail(temp, 1) == nrow(out$plays)) out$plays$set_number[nrow(out$plays)] <- out$plays$set_number[nrow(out$plays)] - 1L
         out$plays$home_team_score[which(out$plays$end_of_set)] <- NA_integer_
         out$plays$visiting_team_score[which(out$plays$end_of_set)] <- NA_integer_
     }

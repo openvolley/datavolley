@@ -63,3 +63,42 @@ test_that("supplying a preferred date format works", {
     expect_equal(chk$meta$match$date, lubridate::ymd("2015-12-08"))
     unlink(tf)
 })
+
+test_that("skill evaluations are guessed correctly", {
+    x1 <- dv_read(dv_example_file(1), insert_technical_timeouts = FALSE, skill_evaluation_decode = "guess")
+    x2 <- dv_read(dv_example_file(1), insert_technical_timeouts = FALSE, skill_evaluation_decode = "default")
+    expect_identical(x1, x2)
+})
+
+test_that("summary works as expected", {
+    x <- dv_read(dv_example_file(1), insert_technical_timeouts = FALSE)
+    xs <- summary(x)
+    expect_true(is.list(xs))
+    expect_true(setequal(names(xs), c("date", "league", "teams", "set_scores", "duration")))
+    pxs <- capture.output(print(xs))
+    expect_true(is.character(pxs))
+    expect_equal(length(pxs), 8L)
+
+    xs <- dvlist_summary(list(x, x))
+    expect_true(setequal(names(xs), c("number_of_matches", "number_of_sets", "date_range", "ladder")))
+    expect_equal(xs$number_of_matches, 2L)
+})
+
+
+test_that("various utils work", {
+    x <- dv_read(dv_example_file(1), insert_technical_timeouts = FALSE)
+    expect_identical(plays(x), x$plays)
+    expect_error(plays(x$plays), "no plays component")
+    expect_error(plays(list()), "no plays component")
+
+    wo <- getOption("width")
+    options(width = 1000L)
+    xi <- capture.output(inspect(head(plays(x))))
+    expect_true(is.character(xi))
+    expect_true(setequal(Filter(nzchar, strsplit(xi[1], "[[:space:]]+")[[1]]), c("time", "code", "team", "player_number", "player_name", "skill", "skill_type", "evaluation")))
+    xi <- capture.output(inspect(head(plays(x)), extra = "video_time"))
+    expect_true(setequal(Filter(nzchar, strsplit(xi[1], "[[:space:]]+")[[1]]), c("time", "code", "team", "player_number", "player_name", "skill", "skill_type", "evaluation", "video_time")))
+    xi <- capture.output(inspect(head(plays(x)), extra = "blah")) ## non-existent column
+    expect_true(setequal(Filter(nzchar, strsplit(xi[1], "[[:space:]]+")[[1]]), c("time", "code", "team", "player_number", "player_name", "skill", "skill_type", "evaluation")))    
+    options(width = wo)
+})
