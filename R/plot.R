@@ -60,6 +60,8 @@
 #' @param background_only logical: if \code{TRUE}, only plot the background elements (including general plot attributes such as the theme)
 #' @param foreground_only logical: if \code{TRUE}, only plot the foreground elements (grid lines, labels, etc)
 #' @param line_width numeric: line width (passed as the size parameter to e.g. \code{ggplot2::geom_path})
+#' @param xlim numeric: (optional) limits for the x-axis
+#' @param ylim numeric: (optional) limits for the y-axis
 #' @param ... : additional parameters passed to \code{ggplot2::theme_classic}
 #'
 #' @return ggplot layer
@@ -139,7 +141,7 @@
 #' }
 #' 
 #' @export
-ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, show_3m_line = TRUE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, background_only = FALSE, foreground_only = FALSE, line_width = 0.5, ...) {
+ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, show_3m_line = TRUE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, background_only = FALSE, foreground_only = FALSE, line_width = 0.5, xlim, ylim, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("The ggplot2 package needs to be installed for ggcourt to be useful")
     }
@@ -241,7 +243,12 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
     thm3 <- if (!tolower(figure_colour) %eq% "none") ggplot2::theme(panel.background = ggplot2::element_rect(fill = figure_colour)) else NULL
     out <- if (!foreground_only) list(bgimg, cfill, thm, thm2, thm3) else list()
     if (!background_only) out <- c(out, list(net))
-    if (fixed_aspect_ratio && !foreground_only) out <- c(out, list(ggplot2::coord_fixed()))
+    if (!foreground_only) {
+        lims <- list()
+        if (!missing(xlim)) lims$xlim <- xlim
+        if (!missing(ylim)) lims$ylim <- ylim
+        out <- c(out, list(if (fixed_aspect_ratio) do.call(ggplot2::coord_fixed, lims) else do.call(ggplot2::coord_cartesian, lims)))
+    }
     if (show_minor_zones && !background_only) out <- c(out, list(hlm, vlm))
     if (show_zone_lines && !background_only) out <- c(out, list(hlz, vlz))
     if (!background_only) out <- c(out, list(hl,vl))

@@ -24,6 +24,8 @@ ggcourt(
   background_only = FALSE,
   foreground_only = FALSE,
   line_width = 0.5,
+  xlim,
+  ylim,
   ...
 )
 }
@@ -70,6 +72,10 @@ ggcourt(
 \item{foreground_only}{logical: if \code{TRUE}, only plot the foreground elements (grid lines, labels, etc)}
 
 \item{line_width}{numeric: line width (passed as the size parameter to e.g. \code{ggplot2::geom_path})}
+
+\item{xlim}{numeric: (optional) limits for the x-axis}
+
+\item{ylim}{numeric: (optional) limits for the y-axis}
 
 \item{...}{: additional parameters passed to \code{ggplot2::theme_classic}}
 }

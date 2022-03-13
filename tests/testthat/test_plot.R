@@ -65,4 +65,9 @@ test_that("coordinate utilities work as expected", {
 
     ## serving zones to coords
     expect_equal(dv_xy2zone(x = c(0.95, 1.15, 1.4, 2), y = 6.5, as_for_serve = TRUE), c(1L, 9L, 9L, 6L))
+
+    ## finding coordinates to flip
+    tst <- tibble(start_zone = c(4, 4, 4, 4, 3, 3, 3, 5, 7), start_coordinate_x = c(1, 1, 3, 3, 2, 2, 2, 1, 3), start_coordinate_y = c(3, 3.5, 4, 3.5, 3, 4, 3.5, 1, 5), skill = c(rep("Attack", 7), rep("Serve", 2)), end_coordinate_y = 2)
+    expect_equal(dv_find_to_flip_coordinates(tst, target_start_end = "lower"), c(FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE))
+    expect_equal(dv_find_to_flip_coordinates(tst, target_start_end = "upper"), !c(FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, TRUE))
 })
