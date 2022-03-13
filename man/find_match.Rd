@@ -9,7 +9,7 @@ find_match(match_id, x)
 \arguments{
 \item{match_id}{string: match_id to find}
 
-\item{x}{list: list of datavolley objects as returned by \code{read_dv}}
+\item{x}{list: list of datavolley objects as returned by \code{dv_read}}
 }
 \value{
 numeric index of the match in the list
@@ -18,5 +18,5 @@ numeric index of the match in the list
 Find a particular match in a list of datavolley objects
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

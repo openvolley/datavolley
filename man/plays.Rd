@@ -7,7 +7,7 @@
 plays(x)
 }
 \arguments{
-\item{x}{datavolley: a datavolley object as returned by \code{read_dv}}
+\item{x}{datavolley: a datavolley object as returned by \code{dv_read}}
 }
 \value{
 The plays component of x (a data.frame)
@@ -17,10 +17,10 @@ Extract the plays component from a datavolley object
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
   inspect(plays(x))
 }
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

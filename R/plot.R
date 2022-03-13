@@ -70,7 +70,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'
 #' library(ggplot2)
 #' library(dplyr)
@@ -514,7 +514,7 @@ dv_cone2xy <- function(start_zones, end_cones, end = "upper", xynames = c("ex", 
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts = FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 #'
 #' library(ggplot2)
 #' library(dplyr)
@@ -648,7 +648,7 @@ ggxy <- function(zones, end="lower", xynames=c("x", "y"), as_for_serve=FALSE) {
 #'
 #' @examples
 #' \dontrun{
-#'  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'  library(ggplot2)
 #'  library(dplyr)
 #'
@@ -697,7 +697,7 @@ dv_flip_index <- function(index) 10101-index
 #'
 #' The orientation of coordinates (e.g. is a serve going from the lower part of the court to the upper, or vice-versa?) depends on how the scout entered them. This function finds coordinates that require flipping, so that all attacks/serves/whatever can be plotted with the same orientation
 #'
-#' @param x datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}
+#' @param x datavolleyplays: the plays component of a datavolley object as returned by \code{dv_read}
 #' @param target_start_end string: "lower" or "upper"
 #'
 #' @return A logical index with length equal to the number of rows of \code{x}. TRUE indicates rows of \code{x} that need their coordinates flipped

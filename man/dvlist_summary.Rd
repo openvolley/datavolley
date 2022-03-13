@@ -7,7 +7,7 @@
 dvlist_summary(z)
 }
 \arguments{
-\item{z}{list: list of datavolley objects as returned by \code{read_dv}}
+\item{z}{list: list of datavolley objects as returned by \code{dv_read}}
 }
 \value{
 named list with various summary indicators, including a competition ladder
@@ -17,11 +17,11 @@ Summarize a list of volleyball matches
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
   dvlist_summary(list(x,x)) ## same match duplicated twice, just for illustration purposes
 }
 
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

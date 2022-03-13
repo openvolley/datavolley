@@ -7,7 +7,7 @@
 find_runs(x, idvars = "team", within_set = TRUE)
 }
 \arguments{
-\item{x}{data.frame: a subset of the plays component of a datavolley object, as returned by \code{read_dv()}}
+\item{x}{data.frame: a subset of the plays component of a datavolley object, as returned by \code{dv_read()}}
 
 \item{idvars}{character: string or character vector of variabe names to use to identify the entity doing the events}
 
@@ -23,7 +23,7 @@ corresponding to serves. Runs that are terminated by the end of a set are not as
 \examples{
 \dontrun{
 ## find runs of serves
-x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 serve_idx <- find_serves(plays(x))
 serve_run_info <- find_runs(plays(x)[serve_idx,])
 ## distribution of serve run lengths
@@ -32,5 +32,5 @@ table(unique(serve_run_info[,c("run_id","run_length")])$run_length)
 
 }
 \seealso{
-\code{\link{read_dv}} \code{\link{plays}}
+\code{\link{dv_read}} \code{\link{plays}}
 }

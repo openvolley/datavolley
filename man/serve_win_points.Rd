@@ -7,7 +7,7 @@
 serve_win_points(x, return_id = FALSE)
 }
 \arguments{
-\item{x}{data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}}
+\item{x}{data.frame: the plays component of a datavolley object, as returned by \code{dv_read()}}
 
 \item{return_id}{logical: include the match_id and point_id of all serve win points in the returned object?}
 }
@@ -19,7 +19,7 @@ Find points in which the serving team wins the point. Serve win rate is the frac
 }
 \examples{
 \dontrun{
-x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 serve_idx <- find_serves(plays(x))
 swp <- serve_win_points(plays(x))
 ## number of serves by team
@@ -30,5 +30,5 @@ table(plays(x)$team[serve_idx & swp$ix])
 
 }
 \seealso{
-\code{\link{read_dv}} \code{\link{plays}}
+\code{\link{dv_read}} \code{\link{plays}}
 }

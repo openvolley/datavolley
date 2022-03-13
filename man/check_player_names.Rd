@@ -7,7 +7,7 @@
 check_player_names(x, distance_threshold = 4)
 }
 \arguments{
-\item{x}{datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects}
+\item{x}{datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects}
 
 \item{distance_threshold}{numeric: if two names differ by an amount less than this threshold, they will be returned as possible matches}
 }
@@ -19,11 +19,11 @@ Player names can sometimes be spelled incorrectly, particularly if there are cha
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
  check_player_names(x)
 }
 
 }
 \seealso{
-\code{\link{read_dv}}, \code{\link{adist}}
+\code{\link{dv_read}}, \code{\link{adist}}
 }

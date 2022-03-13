@@ -7,7 +7,7 @@
 remap_player_names(x, remap)
 }
 \arguments{
-\item{x}{datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects}
+\item{x}{datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects}
 
 \item{remap}{data.frame: data.frame of strings with columns team, from, and to}
 }
@@ -19,7 +19,7 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
   x <- remap_player_names(x,data.frame(team=c("Nova KBM Branik","Braslovče"),
       from=c("ELA PINTAR","KATJA MIHALINEC"),
       to=c("Ela PINTAR","Katja MIHALINEC"),stringsAsFactors=FALSE))
@@ -29,5 +29,5 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 }
 }
 \seealso{
-\code{\link{read_dv}}, \code{\link{check_player_names}}, \code{\link{find_player_name_remapping}}
+\code{\link{dv_read}}, \code{\link{check_player_names}}, \code{\link{find_player_name_remapping}}
 }

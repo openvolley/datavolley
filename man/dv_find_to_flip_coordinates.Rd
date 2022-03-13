@@ -7,7 +7,7 @@
 dv_find_to_flip_coordinates(x, target_start_end = "lower")
 }
 \arguments{
-\item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}}
+\item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{dv_read}}
 
 \item{target_start_end}{string: "lower" or "upper"}
 }

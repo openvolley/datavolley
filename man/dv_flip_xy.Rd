@@ -30,7 +30,7 @@ This is a convenience function that will transform coordinates from the top half
 }
 \examples{
 \dontrun{
- x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+ x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
  library(ggplot2)
  library(dplyr)
 

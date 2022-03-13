@@ -1,6 +1,6 @@
 #' Additional validation checks on a DataVolley file
 #'
-#' This function is automatically run as part of \code{read_dv} if \code{extra_validation} is greater than zero.
+#' This function is automatically run as part of \code{dv_read} if \code{extra_validation} is greater than zero.
 #' The current validation messages/checks are:
 #' \itemize{
 #'   \item message "The total of the [home|visiting] team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the [home|visiting] team in the plays data"
@@ -36,7 +36,7 @@
 #'   \item message "Dig type ([type]) does not match attack type ([type])": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
 #' }
 #' 
-#' @param x datavolley: datavolley object as returned by \code{read_dv}
+#' @param x datavolley: datavolley object as returned by \code{dv_read}
 #' @param validation_level numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes)
 #' @param options list: named list of options that control optional validation behaviour. Valid entries are:
 #' \itemize{
@@ -46,11 +46,11 @@
 #'
 #' @return data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), video_time, and file_line (the actual line from the DataVolley file).
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts = FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 #'   xv <- validate_dv(x)
 #'
 #'   ## specifying "PP" as the setter tip code

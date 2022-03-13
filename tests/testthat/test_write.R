@@ -37,7 +37,7 @@ test_that("dv_write behaves", {
     }
     test_read_write_dvw <- function(filename) {
         ## read a file
-        x0 <- read_dv(filename)
+        x0 <- dv_read(filename)
         ## inject some extra bits for the purposes of testing
         x0$meta$more$spectators <- 99L
         x0$meta$more$receipts <- 123L
@@ -48,7 +48,7 @@ test_that("dv_write behaves", {
         outfile <- tempfile()
         dv_write(x0, file = outfile)
         ## read the one we just wrote
-        x1 <- read_dv(outfile)
+        x1 <- dv_read(outfile)
         ## modify the match_id, they will be different because we changed bits that are used in the hash calculation
         x0$meta$match_id <- x1$meta$match_id
         x0$plays$match_id <- x0$meta$match_id

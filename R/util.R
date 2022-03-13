@@ -178,11 +178,11 @@ na.replace <- function(x,replace_with) {x[is.na(x)] <- replace_with; x}
 #' Find a particular match in a list of datavolley objects
 #'
 #' @param match_id string: match_id to find
-#' @param x list: list of datavolley objects as returned by \code{read_dv} 
+#' @param x list: list of datavolley objects as returned by \code{dv_read} 
 #'
 #' @return numeric index of the match in the list
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #'
 #' @export
 find_match <- function(match_id,x) {
@@ -253,13 +253,13 @@ unambiguous_datetime <- function(z) {
 
 #' Generate a short, human-readable text summary of one or more actions
 #'
-#' @param x data.frame or tibble: one or more rows from a datavolleyplays object as returned by \code{\link{read_dv}}
+#' @param x data.frame or tibble: one or more rows from a datavolleyplays object as returned by \code{\link{dv_read}}
 #' @param verbosity integer: 1 = least verbose, 2 = more verbose. Currently ignored
 #'
 #' @return character vector
 #'
 #' @examples
-#' x <- read_dv(dv_example_file())
+#' x <- dv_read(dv_example_file())
 #' dv_action2text(plays(x)[27:30, ])
 #'
 #' @export

@@ -7,7 +7,7 @@
 inspect(x, vars = "minimal", maxrows = 100, extra)
 }
 \arguments{
-\item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}}
+\item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{dv_read}}
 
 \item{vars}{string: which variables to print? "minimal" set or "all"}
 
@@ -20,11 +20,11 @@ Convenience function for inspecting the plays component of a datavolley object
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
   inspect(plays(x))
 }
 
 }
 \seealso{
-\code{\link{read_dv}} \code{\link{plays}}
+\code{\link{dv_read}} \code{\link{plays}}
 }

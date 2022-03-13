@@ -78,17 +78,17 @@ The \code{do_transliterate} option may be helpful when trying to work with multi
 \dontrun{
   ## to read the example file bundled with the package
   myfile <- dv_example_file()
-  x <- read_dv(myfile, insert_technical_timeouts=FALSE)
+  x <- dv_read(myfile, insert_technical_timeouts=FALSE)
   summary(x)
 
   ## or to read your own file:
-  x <- read_dv("c:/some/path/myfile.dvw", insert_technical_timeouts=FALSE)
+  x <- dv_read("c:/some/path/myfile.dvw", insert_technical_timeouts=FALSE)
 
   ## Insert a technical timeout at point 12 in sets 1 to 4:
-  x <- read_dv(myfile, insert_technical_timeouts=list(c(12),NULL))
+  x <- dv_read(myfile, insert_technical_timeouts=list(c(12),NULL))
 
   ## to read a VolleyMetrics file
-  x <- read_dv(myfile, skill_evaluation_decode = "volleymetrics")
+  x <- dv_read(myfile, skill_evaluation_decode = "volleymetrics")
 }
 }
 \references{

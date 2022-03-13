@@ -2,17 +2,17 @@
 #'
 #' A team name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A team name matching the \code{from} entry in a row in \code{remap} is renamed to the corresponding \code{to} value. If the \code{remap} object also contains a \code{team_id} column, then a team name must match the \code{team_id} and \code{from} values to be changed to the corresponding \code{to} value.
 #'
-#' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
+#' @param x datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects
 #' @param remap data.frame: data.frame of strings with columns \code{from} and \code{to}, and optionally \code{team_id}
 #' @param fixed logical: treat the \code{to} and \code{from} entries as fixed string? (Treat as regexps if \code{fixed} is \code{FALSE})
 #'
 #' @return datavolley object or list with corresponding team names changed
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   summary(x)
 #'
 #'   ## rename a team based just on team name
@@ -78,15 +78,15 @@ remap_team_names <- function(x,remap,fixed=TRUE) {
 #'
 #' Player names can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. This function checks for similar names that might possibly be multiple variants on the same name.
 #'
-#' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
+#' @param x datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects
 #' @param distance_threshold numeric: if two names differ by an amount less than this threshold, they will be returned as possible matches
 #'
 #' @return data.frame
 #'
-#' @seealso \code{\link{read_dv}}, \code{\link{adist}}
+#' @seealso \code{\link{dv_read}}, \code{\link{adist}}
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'  check_player_names(x)
 #' }
 #'
@@ -118,16 +118,16 @@ check_player_names <- function(x, distance_threshold = 4) {
 #'
 #' A player name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A player matching the \code{team} and \code{from} name entries in a row in \code{remap} is renamed to the corresponding \code{to} value. Alternatively, \code{remap} can be provided with the columns \code{player_id} and \code{player_name}: all player name entries associated with a given \code{player_id} will be changed to the associated \code{player_name}.
 #'
-#' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
+#' @param x datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects
 #' @param remap data.frame: data.frame of strings with columns team, from, and to
 #'
 #' @return datavolley object or list with corresponding player names changed
 #'
-#' @seealso \code{\link{read_dv}}, \code{\link{check_player_names}}, \code{\link{find_player_name_remapping}}
+#' @seealso \code{\link{dv_read}}, \code{\link{check_player_names}}, \code{\link{find_player_name_remapping}}
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   x <- remap_player_names(x,data.frame(team=c("Nova KBM Branik","Braslovče"),
 #'       from=c("ELA PINTAR","KATJA MIHALINEC"),
 #'       to=c("Ela PINTAR","Katja MIHALINEC"),stringsAsFactors=FALSE))
@@ -194,7 +194,7 @@ remap_player_names=function(x,remap) {
 #'
 #' A player name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. This function will attempt to find names that have been misspelled and create a remapping table suitable to pass to \code{\link{remap_player_names}}. Player names will only be compared within the same team. Note that this function is unlikely to get perfect results: use its output with care.
 #'
-#' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
+#' @param x datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects
 #' @param distance_threshold numeric: if two names differ by an amount less than this threshold, they will be treated as the same name
 #' @param verbose logical: print progress to console as we go? Note that warnings will also be issued regardless of this setting
 #'
@@ -204,7 +204,7 @@ remap_player_names=function(x,remap) {
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 #'   remap <- find_player_name_remapping(x)
 #' }
 #' @export

@@ -7,7 +7,7 @@
 dv_action2text(x, verbosity = 1)
 }
 \arguments{
-\item{x}{data.frame or tibble: one or more rows from a datavolleyplays object as returned by \code{\link{read_dv}}}
+\item{x}{data.frame or tibble: one or more rows from a datavolleyplays object as returned by \code{\link{dv_read}}}
 
 \item{verbosity}{integer: 1 = least verbose, 2 = more verbose. Currently ignored}
 }
@@ -18,7 +18,7 @@ character vector
 Generate a short, human-readable text summary of one or more actions
 }
 \examples{
-x <- read_dv(dv_example_file())
+x <- dv_read(dv_example_file())
 dv_action2text(plays(x)[27:30, ])
 
 }

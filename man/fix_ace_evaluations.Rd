@@ -7,7 +7,7 @@
 fix_ace_evaluations(x, rotation_error_is_ace = FALSE, verbose = TRUE)
 }
 \arguments{
-\item{x}{datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects}
+\item{x}{datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects}
 
 \item{rotation_error_is_ace}{logical: should a rotation error on reception by the receiving team be counted as an ace?}
 
@@ -20,5 +20,5 @@ datavolley object or list of such with updated evaluation values
 Some DataVolley files do not indicate serve aces with the skill evaluation "Ace". This function will search for winning serves, either with no reception or a reception error, and change their evaluation value to "Ace"
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

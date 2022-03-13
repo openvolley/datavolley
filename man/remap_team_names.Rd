@@ -7,7 +7,7 @@
 remap_team_names(x, remap, fixed = TRUE)
 }
 \arguments{
-\item{x}{datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects}
+\item{x}{datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects}
 
 \item{remap}{data.frame: data.frame of strings with columns \code{from} and \code{to}, and optionally \code{team_id}}
 
@@ -21,7 +21,7 @@ A team name can sometimes be spelled incorrectly, particularly if there are char
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
   summary(x)
 
   ## rename a team based just on team name
@@ -32,5 +32,5 @@ A team name can sometimes be spelled incorrectly, particularly if there are char
 }
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

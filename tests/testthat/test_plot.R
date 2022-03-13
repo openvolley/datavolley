@@ -1,7 +1,7 @@
 context("plotting and related utils")
 
 test_that("coordinate utilities work as expected", {
-    x <- read_dv(dv_example_file(1), insert_technical_timeouts=FALSE)
+    x <- dv_read(dv_example_file(1), insert_technical_timeouts=FALSE)
 
     xyl <- dv_xy(1:6, end="lower")
     xyu <- dv_xy(1:6, end="upper")

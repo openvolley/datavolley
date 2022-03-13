@@ -22,7 +22,7 @@ Generates fake coordinate data. The DataVolley software has the capability to ac
 library(ggplot2)
 
 ## read example data file
-x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 
 ## take just the serves from the play-by-play data
 xserves <- subset(plays(x), skill=="Serve")

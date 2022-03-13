@@ -8,11 +8,11 @@
 #' }
 #' @return path to the file
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #'
 #' @examples
 #' myfile <- dv_example_file()
-#' x <- read_dv(myfile, insert_technical_timeouts = FALSE)
+#' x <- dv_read(myfile, insert_technical_timeouts = FALSE)
 #' summary(x)
 #'
 #' @export
@@ -42,7 +42,7 @@ dv_example_file <- function(choice=1) {
 #' library(ggplot2)
 #'
 #' ## read example data file
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 #'
 #' ## take just the serves from the play-by-play data
 #' xserves <- subset(plays(x), skill=="Serve")

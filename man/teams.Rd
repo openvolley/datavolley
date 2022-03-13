@@ -19,7 +19,7 @@ visiting_team(x)
 visiting_team_id(x)
 }
 \arguments{
-\item{x}{datavolley or data.frame: a datavolley object as returned by \code{read_dv}, or the plays component of that object}
+\item{x}{datavolley or data.frame: a datavolley object as returned by \code{dv_read}, or the plays component of that object}
 }
 \value{
 character vector of team names or IDs
@@ -29,11 +29,11 @@ Get team names and IDs from datavolley object
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
   teams(x)
   home_team_id(x)
 }
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

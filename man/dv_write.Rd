@@ -10,7 +10,7 @@ dv_write(x, file, text_encoding = "UTF-8")
 write_dv(x, file, text_encoding = "UTF-8")
 }
 \arguments{
-\item{x}{datavolley: a datavolley object as returned by \code{\link{read_dv}}}
+\item{x}{datavolley: a datavolley object as returned by \code{\link{dv_read}}}
 
 \item{file}{string: the filename to write to. If not supplied, no file will be written but the dvw content will be returned}
 
@@ -20,16 +20,16 @@ write_dv(x, file, text_encoding = "UTF-8")
 The dvw file contents as a character vector (invisibly)
 }
 \description{
-Note that this is really rather experimental, and you probably shouldn't use it yet. Once complete, this function will allow a datavolley file to be read in via \code{\link{read_dv}}, modified by the user, and then rewritten back to a datavolley file.
+Note that this is really rather experimental, and you probably shouldn't use it yet. Once complete, this function will allow a datavolley file to be read in via \code{\link{dv_read}}, modified by the user, and then rewritten back to a datavolley file.
 At this stage, most modifications to the datavolley object should make it back into the rewritten file. However, the scouted code (in the \code{code} column) is NOT yet updated to reflect changes that might have been made to other columns in the datavolley object.
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file())
+  x <- dv_read(dv_example_file())
   outfile <- tempfile()
   dv_write(x, outfile)
 }
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

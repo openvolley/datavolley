@@ -7,7 +7,7 @@
 play_phase(x, method = "default")
 }
 \arguments{
-\item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}}
+\item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{dv_read}}
 
 \item{method}{string: "default" (uses the \code{team_touch_id} and \code{skill} values to figure out phase), or "alt" (uses the sequences of \code{skill} values only. This is slower and probably less reliable, but will be more likely to give correct results in some situations (e.g. if the DataVolley file has been scouted in practice mode, and all actions have been assigned to the one team)}
 }
@@ -20,12 +20,12 @@ or "Transition" (all play actions after that)
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts = FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
   px <- plays(x)
   px$phase <- play_phase(px)
 }
 
 }
 \seealso{
-\code{\link{read_dv}} \code{\link{plays}}
+\code{\link{dv_read}} \code{\link{plays}}
 }

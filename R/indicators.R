@@ -1,14 +1,14 @@
 #' Find serves
 #' 
-#' @param x data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}
+#' @param x data.frame: the plays component of a datavolley object, as returned by \code{dv_read()}
 #'
 #' @return a logical vector, giving the indices of the rows of x that correspond to serves
 #'
-#' @seealso \code{\link{read_dv}} \code{\link{plays}}
+#' @seealso \code{\link{dv_read}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #' serve_idx <- find_serves(plays(x))
 #' ## number of serves by team
 #' table(plays(x)$team[serve_idx])
@@ -24,16 +24,16 @@ find_serves=function(x) {
 #'
 #' Find points in which the serving team wins the point. Serve win rate is the fraction of serves won by the serving team.
 #' 
-#' @param x data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}
+#' @param x data.frame: the plays component of a datavolley object, as returned by \code{dv_read()}
 #' @param return_id logical: include the match_id and point_id of all serve win points in the returned object?
 #'
 #' @return named list with components "ix" (logical indices of serves corresponding to serve win points in the x object), "n" (number of serve win points in x), "rate" (serve win rate from x). If \code{return_id} is TRUE, also return a component "id" (a data.frame containing the match_id and point_id of all serve win points)
 #'
-#' @seealso \code{\link{read_dv}} \code{\link{plays}}
+#' @seealso \code{\link{dv_read}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #' serve_idx <- find_serves(plays(x))
 #' swp <- serve_win_points(plays(x))
 #' ## number of serves by team
@@ -60,17 +60,17 @@ serve_win_points=function(x,return_id=FALSE) {
 
 #' Find first attacks by the receiving team (i.e. attacks associated with a serve reception)
 #'
-#' @param x data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}
+#' @param x data.frame: the plays component of a datavolley object, as returned by \code{dv_read()}
 # #' @param return_id logical: include the match_id and point_id of all first attacks in the returned object?
 #'
 #' @return named list with components "ix" (logical indices into the x object where the row corresponds to a first attack in a rally), "n" (number of receptions for which there was a first attack by the receiving team), "n_win" (the number of winning first attacks), "win_rate" (number of winning first attacks as a proportion of the total number of first attacks).
 # #' If \code{return_id} is TRUE, also return a component "id" (a data.frame containing the match_id and point_id of all first attacks)
 #'
-#' @seealso \code{\link{read_dv}} \code{\link{plays}}
+#' @seealso \code{\link{dv_read}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #' ## first attack win rate, by team
 #' by(plays(x),plays(x)$team,function(z)find_first_attack(z)$win_rate)
 #' }
@@ -103,18 +103,18 @@ find_first_attack=function(x) {
 #' Find runs of events within a match. Typically, this function would be passed a subset of \code{plays(x)}, such as rows
 #' corresponding to serves. Runs that are terminated by the end of a set are not assigned a \code{run_length}.
 #'
-#' @param x data.frame: a subset of the plays component of a datavolley object, as returned by \code{read_dv()}
+#' @param x data.frame: a subset of the plays component of a datavolley object, as returned by \code{dv_read()}
 #' @param idvars character: string or character vector of variabe names to use to identify the entity doing the events
 #' @param within_set logical: only consider runs within a single set? If FALSE, runs that span sets will be treated as a single run
 #'
 #' @return A data.frame the same number of rows as \code{x}, and with columns \code{run_id} (the identifier of the run to which each row belongs), \code{run_length} (the length of the run), and \code{run_position} (the position of this row in its associated run).
 #'
-#' @seealso \code{\link{read_dv}} \code{\link{plays}}
+#' @seealso \code{\link{dv_read}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
 #' ## find runs of serves
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 #' serve_idx <- find_serves(plays(x))
 #' serve_run_info <- find_runs(plays(x)[serve_idx,])
 #' ## distribution of serve run lengths

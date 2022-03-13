@@ -87,7 +87,7 @@ To get a visual depiction of this, try: \code{ ggplot() + ggcourt() + theme_bw()
 }
 \examples{
 \dontrun{
-x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 
 library(dplyr)
 

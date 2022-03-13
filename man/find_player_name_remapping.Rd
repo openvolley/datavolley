@@ -7,7 +7,7 @@
 find_player_name_remapping(x, distance_threshold = 3, verbose = TRUE)
 }
 \arguments{
-\item{x}{datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects}
+\item{x}{datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects}
 
 \item{distance_threshold}{numeric: if two names differ by an amount less than this threshold, they will be treated as the same name}
 
@@ -21,7 +21,7 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 }
 \examples{
 \dontrun{
-  x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
   remap <- find_player_name_remapping(x)
 }
 }

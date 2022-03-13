@@ -7,7 +7,7 @@
 find_serves(x)
 }
 \arguments{
-\item{x}{data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}}
+\item{x}{data.frame: the plays component of a datavolley object, as returned by \code{dv_read()}}
 }
 \value{
 a logical vector, giving the indices of the rows of x that correspond to serves
@@ -17,7 +17,7 @@ Find serves
 }
 \examples{
 \dontrun{
-x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 serve_idx <- find_serves(plays(x))
 ## number of serves by team
 table(plays(x)$team[serve_idx])
@@ -25,5 +25,5 @@ table(plays(x)$team[serve_idx])
 
 }
 \seealso{
-\code{\link{read_dv}} \code{\link{plays}}
+\code{\link{dv_read}} \code{\link{plays}}
 }

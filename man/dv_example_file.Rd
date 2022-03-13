@@ -21,7 +21,7 @@ Example DataVolley files provided as part of the datavolley package
 }
 \examples{
 myfile <- dv_example_file()
-x <- read_dv(myfile, insert_technical_timeouts = FALSE)
+x <- dv_read(myfile, insert_technical_timeouts = FALSE)
 summary(x)
 
 }
@@ -29,5 +29,5 @@ summary(x)
 The example data files came from \url{http://www.odbojka.si/}
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

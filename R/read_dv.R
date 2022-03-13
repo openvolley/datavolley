@@ -27,17 +27,17 @@
 #' \dontrun{
 #'   ## to read the example file bundled with the package
 #'   myfile <- dv_example_file()
-#'   x <- read_dv(myfile, insert_technical_timeouts=FALSE)
+#'   x <- dv_read(myfile, insert_technical_timeouts=FALSE)
 #'   summary(x)
 #'
 #'   ## or to read your own file:
-#'   x <- read_dv("c:/some/path/myfile.dvw", insert_technical_timeouts=FALSE)
+#'   x <- dv_read("c:/some/path/myfile.dvw", insert_technical_timeouts=FALSE)
 #'
 #'   ## Insert a technical timeout at point 12 in sets 1 to 4:
-#'   x <- read_dv(myfile, insert_technical_timeouts=list(c(12),NULL))
+#'   x <- dv_read(myfile, insert_technical_timeouts=list(c(12),NULL))
 #'
 #'   ## to read a VolleyMetrics file
-#'   x <- read_dv(myfile, skill_evaluation_decode = "volleymetrics")
+#'   x <- dv_read(myfile, skill_evaluation_decode = "volleymetrics")
 #' }
 #' @export
 read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", date_format = "guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta) {
@@ -539,14 +539,14 @@ dv_read <- read_dv
 
 #' A simple summary of a volleyball match
 #'
-#' @param object datavolley: datavolley object as returned by \code{read_dv}
+#' @param object datavolley: datavolley object as returned by \code{dv_read}
 #' @param ... : additional arguments (currently these have no effect)
 #'
 #' @return list of summary items
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #' @examples
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #' summary(x)
 #'
 #' @method summary datavolley
@@ -587,15 +587,15 @@ print.summary.datavolley <- function(x,...) {
 
 #' Summarize a list of volleyball matches
 #'
-#' @param z list: list of datavolley objects as returned by \code{read_dv}
+#' @param z list: list of datavolley objects as returned by \code{dv_read}
 #'
 #' @return named list with various summary indicators, including a competition ladder
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   dvlist_summary(list(x,x)) ## same match duplicated twice, just for illustration purposes
 #' }
 #'
@@ -647,15 +647,15 @@ print.summary.datavolleylist <- function(x,...) {
 
 #' Extract the plays component from a datavolley object
 #'
-#' @param x datavolley: a datavolley object as returned by \code{read_dv}
+#' @param x datavolley: a datavolley object as returned by \code{dv_read}
 #'
 #' @return The plays component of x (a data.frame)
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   inspect(plays(x))
 #' }
 #' @export
@@ -666,16 +666,16 @@ plays <- function(x) {
 
 #' Convenience function for inspecting the plays component of a datavolley object
 #'
-#' @param x datavolleyplays: the plays component of a datavolley object as returned by \code{read_dv}
+#' @param x datavolleyplays: the plays component of a datavolley object as returned by \code{dv_read}
 #' @param vars string: which variables to print? "minimal" set or "all"
 #' @param maxrows numeric: maximum number of rows to print
 #' @param extra character: names of any extra columns to include in the output
 #'
-#' @seealso \code{\link{read_dv}} \code{\link{plays}}
+#' @seealso \code{\link{dv_read}} \code{\link{plays}}
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   inspect(plays(x))
 #' }
 #'

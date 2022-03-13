@@ -14,7 +14,7 @@ function. This function takes arguments skill, evaluation_code, and show_map and
 }
 \description{
 If your DataVolley files use evaluation codes differently to those coded here, you will need to supply a custom
-skill_evaluation_decode function to \code{\link{read_dv}}
+skill_evaluation_decode function to \code{\link{dv_read}}
 }
 \examples{
 sd <- skill_evaluation_decoder()
@@ -23,5 +23,5 @@ sd(show_map=TRUE)
 
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

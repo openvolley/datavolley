@@ -7,7 +7,7 @@
 \method{summary}{datavolley}(object, ...)
 }
 \arguments{
-\item{object}{datavolley: datavolley object as returned by \code{read_dv}}
+\item{object}{datavolley: datavolley object as returned by \code{dv_read}}
 
 \item{...}{: additional arguments (currently these have no effect)}
 }
@@ -18,10 +18,10 @@ list of summary items
 A simple summary of a volleyball match
 }
 \examples{
-x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 summary(x)
 
 }
 \seealso{
-\code{\link{read_dv}}
+\code{\link{dv_read}}
 }

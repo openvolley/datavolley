@@ -55,7 +55,7 @@ Data can be provided either as separate \code{x}, \code{y}, and \code{z} objects
 }
 \examples{
 \dontrun{
-x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 
 library(dplyr)
 

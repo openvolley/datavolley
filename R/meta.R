@@ -53,8 +53,8 @@ read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
 read_match <- function(txt, date_format = NULL) {
     idx <- grep("[3MATCH]", txt, fixed = TRUE)
     ##tryCatch(p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE),
-    ##         error=function(e) { stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") })
-    tryCatch(p <- read_semi_text(txt[idx + 1], fallback = "read.table"), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+    ##         error=function(e) { stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") })
+    tryCatch(p <- read_semi_text(txt[idx + 1], fallback = "read.table"), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     names(p)[1] <- "date"
     names(p)[2] <- "time"
     names(p)[3] <- "season"
@@ -105,8 +105,8 @@ read_match <- function(txt, date_format = NULL) {
 read_more <- function(txt) {
     idx <- grep("[3MORE]",txt,fixed=TRUE)
     ##tryCatch(p <- read.table(text = txt[idx+1], sep = ";", quote = "", stringsAsFactors = FALSE, header = FALSE),
-    ##         error=function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
-    tryCatch(p <- read_semi_text(txt[idx+1], fallback = "read.table"), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+    ##         error=function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
+    tryCatch(p <- read_semi_text(txt[idx+1], fallback = "read.table"), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     for (k in c(1, 4:6)) p[, k] <- as.character(p[, k])
     names(p)[1] <- "referees"
     names(p)[2] <- "spectators"
@@ -119,8 +119,8 @@ read_more <- function(txt) {
 
 read_result <- function(txt) {
     txt <- text_chunk(txt,"[3SET]")
-    ##suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
-    tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+    ##suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") }))
+    tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     names(p)[1] <- "played"
     names(p)[2] <- "score_intermediate1"
     names(p)[3] <- "score_intermediate2"
@@ -143,8 +143,8 @@ read_teams <- function(txt) {
     idx <- grep("[3TEAMS]", txt, fixed = TRUE)
     txt <- text_chunk(txt, "[3TEAMS]")
     msgs <- list()
-    ##suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE,sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
-    tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+    ##suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE,sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") }))
+    tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     names(p)[1] <- "team_id"
     names(p)[2] <- "team"
     names(p)[3] <- "sets_won"
@@ -175,8 +175,8 @@ read_players <- function(txt,team,surname_case) {
     if (missing(team)) team <- "home"
     chnkmarker <- if (tolower(team)=="home") "[3PLAYERS-H]" else "[3PLAYERS-V]"
     txt <- text_chunk(txt, chnkmarker)
-##    suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") }))
-    tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+##    suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") }))
+    tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     names(p)[2] <- "number"
     names(p)[4] <- "starting_position_set1"
     names(p)[5] <- "starting_position_set2"
@@ -228,8 +228,8 @@ read_attacks <- function(txt) {
     if (str_trim(txt)=="") {
         NULL
     } else {
-        ##tryCatch({ p <- read.table(text=txt,sep=";",quote="",header=FALSE,stringsAsFactors=FALSE) },error=function(e) { stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?") })
-        tryCatch(p <- read_semi_text(txt, fallback = "read.table"), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+        ##tryCatch({ p <- read.table(text=txt,sep=";",quote="",header=FALSE,stringsAsFactors=FALSE) },error=function(e) { stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") })
+        tryCatch(p <- read_semi_text(txt, fallback = "read.table"), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         names(p)[1] <- "code"
         names(p)[2] <- "attacker_position"
@@ -247,7 +247,7 @@ read_setter_calls <- function(txt) {
         NULL
     } else {
         ## with read_semi_text, need to force col 9 to be char (it's a comma-separated string of ints) else it gets parsed into a single number
-        tryCatch(p <- read_semi_text(txt, col_types = "c?c??iiic??"), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?"))
+        tryCatch(p <- read_semi_text(txt, col_types = "c?c??iiic??"), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         names(p)[1] <- "code"
         names(p)[3] <- "description"
         names(p)[6:8] <- c("start_coordinate", "mid_coordinate", "end_coordinate")
@@ -294,7 +294,7 @@ read_comments <- function(txt) {
             tmp <- read_semi_text(txt, fallback = "read.table")
             setNames(tmp, paste0("comment_", seq_len(ncol(tmp))))
         }), error = function(e) {
-            warning("could not read the [3COMMENTS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to read_dv is incorrect?")
+            warning("could not read the [3COMMENTS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?")
         })
     }
     p
@@ -413,7 +413,7 @@ get_player_id <- function(team, number, meta) {
 ## #'
 ## #' DataVolley files generally contain a set of attack codes and corresponding descriptions (in Italian).
 ## #' If you use these codes differently, or wish to change the descriptions, you can pass a customised
-## #' attack_code_describe function to \code{\link{read_dv}}
+## #' attack_code_describe function to \code{\link{dv_read}}
 ## #'
 ## #' @param code string: two-character attack code
 ## #' @param translation string: description of the corresponding attack
@@ -421,7 +421,7 @@ get_player_id <- function(team, number, meta) {
 ## #'
 ## #' @return string giving the description of that attack code
 ## #'
-## #' @seealso \code{\link{read_dv}}
+## #' @seealso \code{\link{dv_read}}
 ## #' @examples
 ## #' attack_code_describe("X2")
 ## #' attack_code_describe(show_map=TRUE)
@@ -488,15 +488,15 @@ PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 
 #' Get team names and IDs from datavolley object
 #'
-#' @param x datavolley or data.frame: a datavolley object as returned by \code{read_dv}, or the plays component of that object
+#' @param x datavolley or data.frame: a datavolley object as returned by \code{dv_read}, or the plays component of that object
 #'
 #' @return character vector of team names or IDs
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #'
 #' @examples
 #' \dontrun{
-#'   x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 #'   teams(x)
 #'   home_team_id(x)
 #' }

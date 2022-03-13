@@ -56,7 +56,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'
 #' library(dplyr)
 #'
@@ -281,7 +281,7 @@ dv_plot_new <- function(x, y, legend, court, margins, par_args, ...) {
 #'
 #' @examples
 #' \dontrun{
-#' x <- read_dv(dv_example_file(), insert_technical_timeouts=FALSE)
+#' x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 #'
 #' library(dplyr)
 #'

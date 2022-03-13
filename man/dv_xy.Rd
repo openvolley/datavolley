@@ -34,7 +34,7 @@ For a description of the court dimensions and coordinates used for plotting, see
 }
 \examples{
 \dontrun{
-x <- read_dv(dv_example_file(), insert_technical_timeouts = FALSE)
+x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
 
 library(ggplot2)
 library(dplyr)

@@ -1,10 +1,10 @@
 ## #' Find gaps in timing that might indicate missing data
 ## #'
-## #' @param x data.frame: the plays component of a datavolley object, as returned by \code{read_dv()}
+## #' @param x data.frame: the plays component of a datavolley object, as returned by \code{dv_read()}
 ## #'
 ## #' @return logical vector indicating entries where the timing looks suspicious
 ## #'
-## #' @seealso \code{\link{read_dv}} \code{\link{plays}}
+## #' @seealso \code{\link{dv_read}} \code{\link{plays}}
 ## #'
 ## #' @examples
 ## #'
@@ -21,13 +21,13 @@
 #'
 #' Some DataVolley files do not indicate serve aces with the skill evaluation "Ace". This function will search for winning serves, either with no reception or a reception error, and change their evaluation value to "Ace"
 #'
-#' @param x datavolley: a datavolley object as returned by \code{read_dv}, or list of such objects
+#' @param x datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects
 #' @param rotation_error_is_ace logical: should a rotation error on reception by the receiving team be counted as an ace?
 #' @param verbose logical: print progress to console?
 #'
 #' @return datavolley object or list of such with updated evaluation values
 #'
-#' @seealso \code{\link{read_dv}}
+#' @seealso \code{\link{dv_read}}
 #'
 #' @export
 fix_ace_evaluations=function(x,rotation_error_is_ace=FALSE,verbose=TRUE) {
