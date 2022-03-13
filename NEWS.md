@@ -1,3 +1,9 @@
+datavolley 1.2.3
+=================
+- utilities to make files scouted by ClickNScout more useful
+- optional xlim, ylim to ggcourt,
+- add dv_find_to_flip_coordinates function
+
 datavolley 1.2.0
 =================
 - bug fix: actions scouted with an unknown player (denoted in the dvw file with player number "$$") were previously being incorrectly parsed

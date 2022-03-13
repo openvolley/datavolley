@@ -19,6 +19,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -31,18 +33,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">datavolley</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.2.3</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="articles/datavolley.html">Get started</a>
 </li>
@@ -65,38 +61,50 @@
 
       </header><div class="row">
   <div class="contents col-md-9">
-<div id="datavolley" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#datavolley" class="anchor"></a>datavolley</h1></div>
+<div class="section level1">
+<div class="page-header"><h1 id="datavolley">datavolley<a class="anchor" aria-label="anchor" href="#datavolley"></a>
+</h1></div>
 <!-- badges: start -->
 
-<p>An R package for reading volleyball scouting files in DataVolley format (<code>*.dvw</code>), collected for example with the commercial DataVolley, Click and Scout, or VolleyStation software.</p>
+<p>An R package for reading volleyball scouting files in DataVolley
+format (<code>*.dvw</code>), collected for example with the commercial
+DataVolley, Click and Scout, or VolleyStation software.</p>
 <p>See also:</p>
 <ul>
-<li>the <a href="https://openvolley.github.io/datavolley">package vignette</a> for more examples and information</li>
-<li>these <a href="https://openvolley.github.io/volley-analytics-snippets">code snippets</a> for volleyball analytics in R with datavolley and the other openvolley packages</li>
-<li>this <a href="https://apps.untan.gl/dvalidate/">DataVolley file validator</a> and <a href="https://apps.untan.gl/">suite of analytical apps</a>, which are built on the datavolley package.</li>
+<li>the <a href="https://openvolley.github.io/datavolley" class="external-link">package
+vignette</a> for more examples and information</li>
+<li>these <a href="https://openvolley.github.io/volley-analytics-snippets" class="external-link">code
+snippets</a> for volleyball analytics in R with datavolley and the other
+openvolley packages</li>
+<li>this <a href="https://apps.untan.gl/dvalidate/" class="external-link">DataVolley file
+validator</a> and <a href="https://apps.untan.gl/" class="external-link">suite of analytical
+apps</a>, which are built on the datavolley package.</li>
 </ul>
-<p>The <a href="https://github.com/openvolley/peranavolley">peranavolley</a> package provides similar functionality for reading files scouted by the <a href="http://peranasports.com/software/vbstatshd/">AOC VBStats</a> software.</p>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor"></a>Installation</h2>
+<p>The <a href="https://github.com/openvolley/peranavolley" class="external-link">peranavolley</a>
+package provides similar functionality for reading files scouted by the
+<a href="http://peranasports.com/software/vbstatshd/" class="external-link">AOC VBStats</a>
+software.</p>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"datavolley"</span>, repos <span class="op">=</span> <span class="st">"https://openvolley.r-universe.dev"</span><span class="op">)</span>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>openvolley <span class="op">=</span> <span class="st">"https://openvolley.r-universe.dev"</span>,
+                  CRAN <span class="op">=</span> <span class="st">"https://cloud.r-project.org"</span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"datavolley"</span><span class="op">)</span>
 
 <span class="co">## or</span>
 
 <span class="co">## install.packages("remotes") ## if needed</span>
-<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"openvolley/datavolley"</span><span class="op">)</span></code></pre></div>
+<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"openvolley/datavolley"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="example" class="section level2">
-<h2 class="hasAnchor">
-<a href="#example" class="anchor"></a>Example</h2>
+<div class="section level2">
+<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+</h2>
 <p>Read one of the example data files bundled with the package:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">datavolley</span><span class="op">)</span>
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">datavolley</span><span class="op">)</span>
 <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_dv.html">dv_read</a></span><span class="op">(</span><span class="fu"><a href="reference/dv_example_file.html">dv_example_file</a></span><span class="op">(</span><span class="op">)</span>, insert_technical_timeouts <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>
 <span class="co">#&gt; Match summary:</span>
 <span class="co">#&gt; Date: 2015-01-25</span>
 <span class="co">#&gt; League: Finale mladinke</span>
@@ -106,48 +114,65 @@
 <span class="co">#&gt; Result: 3-0 (25-16, 25-14, 25-22)</span>
 <span class="co">#&gt; Duration: 67 minutes</span></code></pre></div>
 </div>
-<div id="troubleshooting" class="section level2">
-<h2 class="hasAnchor">
-<a href="#troubleshooting" class="anchor"></a>Troubleshooting</h2>
-<p>If you see unexpected behaviour, try <code><a href="reference/read_dv.html">dv_read(..., do_warn = TRUE, verbose = TRUE)</a></code> to obtain more diagnostic information during the process of reading and parsing the DataVolley file. Also check the text encoding specified to <code>dv_read</code> (did you specify one??)</p>
+<div class="section level2">
+<h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
+</h2>
+<p>If you see unexpected behaviour, try
+<code>dv_read(..., do_warn = TRUE, verbose = TRUE)</code> to obtain more
+diagnostic information during the process of reading and parsing the
+DataVolley file. Also check the text encoding specified to
+<code>dv_read</code> (did you specify one??)</p>
 </div>
 </div>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <div class="license">
-<h2>License</h2>
+<h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li>
-<a href="https://opensource.org/licenses/mit-license.php">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a>
+<a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a>
 </li>
 </ul>
 </div>
+
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing datavolley</a></li>
+</ul>
+</div>
+
 <div class="developers">
-<h2>Developers</h2>
+<h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Ben Raymond <br><small class="roles"> Author, maintainer </small>  </li>
 </ul>
 </div>
 
-  <div class="dev-status">
-<h2>Dev status</h2>
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/openvolley/datavolley/actions"><img src="https://github.com/openvolley/datavolley/workflows/R-CMD-check/badge.svg" alt="R build status"></a></li>
-<li><a href="https://www.tidyverse.org/lifecycle/#stable"><img src="https://img.shields.io/badge/lifecycle-stable-brightgreen.svg" alt="lifecycle"></a></li>
-<li><a href="https://codecov.io/gh/openvolley/datavolley?branch=master"><img src="https://codecov.io/gh/openvolley/datavolley/branch/master/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://github.com/openvolley/datavolley/actions" class="external-link"><img src="https://github.com/openvolley/datavolley/workflows/R-CMD-check/badge.svg" alt="R build status"></a></li>
+<li><a href="https://www.tidyverse.org/lifecycle/#stable" class="external-link"><img src="https://img.shields.io/badge/lifecycle-stable-brightgreen.svg" alt="lifecycle"></a></li>
+<li><a href="https://codecov.io/gh/openvolley/datavolley?branch=master" class="external-link"><img src="https://codecov.io/gh/openvolley/datavolley/branch/master/graph/badge.svg" alt="Codecov test coverage"></a></li>
 </ul>
 </div>
-</div>
+
+  </div>
 </div>
 
 
       <footer><div class="copyright">
-  <p>Developed by Ben Raymond.</p>
+  <p></p>
+<p>Developed by Ben Raymond.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
+2.0.2.</p>
 </div>
 
       </footer>
@@ -155,6 +180,8 @@
 
   
 
+
+  
 
   </body>
 </html>
