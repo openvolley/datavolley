@@ -7,22 +7,17 @@
 dv_attack_code_map(type, start_zone)
 }
 \arguments{
-\item{type}{string:}
+\item{type}{character: vector of attack tempos ("H", "T", "Q", etc). A \code{type} vector of length 1 will be expanded to the length of the \code{start_zone} vector, if needed}
 
-\item{start_zone}{string:}
+\item{start_zone}{integer: vector of start zones}
 }
 \value{
-a vector of attack codes, set_types, etc.
+A vector of attack codes, set_types, etc.
 }
 \description{
 If your DataVolley files does not have attack codes ready, (for example, if you are using Click&Scout), this function will take the starting zone and tempo of the attack to map it to an attack code.
 }
 \examples{
-type = c("H", "Q", "T")
-start_zone = c("8", "3", "4")
-attack_code_map(type, start_zone)
+dv_attack_code_map(type = c("H", "Q", "T"), start_zone = c("8", "3", "4"))
 
-}
-\seealso{
-\code{\link{read_dv}}
 }

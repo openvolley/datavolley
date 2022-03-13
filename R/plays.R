@@ -32,261 +32,177 @@ attack_map <- function(type,skill) {
 #'
 #' If your DataVolley files does not have attack codes ready, (for example, if you are using Click&Scout), this function will take the starting zone and tempo of the attack to map it to an attack code.
 #'
-#' @param type string: 
-#' @param start_zone string:  
-#' @return a vector of attack codes, set_types, etc.
+#' @param type character: vector of attack tempos ("H", "T", "Q", etc). A \code{type} vector of length 1 will be expanded to the length of the \code{start_zone} vector, if needed
+#' @param start_zone integer: vector of start zones
+#' @return A vector of attack codes, set_types, etc.
 #'
-#' @seealso \code{\link{read_dv}}
 #' @examples
-#' type = c("H", "Q", "T")
-#' start_zone = c("8", "3", "4")
-#' attack_code_map(type, start_zone)
+#' dv_attack_code_map(type = c("H", "Q", "T"), start_zone = c("8", "3", "4"))
 #'
-#' @export dv_attack_code_map
-dv_attack_code_map <- function(type,start_zone) {
-    if(length(type) == 1){
-    m = switch(type,
-           H=switch(start_zone, "2" = "V6","3" = "V3","4" = "V5", "9"="V8", "8" = "VP", "7" = "V0", paste0("Unknown high ball attack from ",start_zone)),
-           M=switch(start_zone, "2" = "X4","3" = "X3","4" = "X9", "8" = "XP", paste0("Unknown half ball attack from ",start_zone)),
-           Q=switch(start_zone, "2" = "X2","3" = "X1","4" = "X7","9" = "XO", paste0("Unknown quick ball attack from ",start_zone)),
-           T=switch(start_zone, "2" = "X6","3" = "X3","4" = "X5", "9"="X8", "7" = "X0", paste0("Unknown half ball attack from ",start_zone)),
-           U=switch(start_zone, "2" = "C6","4" = "C5", "9"="C8", "7" = "C0", paste0("Unknown medium ball attack from ",start_zone)),
-           N=switch(start_zone, "2" = "CF","3" = "CB",paste0("Unknown slide attack from ",start_zone)),
-           O=paste0("Other attack from ",start_zone),
-           paste0("Unknown attack from ",start_zone))
+#' @export
+dv_attack_code_map <- function(type, start_zone) {
+    if (length(type) < 1 || length(start_zone) < 1) stop("non-empty type and start_zone required")
+    if (length(type) == 1 && length(start_zone) > 1) {
+        type <- rep(type, length(start_zone))
+    } else if (length(type) > 1 && length(start_zone) == 1) {
+        start_zone <- rep(start_zone, length(type))
     }
-    if(length(type) > 1){
-     mt = cbind(matrix(type, ncol = 1), matrix(start_zone, ncol = 1))
-      m= apply(mt, 1, function(x) switch(x[1],
-               H=switch(x[2], "2" = "V6","3" = "V3","4" = "V5", "9"="V8", "8" = "VP", "7" = "V0", paste0("Unknown high ball attack from ",x[2])),
-               M=switch(x[2], "2" = "X4","3" = "X3","4" = "X9", "8" = "XP", paste0("Unknown half ball attack from ",x[2])),
-               Q=switch(x[2], "2" = "X2","3" = "X1","4" = "X7","9" = "XO", paste0("Unknown quick ball attack from ",x[2])),
-               T=switch(x[2], "2" = "X6","3" = "X3","4" = "X5", "9"="X8", "7" = "X0","8" = "XP", paste0("Unknown half ball attack from ",x[2])),
-               U=switch(x[2], "2" = "C6","4" = "C5", "9"="C8", "7" = "C0", paste0("Unknown medium ball attack from ",x[2])),
-               N=switch(x[2], "2" = "CF","3" = "CB",paste0("Unknown slide attack from ",x[2])),
-               O=paste0("Other attack from ",x[2]),
-               paste0("Unknown attack from ",x[2]))
-        )
+    if (length(type) != length(start_zone)) stop("type and start_zone are of different lengths")
+    start_zone <- as.character(start_zone)
+    tsmap <- function(typ, sz) {
+        switch(typ,
+               H = switch(sz, "2" = "V6", "3" = "V3", "4" = "V5", "9" = "V8", "8" = "VP", "7" = "V0", paste0("Unknown high ball attack from ", sz)),
+               M = switch(sz, "2" = "X4", "3" = "X3", "4" = "X9", "8" = "XP", paste0("Unknown half ball attack from ", sz)),
+               Q = switch(sz, "2" = "X2", "3" = "X1", "4" = "X7", "9" = "XO", paste0("Unknown quick ball attack from ", sz)),
+               T = switch(sz, "2" = "X6", "3" = "X3", "4" = "X5", "9" = "X8", "7" = "X0", paste0("Unknown half ball attack from ", sz)),
+               U = switch(sz, "2" = "C6", "4" = "C5", "9" = "C8", "7" = "C0", paste0("Unknown medium ball attack from ", sz)),
+               N = switch(sz, "2" = "CF", "3" = "CB", paste0("Unknown slide attack from ", sz)),
+               O = paste0("Other attack from ", sz),
+               paste0("Unknown attack tempo from ", sz))
     }
-    return(m)
+        mt <- cbind(matrix(type, ncol = 1), matrix(start_zone, ncol = 1))
+        apply(mt, 1, function(x) tsmap(x[1], x[2]))
 }
 
-#' @export dv_attack_code2loc
+#' Nominal starting coordinate for standard attack codes
+#'
+#' @param code character: vector of attack codes ("X5", "VP", etc)
+#' @return A vector of numeric coordinates
+#'
+#' @examples
+#' dv_attack_code2loc(code = c("X5", "X7", "PP"))
+#'
+#' @export
 dv_attack_code2loc <- function(code) {
-  if(length(code) == 1){
-    m = code
-    atk_loc = ifelse(m %in% c("V5", "X5", "C5") , 4912, 
-                     ifelse(m %in% c("V6", "X6", "C6") , 4988, 
-                            ifelse(m %in% c("V8", "X8", "C8") , 4186, 
-                                   ifelse(m %in% c("V0", "X0", "C0") , 4114, 
-                                          ifelse(m %in% c("VP", "XP") , 4150, 
-                                                 ifelse(m %in% c("V3", "X3") , 4950, 
-                                                        ifelse(m %in% c("X1") , 4956, 
-                                                               ifelse(m %in% c("X2") , 4868, 
-                                                                      ifelse(m %in% c("X7") , 4932, 
-                                                                             ifelse(m %in% c("XO") , 3769, 
-                                                                                    ifelse(m %in% c("CF") , 4976, 
-                                                                                           ifelse(m %in% c("CB", "CD"), 4970, 
-                                                                                                  ifelse(m %in% c("PP"), 4964,  
-                                                                                                         ifelse(m %in% c("P2", "PR"), 4964,  
-                                                                                                  NA_real_
-                                                                                           ))))))))))))))
-    
-  }
-  if(length(code) > 1){
-
-    m = code
-
-    atk_loc = sapply(m, function(x)
-      ifelse(x %in% c("V5", "X5", "C5") , 4912, 
-             ifelse(x %in% c("V6", "X6", "C6") , 4988, 
-                    ifelse(x %in% c("V8", "X8", "C8") , 4186, 
-                           ifelse(x %in% c("V0", "X0", "C0") , 4114, 
-                                  ifelse(x %in% c("VP", "XP") , 4150, 
-                                         ifelse(x %in% c("V3", "X3") , 4950, 
-                                                ifelse(x %in% c("X1") , 4956, 
-                                                       ifelse(x %in% c("X2") , 4868, 
-                                                              ifelse(x %in% c("X7") , 4932, 
-                                                                     ifelse(x %in% c("XO") , 3769, 
-                                                                            ifelse(x %in% c("CF") , 4976, 
-                                                                                   ifelse(x %in% c("CB", "CD"), 4970, 
-                                                                                          ifelse(x %in% c("PP"), 4964,  
-                                                                                                 ifelse(x %in% c("P2", "PR"), 4964,  
-                                                                                                        NA_real_
-                                                                                                 )))))))))))))))
-    
-  }
-  return(atk_loc)
+    if (length(code) < 1) stop("non-empty code required")
+    locmap <- function(z) {
+        ifelse(z %in% c("V5", "X5", "C5") , 4912,
+         ifelse(z %in% c("V6", "X6", "C6") , 4988,
+          ifelse(z %in% c("V8", "X8", "C8") , 4186,
+           ifelse(z %in% c("V0", "X0", "C0") , 4114,
+            ifelse(z %in% c("VP", "XP") , 4150,
+             ifelse(z %in% c("V3", "X3") , 4950,
+              ifelse(z %in% c("X1") , 4956,
+               ifelse(z %in% c("X2") , 4868,
+                ifelse(z %in% c("X7") , 4932,
+                 ifelse(z %in% c("XO") , 3769,
+                  ifelse(z %in% c("CF") , 4976,
+                   ifelse(z %in% c("CB", "CD"), 4970,
+                    ifelse(z %in% c("PP"), 4964,
+                     ifelse(z %in% c("P2", "PR"), 4964,
+                            NA_real_))))))))))))))
+    }
+    vapply(code, locmap, FUN.VALUE = 0)
 }
 
-#' @export dv_attack_code2desc
+#' Nominal descriptions for standard attack codes
+#'
+#' @param code character: vector of attack codes ("X5", "VP", etc)
+#' @return A named character vector of descriptions. Unrecognized attack codes will have \code{NA} description.
+#'
+#' @examples
+#' dv_attack_code2desc(c("X5", "X7", "PP", "blah"))
+#'
+#' @export
 dv_attack_code2desc <- function(code) {
-  if(length(code) == 1){
-    m = code
-    atk_desc = ifelse(m %in% c("X5") , "Shoot in 4", 
-                      ifelse(m %in% c("X6") , "Shoot in 2", 
-                             ifelse(m %in% c("X8") , "Shoot in 1", 
-                                    ifelse(m %in% c("X0") , "Shoot in 5", 
-                                           ifelse(m %in% c("XP") , "Pipe", 
-                                                  ifelse(m %in% c("X3") , "Meter ball in 3", 
-                                                         ifelse(m %in% c("X1") , "Quick", 
-                                                                ifelse(m %in% c("X2") , "Quick set behind", 
-                                                                       ifelse(m %in% c("X7") , "Quick - push", 
-                                                                              ifelse(m %in% c("XO") , "Pipe behind", 
-                                                                                     ifelse(m %in% c("X9") , "Interval ball in 4", 
-                                                                                            ifelse(m %in% c("CB", "CD"), "Slide close",
-                                                                                                   ifelse(m %in% c("V5") , "High set in 4", 
-                                                                                                          ifelse(m %in% c("V6") , "High set in 2", 
-                                                                                                                 ifelse(m %in% c("V8") , "High set in 1", 
-                                                                                                                        ifelse(m %in% c("V0") , "High set in 5", 
-                                                                                                                               ifelse(m %in% c("VP") , "High Pipe", 
-                                                                                                                                      ifelse(m %in% c("V3") , "High set in 3", 
-                                                                                                                                             ifelse(m %in% c("VO") , "High pipe behind", 
-                                                                                                                                                    ifelse(m %in% c("C0") , "Medium ball in 5", 
-                                                                                                                                                           ifelse(m %in% c("C5") , "Medium ball in 4", 
-                                                                                                                                                                  ifelse(m %in% c("C6") , "Medium ball in 2", 
-                                                                                                                                                                         ifelse(m %in% c("C8") , "Medium ball in 1", 
-                                                                                                                                                                                ifelse(m %in% c("CF"), "Slide far",
-                                                                                                                                                                                       ifelse(m %in% c("PP"), "Setter tip",  
-                                                                                                                                                                                              ifelse(m %in% c("P2"), "Second hit to opponent court",
-                                                                                                                                                                                                     ifelse(m %in% c("PR"), "Attack on opponent freeball",  
-                                                                                                                                                                                                     NA_real_
-                                                                                                                                                                                                     )))))))))))))))))))))))))))
-    
-    
-  }
-  if(length(code) > 1){
-    
-    m = code
-    
-    atk_desc = sapply(m, function(x)
-      ifelse(x %in% c("X5") , "Shoot in 4", 
-             ifelse(x %in% c("X6") , "Shoot in 2", 
-                    ifelse(x %in% c("X8") , "Shoot in 1", 
-                           ifelse(x %in% c("X0") , "Shoot in 5", 
-                                  ifelse(x %in% c("XP") , "Pipe", 
-                                         ifelse(x %in% c("X3") , "Meter ball in 3", 
-                                                ifelse(x %in% c("X1") , "Quick", 
-                                                       ifelse(x %in% c("X2") , "Quick set behind", 
-                                                              ifelse(x %in% c("X7") , "Quick - push", 
-                                                                     ifelse(x %in% c("XO") , "Pipe behind", 
-                                                                            ifelse(x %in% c("X9") , "Interval ball in 4", 
-                                                                                   ifelse(x %in% c("CB", "CD"), "Slide close",
-                                                                                          ifelse(x %in% c("V5") , "High set in 4", 
-                                                                                                 ifelse(x %in% c("V6") , "High set in 2", 
-                                                                                                        ifelse(x %in% c("V8") , "High set in 1", 
-                                                                                                               ifelse(x %in% c("V0") , "High set in 5", 
-                                                                                                                      ifelse(x %in% c("VP") , "High Pipe", 
-                                                                                                                             ifelse(x %in% c("V3") , "High set in 3", 
-                                                                                                                                    ifelse(x %in% c("VO") , "High pipe behind", 
-                                                                                                                                           ifelse(x %in% c("C0") , "Medium ball in 5", 
-                                                                                                                                                  ifelse(x %in% c("C5") , "Medium ball in 4", 
-                                                                                                                                                         ifelse(x %in% c("C6") , "Medium ball in 2", 
-                                                                                                                                                                ifelse(x %in% c("C8") , "Medium ball in 1", 
-                                                                                                                                                                       ifelse(x %in% c("CF"), "Slide far",
-                                                                                                                                                                              ifelse(x %in% c("PP"), "Setter tip",  
-                                                                                                                                                                                     ifelse(x %in% c("P2"), "Second hit to opponent court",
-                                                                                                                                                                                            ifelse(x %in% c("PR"), "Attack on opponent freeball",  
-                                                                                                                                                                                                   NA_real_
-                                                                                                                                                                                            ))))))))))))))))))))))))))))
-    
-    
-  }
-  return(atk_desc)
+    if (length(code) < 1) stop("non-empty code required")
+    descmap <- function(z) {
+        ifelse(z %in% c("X5") , "Shoot in 4",
+        ifelse(z %in% c("X6") , "Shoot in 2",
+        ifelse(z %in% c("X8") , "Shoot in 1",
+        ifelse(z %in% c("X0") , "Shoot in 5",
+        ifelse(z %in% c("XP") , "Pipe",
+        ifelse(z %in% c("X3") , "Meter ball in 3",
+        ifelse(z %in% c("X1") , "Quick",
+        ifelse(z %in% c("X2") , "Quick set behind",
+        ifelse(z %in% c("X7") , "Quick - push",
+        ifelse(z %in% c("XO") , "Pipe behind",
+        ifelse(z %in% c("X9") , "Interval ball in 4",
+        ifelse(z %in% c("CB", "CD"), "Slide close",
+        ifelse(z %in% c("V5") , "High set in 4",
+        ifelse(z %in% c("V6") , "High set in 2",
+        ifelse(z %in% c("V8") , "High set in 1",
+        ifelse(z %in% c("V0") , "High set in 5",
+        ifelse(z %in% c("VP") , "High Pipe",
+        ifelse(z %in% c("V3") , "High set in 3",
+        ifelse(z %in% c("VO") , "High pipe behind",
+        ifelse(z %in% c("C0") , "Medium ball in 5",
+        ifelse(z %in% c("C5") , "Medium ball in 4",
+        ifelse(z %in% c("C6") , "Medium ball in 2",
+        ifelse(z %in% c("C8") , "Medium ball in 1",
+        ifelse(z %in% c("CF"), "Slide far",
+        ifelse(z %in% c("PP"), "Setter tip",
+        ifelse(z %in% c("P2"), "Second hit to opponent court",
+        ifelse(z %in% c("PR"), "Attack on opponent freeball",
+               NA_character_)))))))))))))))))))))))))))
+    }
+    vapply(code, descmap, FUN.VALUE = "")
 }
 
-#' @export dv_attack_code2side
+#' Attack side for standard attack codes
+#'
+#' @param code character: vector of attack codes ("X5", "VP", etc)
+#' @return A named vector of sides ("L", "R", "C")
+#'
+#' @examples
+#' dv_attack_code2side(code = c("X5", "X7", "PP"))
+#'
+#' @export
 dv_attack_code2side <- function(code) {
-  if(length(code) == 1){
-  
-    m = code
-    
-    atk_side =  ifelse(m %in% c("V5", "X5", "C5") , "R", 
-                       ifelse(m %in% c("V6", "X6", "C6"), "L", 
-                              ifelse( m %in% c("V8", "X8", "C8") , "C", 
-                                      ifelse(m %in% c("V0", "X0", "C0") , "C", 
-                                             ifelse(m %in% c("VP", "XP") , "C",
-                                                    ifelse(m %in% c("V3", "X3") , "C", 
-                                                           ifelse(m %in% c("X1", "X7") , "R",
-                                                                  ifelse(m %in% c("X2") , "L", 
-                                                                         ifelse(m %in% c("XO", "P2", "PR") , "C", 
-                                                                                ifelse(m %in% c("CF") , "L", 
-                                                                                       ifelse(m %in% c("CB", "CD", "PP") , "L", 
-                                                                                              NA_character_)))))))))))
-    
-  }
-  if(length(code) > 1){
-    m = code
-
-        atk_side = sapply(m, function(x) 
-      ifelse(x %in% c("V5", "X5", "C5") , "R", 
-             ifelse(x %in% c("V6", "X6", "C6"), "L", 
-                    ifelse( x %in% c("V8", "X8", "C8") , "C", 
-                            ifelse(x %in% c("V0", "X0", "C0") , "C", 
-                                   ifelse(x %in% c("VP", "XP") , "C",
-                                          ifelse(x %in% c("V3", "X3") , "C", 
-                                                 ifelse(x %in% c("X1", "X7") , "R",
-                                                        ifelse(x %in% c("X2") , "L", 
-                                                               ifelse(x %in% c("XO", "P2", "PR") , "C", 
-                                                                      ifelse(x %in% c("CF") , "L", 
-                                                                             ifelse(x %in% c("CB", "CD", "PP") , "L", 
-                                                                                    NA_character_))))))))))))
-    
-  }
-  return(atk_side)
+    if (length(code) < 1) stop("non-empty code required")
+    sidemap <- function(z) {
+        ifelse(z %in% c("V5", "X5", "C5") , "R",
+         ifelse(z %in% c("V6", "X6", "C6"), "L",
+          ifelse(z %in% c("V8", "X8", "C8") , "C",
+           ifelse(z %in% c("V0", "X0", "C0") , "C",
+            ifelse(z %in% c("VP", "XP") , "C",
+             ifelse(z %in% c("V3", "X3") , "C",
+              ifelse(z %in% c("X1", "X7") , "R",
+               ifelse(z %in% c("X2") , "L",
+                ifelse(z %in% c("XO", "P2", "PR") , "C",
+                 ifelse(z %in% c("CF") , "L",
+                  ifelse(z %in% c("CB", "CD", "PP") , "L",
+                   NA_character_)))))))))))
+    }
+    vapply(code, sidemap, FUN.VALUE = "")
 }
 
-#' @export dv_attack_code2settype
+#' Set type for standard attack codes
+#'
+#' @param code character: vector of attack codes ("X5", "VP", etc)
+#' @return A named vector of sides ("F", "B", "C", "P", "S", "-")
+#'
+#' @examples
+#' dv_attack_code2settype(code = c("X5", "X7", "PP"))
+#'
+#' @export
 dv_attack_code2settype <- function(code) {
-  if(length(code) == 1){
-    
-    m = code
-    
-    set_type =  ifelse(m %in% c("V5", "X5", "C5") , "F", 
-                       ifelse(m %in% c("V6", "X6", "C6") , "B", 
-                              ifelse(m %in% c("V8", "X8", "C8") , "B", 
-                                     ifelse(m %in% c("V0", "X0", "C0") , "F", 
-                                            ifelse(m %in% c("VP", "XP") , "P", 
-                                                   ifelse(m %in% c("V3", "X3", "P2", "PR") , "-", 
-                                                          ifelse(m %in% c("X1","X2", "X7") , "C",
-                                                                 ifelse(m %in% c("XO") , "B", 
-                                                                        ifelse(m %in% c("CF") , "C", 
-                                                                               ifelse(m %in% c("CB", "CD") , "C",
-                                                                                      ifelse(m %in% c("PP") , "S",
-                                                                                      NA_character_)))))))))))
-  }
-  if(length(code) > 1){
-     m =code
-    
-    set_type = sapply(m, function(x)
-      ifelse(x %in% c("V5", "X5", "C5") , "F", 
-             ifelse(x %in% c("V6", "X6", "C6") , "B", 
-                    ifelse(x %in% c("V8", "X8", "C8") , "B", 
-                           ifelse(x %in% c("V0", "X0", "C0") , "F", 
-                                  ifelse(x %in% c("VP", "XP") , "P", 
-                                         ifelse(x %in% c("V3", "X3", "P2", "PR") , "-", 
-                                                ifelse(x %in% c("X1","X2", "X7") , "C",
-                                                       ifelse(x %in% c("XO") , "B", 
-                                                              ifelse(x %in% c("CF") , "C", 
-                                                                     ifelse(x %in% c("CB", "CD") , "C",
-                                                                            ifelse(x %in% c("PP") , "S",
-                                                                            NA_character_))))))))))))
-    
-  }
-  return(set_type)
+    if (length(code) < 1) stop("non-empty code required")
+    stmap <- function(z) {
+        ifelse(z %in% c("V5", "X5", "C5") , "F",
+         ifelse(z %in% c("V6", "X6", "C6") , "B",
+          ifelse(z %in% c("V8", "X8", "C8") , "B",
+           ifelse(z %in% c("V0", "X0", "C0") , "F",
+            ifelse(z %in% c("VP", "XP") , "P",
+             ifelse(z %in% c("V3", "X3", "P2", "PR") , "-",
+              ifelse(z %in% c("X1", "X2", "X7") , "C",
+               ifelse(z %in% c("XO") , "B",
+                ifelse(z %in% c("CF") , "C",
+                 ifelse(z %in% c("CB", "CD") , "C",
+                  ifelse(z %in% c("PP") , "S",
+                   NA_character_)))))))))))
+    }
+    vapply(code, stmap, FUN.VALUE = "")
 }
 
 #' Create a meta attack data.frame from the plays object if it is missing
 #'
-#' If your DataVolley files does not have a meta attack dataframe, 
-#' (for example, if you are using Click&Scout), this function will take the
-#'  plays object to create one..
+#' If your DataVolley file does not have a meta attack dataframe (for example, if you are using Click&Scout), this function will create one from the information in the plays object.
 #'
-#' @param plays data.frame: 
-#' @return a dataframe of attacks.
+#' @param plays data.frame: the plays component of a datavolley object, as returned by \code{\link{dv_read}}
+#' @return A dataframe of attacks.
 #'
-#' @seealso \code{\link{read_dv}}
-#' @export dv_create_meta_attacks
+#' @export
 dv_create_meta_attacks <- function(plays){
     attack_df = plays[plays$skill %eq% "Attack",]
     attack_df$side = if("side" %in% names(attack_df)) attack_df$side else NA

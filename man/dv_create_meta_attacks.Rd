@@ -7,16 +7,11 @@
 dv_create_meta_attacks(plays)
 }
 \arguments{
-\item{plays}{data.frame:}
+\item{plays}{data.frame: the plays component of a datavolley object, as returned by \code{\link{dv_read()}}}
 }
 \value{
-a dataframe of attacks.
+A dataframe of attacks.
 }
 \description{
-If your DataVolley files does not have a meta attack dataframe, 
-(for example, if you are using Click&Scout), this function will take the
- plays object to create one..
-}
-\seealso{
-\code{\link{read_dv}}
+If your DataVolley files does not have a meta attack dataframe, (for example, if you are using Click&Scout), this function will create one from the information in the plays object.
 }
