@@ -430,8 +430,17 @@ read_main <- function(filename, file_text) {
     names(x)[11] <- "visiting_rot"
     names(x)[12] <- "video_file_number"
     names(x)[13] <- "video_time"
-    names(x)[15:20] <- paste("home_p",1:6,sep="") ## home team, court positons 1-6, entries are player numbers
-    names(x)[21:26] <- paste("visiting_p",1:6,sep="") ## visiting team
+    names(x)[15:20] <- paste0("home_p", 1:6) ## home team, court positons 1-6, entries are player numbers
+    names(x)[21:26] <- paste0("visiting_p", 1:6) ## visiting team
+    for (nm in c(paste0("home_p", 1:6), paste0("visiting_p", 1:6))) {
+        temp <- x[[nm]]
+        if (is.character(temp)) {
+            ## malformed VM files can have 'null'
+            temp[temp %eq% "null"] <- NA_character_
+            temp <- as.integer(temp)
+            x[[nm]] <- temp
+        }
+    }
     x$code <- as.character(x$code)
     x
 }

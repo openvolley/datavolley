@@ -227,12 +227,11 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                 idx <- attacks$home_team %eq% attacks$team
                 attacks[idx, paste0("attacker_", 1:6)] <- attacks[idx, paste0("home_p", 1:6)]
                 attacks[!idx, paste0("attacker_", 1:6)] <- attacks[!idx, paste0("visiting_p", 1:6)]
-                chk <- attacks[attacks$start_zone %in% c(2,3,4) & (!attacks$attack_code %in% ignore_codes) & (attacks$player_number==attacks$attacker_1 | attacks$player_number==attacks$attacker_5 | attacks$player_number==attacks$attacker_6),]
-                if (nrow(chk)>0)
-                    out <- rbind(out,chk_df(chk,"Back-row player made an attack from a front-row zone",severity=3))
+                chk <- attacks[which(attacks$start_zone %in% c(2, 3, 4) & (!attacks$attack_code %in% ignore_codes) & (attacks$player_number == attacks$attacker_1 | attacks$player_number == attacks$attacker_5 | attacks$player_number == attacks$attacker_6)), ]
+                if (nrow(chk)>0) out <- rbind(out,chk_df(chk,"Back-row player made an attack from a front-row zone",severity=3))
 
                 ## and vice-versa: attack starting from back row by a front-row player
-                chk <- attacks[attacks$start_zone %in% c(5,6,7,8,9,1) & (attacks$player_number==attacks$attacker_2 | attacks$player_number==attacks$attacker_3 | attacks$player_number==attacks$attacker_4),]
+                chk <- attacks[which(attacks$start_zone %in% c(5, 6, 7, 8, 9, 1) & (attacks$player_number == attacks$attacker_2 | attacks$player_number == attacks$attacker_3 | attacks$player_number == attacks$attacker_4)), ]
                 if (nrow(chk)>0)
                     out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)",severity=2))
                 ## those are probably less of an issue than a back-row player making a front row attack. A front-row player making a back row attack is not illegal, just inconsistent
