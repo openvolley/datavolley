@@ -55,12 +55,12 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     assert_that(is.numeric(extra_validation),extra_validation %in% 0:3)
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
+    ## generic read of the first lines, to check formats
+    dvlines <- stringi::stri_trans_general(readLines(filename, warn = FALSE, n = 100L), "latin-ascii")
     if (is.string(skill_evaluation_decode)) {
         skill_evaluation_decode <- match.arg(tolower(skill_evaluation_decode), c("default", "volleymetrics", "guess", "german"))
         if (skill_evaluation_decode == "guess") {
             is_vm <- tryCatch({
-                dvlines <- readLines(filename, warn = FALSE, n = 100L)
-                dvlines <- stringi::stri_trans_general(dvlines, "latin-ascii")
                 any(grepl("volleymetric", dvlines, ignore.case = TRUE))
             }, error = function(e) FALSE)
             skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
@@ -126,7 +126,8 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             ##if (length(encoding)<=1) encoding <- iconvlist()
         }
         encoding <- unique(encoding)
-        encoding <- get_best_encodings(encoding, filename = filename, read_from = idx1, read_to = idx2)
+        expect_tildes <- tryCatch(!any(grepl("PRG: Essential Stats", dvlines)), error = function(e) FALSE)
+        encoding <- get_best_encodings(encoding, filename = filename, read_from = idx1, read_to = idx2, expect_tildes = expect_tildes)
         if (length(encoding$encodings) < 1) stop("error in guessing text encoding")
         if (encoding$error_score > 0) {
             ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect2
