@@ -177,19 +177,8 @@ read_players <- function(txt,team,surname_case) {
     txt <- text_chunk(txt, chnkmarker)
 ##    suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") }))
     tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-    names(p)[2] <- "number"
-    names(p)[4] <- "starting_position_set1"
-    names(p)[5] <- "starting_position_set2"
-    names(p)[6] <- "starting_position_set3"
-    names(p)[7] <- "starting_position_set4"
-    names(p)[8] <- "starting_position_set5"
-    names(p)[9] <- "player_id"
-    names(p)[10] <- "lastname"
-    names(p)[11] <- "firstname"
-    names(p)[12] <- "nickname"
-    names(p)[13] <- "special_role"
-    names(p)[14] <- "role"
-    names(p)[15] <- "foreign"
+    if (ncol(p) < 1) p <- tibble::as_tibble(setNames(as.data.frame(matrix(nrow = 0, ncol = 18)), paste0("X", 1:18)))
+    names(p)[c(2, 4:15)] <- c("number", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role", "foreign")
     if (is.character(surname_case)) {
         p$lastname <- switch(tolower(surname_case),
                              upper = toupper(p$lastname),
