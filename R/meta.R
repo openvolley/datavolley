@@ -151,6 +151,8 @@ read_teams <- function(txt) {
     names(p)[4] <- "coach"
     names(p)[5] <- "assistant"
     if (ncol(p) > 5) names(p)[6] <- "shirt_colour"
+    int2rgb <- function(z) {r <- floor(z / 256^2); g <- floor((z - r * (256^2)) / 256); b <- z - floor(r * (256^2) + g * 256); apply(cbind(r, g, b), 1, function(z) sprintf("#%02X%02X%02X", z[1], z[2], z[3])) }
+    try(p$shirt_colour <- int2rgb(p$shirt_colour), silent = TRUE)
     p$home_away_team <- c("*","a")
     p$team_id <- str_trim(as.character(p$team_id)) ## force to be char
     p$team <- str_trim(p$team)
