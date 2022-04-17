@@ -1,10 +1,10 @@
 #' Change team names
 #'
-#' A team name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A team name matching the \code{from} entry in a row in \code{remap} is renamed to the corresponding \code{to} value. If the \code{remap} object also contains a \code{team_id} column, then a team name must match the \code{team_id} and \code{from} values to be changed to the corresponding \code{to} value.
+#' A team name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. If a team name matches the \code{from} entry and/or its ID matches the \code{team_id} entry in a row in \code{remap}, the team will be renamed to the corresponding \code{to} value and/or its ID changed to the corresponding \code{to_team_id} value.
 #'
 #' @param x datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects
-#' @param remap data.frame: data.frame of strings with columns \code{from} and \code{to}, and optionally \code{team_id}
-#' @param fixed logical: treat the \code{to} and \code{from} entries as fixed string? (Treat as regexps if \code{fixed} is \code{FALSE})
+#' @param remap data.frame: data.frame of strings with one or both columns \code{from} and \code{team_id}, and one or both columns \code{to} and \code{to_team_id}
+#' @param fixed logical: treat the \code{from} and \code{team_id} entries as fixed strings? If \code{fixed} is \code{FALSE} they will be treated as regular expressions
 #'
 #' @return datavolley object or list with corresponding team names changed
 #'
@@ -19,24 +19,23 @@
 #'   summary(remap_team_names(x, data.frame(from="Nova KBM Branik", to="NKBM Branik")))
 #'
 #'   ## rename a team based on team name and ID
-#'   summary(remap_team_names(x, data.frame(from="Nova KBM Branik", to="NKBM Branik", id="MB4")))
+#'   summary(remap_team_names(x, data.frame(from="Nova KBM Branik", to="NKBM Branik", team_id="MB4")))
 #' }
 #' @export
-remap_team_names <- function(x,remap,fixed=TRUE) {
-    if (!(inherits(x,"datavolley") || (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
+remap_team_names <- function(x, remap, fixed = TRUE) {
+    if (!(inherits(x, "datavolley") || (is.list(x) && all(sapply(x, function(z) inherits(z, "datavolley"))))))
         stop("x must be a datavolley object or list of such objects")
     assert_that(is.data.frame(remap))
     assert_that(is.flag(fixed))
-    assert_that(has_name(remap,"from"),has_name(remap,"to"))
-    use_team_id <- "team_id" %in% names(remap)
-    if (is.factor(remap$from)) remap$from <- as.character(remap$from)
-    if (is.factor(remap$to)) remap$to <- as.character(remap$to)
-    if (use_team_id) {
-        if (is.factor(remap$team_id)) remap$team_id <- as.character(remap$team_id)
+    assert_that((has_name(remap, "from") || has_name(remap, "team_id")), (has_name(remap, "to") || has_name(remap, "to_team_id")))
+    ##use_team_id <- "team_id" %in% names(remap)
+    for (i in seq_len(ncol(remap))) remap[[i]] <- as.character(remap[[i]])
+    from_by <- paste0(sort(intersect(c("from", "team_id"), tolower(names(remap)))), collapse = "&")
+    if (from_by == "from&team_id") { ##use_team_id) {
         temp <- paste0(remap$from, "@@", remap$team_id)
-        if (any(duplicated(temp))) stop("elements in team_id and from columns of remap must form unique pairs (no duplicates)")
+        if (any(duplicated(temp))) stop("elements in 'team_id' and 'from' columns of remap must form unique pairs (no duplicates)")
     } else {
-        if (length(remap$from)!=length(unique(remap$from))) stop("elements in from must be unique (no duplicates)")
+        if (length(remap[[from_by]]) != length(unique(remap[[from_by]]))) stop("elements in ", from_by, " must be unique (no duplicates)")
     }
     was_list <- TRUE
     if (inherits(x,"datavolley")) {
@@ -48,20 +47,58 @@ remap_team_names <- function(x,remap,fixed=TRUE) {
             this_team <- x[[k]]$meta$teams$team[t]
             this_team_id <- x[[k]]$meta$teams$team_id[t]
             if (fixed) {
-                idx <- if (!use_team_id) (remap$from %eq% this_team) else ((remap$from %eq% this_team) & (remap$team_id %eq% this_team_id))
+                idx <- if (from_by == "from") {
+                           remap$from %eq% this_team
+                       } else if (from_by == "team_id") {
+                           remap$team_id %eq% this_team_id
+                       } else {
+                           (remap$from %eq% this_team) & (remap$team_id %eq% this_team_id)
+                       }
             } else {
-                idx <- if (!use_team_id) !is.na(str_locate(this_team,remap$from)[,1]) else ((!is.na(str_locate(this_team,remap$from)[,1])) & (!is.na(str_locate(this_team_id,remap$team_id)[,1])))
+                idx <- if (from_by == "from") {
+                           !is.na(str_locate(this_team, remap$from)[, 1])
+                       } else if (from_by == "team_id") {
+                           !is.na(str_locate(this_team_id, remap$team_id)[, 1])
+                       } else {
+                           !is.na(str_locate(this_team, remap$from)[, 1]) & !is.na(str_locate(this_team_id, remap$team_id)[, 1])
+                       }
             }
-            if (sum(idx)==1) {
-                team_should_be <- remap$to[which(idx)]
-                x[[k]]$meta$teams$team[t] <- team_should_be
-                x[[k]]$plays$team <- str_replace_all(x[[k]]$plays$team,fixed(this_team),team_should_be)
-                x[[k]]$plays$point_won_by <- str_replace_all(x[[k]]$plays$point_won_by,fixed(this_team),team_should_be)
-                x[[k]]$plays$home_team <- str_replace_all(x[[k]]$plays$home_team,fixed(this_team),team_should_be)
-                x[[k]]$plays$visiting_team <- str_replace_all(x[[k]]$plays$visiting_team,fixed(this_team),team_should_be)
-                x[[k]]$plays$serving_team <- str_replace_all(x[[k]]$plays$serving_team,fixed(this_team),team_should_be)
-            } else if (sum(idx)>1) {
-                stop(sprintf("ambiguous team name remapping: %s matches more than one 'from' entry",this_team))
+            if (sum(idx) == 1) {
+                if ("to" %in% names(remap)) {
+                    team_should_be <- remap$to[which(idx)]
+                    if (!is.na(team_should_be)) {
+                        x[[k]]$meta$teams$team[t] <- team_should_be
+                        x[[k]]$plays$team <- str_replace_all(x[[k]]$plays$team, fixed(this_team), team_should_be)
+                        x[[k]]$plays$point_won_by <- str_replace_all(x[[k]]$plays$point_won_by, fixed(this_team), team_should_be)
+                        x[[k]]$plays$home_team <- str_replace_all(x[[k]]$plays$home_team, fixed(this_team), team_should_be)
+                        x[[k]]$plays$visiting_team <- str_replace_all(x[[k]]$plays$visiting_team, fixed(this_team), team_should_be)
+                        x[[k]]$plays$serving_team <- str_replace_all(x[[k]]$plays$serving_team, fixed(this_team), team_should_be)
+                        if ("receiving_team" %in% names(x[[k]]$plays)) x[[k]]$plays$receiving_team <- str_replace_all(x[[k]]$plays$receiving_team, fixed(this_team), team_should_be)
+                        if ("set_won_by" %in% names(x[[k]]$plays)) x[[k]]$plays$set_won_by <- str_replace_all(x[[k]]$plays$set_won_by, fixed(this_team), team_should_be)
+                        if ("match_won_by" %in% names(x[[k]]$plays)) x[[k]]$plays$match_won_by <- str_replace_all(x[[k]]$plays$match_won_by, fixed(this_team), team_should_be)
+                    }
+                }
+                if ("to_team_id" %in% names(remap)) {
+                    team_id_should_be <- remap$to_team_id[which(idx)]
+                    if (!is.na(team_id_should_be)) {
+                        x[[k]]$meta$teams$team_id[t] <- team_id_should_be
+                        x[[k]]$plays$team_id <- str_replace_all(x[[k]]$plays$team_id, fixed(this_team_id), team_id_should_be)
+                        x[[k]]$plays$home_team_id <- str_replace_all(x[[k]]$plays$home_team_id, fixed(this_team_id), team_id_should_be)
+                        x[[k]]$plays$visiting_team_id <- str_replace_all(x[[k]]$plays$visiting_team_id, fixed(this_team_id), team_id_should_be)
+                        if ("receiving_team_id" %in% names(x[[k]]$plays)) x[[k]]$plays$receiving_team_id <- str_replace_all(x[[k]]$plays$receiving_team_id, fixed(this_team_id), team_id_should_be)
+                        if ("set_won_by_id" %in% names(x[[k]]$plays)) x[[k]]$plays$set_won_by_id <- str_replace_all(x[[k]]$plays$set_won_by_id, fixed(this_team_id), team_id_should_be)
+                        if ("match_won_by_id" %in% names(x[[k]]$plays)) x[[k]]$plays$match_won_by_id <- str_replace_all(x[[k]]$plays$match_won_by_id, fixed(this_team_id), team_id_should_be)
+                    }
+                }
+            } else if (sum(idx) > 1) {
+                ## should have been caught above, but anyway
+                if (from_by == "from") {
+                    stop("ambiguous team name remapping: ", this_team, " matches more than one 'from' entry in remap")
+                } else if (from_by == "team_id") {
+                    stop("ambiguous team name remapping: ", this_team_id, " matches more than one 'team_id' entry in remap")
+                } else {
+                    stop("ambiguous team name remapping: ", this_team, " (team_id ", this_team_id, ") matches more than one 'from' and 'team_id' entry in remap")
+                }
             }
         }
     }

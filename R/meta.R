@@ -67,6 +67,10 @@ read_match <- function(txt, date_format = NULL) {
     names(p)[10] <- "regulation" ## 0 = indoor sideout, 1 = indoor rally point, 2 = beach rally point
     names(p)[11] <- "zones_or_cones" ## C or Z, e.g. 12/08/2018;;;;;;;;1;1;Z;0;
     msgs <- list()
+    ## readr will treat e.g. 001 as character not numeric
+    c2n <- function(z) if (is.character(z) && !is.na(z) && !is.na(as.numeric(z))) as.numeric(z) else z
+    p$day_number <- c2n(p$day_number)
+    p$match_number <- c2n(p$match_number)
     if (is.na(p$date)) {
         msgs <- collect_messages(msgs, "Match information is missing the date", idx + 1, txt[idx + 1], severity = 2)
         date_was_missing <- TRUE

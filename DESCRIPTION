@@ -1,6 +1,6 @@
 Package: datavolley
 Title: Reading and Analyzing DataVolley Scouting Files
-Version: 1.2.7
+Version: 1.2.8
 Authors@R: person("Ben", "Raymond", email = "ben@untan.gl", role = c("aut", "cre"))
 Description: Provides functions for parsing and working with volleyball match files in DataVolley format.
 Depends:
