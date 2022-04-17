@@ -115,6 +115,7 @@ dvw_video <- function(x, text_encoding) {
 dvw_winning_symbols <- function(x, text_encoding) {
     mm <- x$meta$winning_symbols
     if (is.null(mm)) stop("missing the meta$winning_symbols component of the input object")
+    if (is.data.frame(mm)) mm <- winning_symbols_df2txt(mm)
     c("[3WINNINGSYMBOLS]", mm)
 }
 

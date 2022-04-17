@@ -102,3 +102,10 @@ test_that("various utils work", {
     expect_true(setequal(Filter(nzchar, strsplit(xi[1], "[[:space:]]+")[[1]]), c("time", "code", "team", "player_number", "player_name", "skill", "skill_type", "evaluation")))    
     options(width = wo)
 })
+
+test_that("internal reader utils work", {
+    x <- dv_read(dv_example_file(1), insert_technical_timeouts = FALSE)
+    ws <- x$meta$winning_symbols
+    expect_identical(ws, datavolley:::winning_symbols_df2txt(datavolley:::winning_symbols_df(ws)))
+    expect_error(datavolley:::winning_symbols_df("blah"))
+})

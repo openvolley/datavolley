@@ -269,8 +269,30 @@ read_video <- function(txt) {
 }
 
 read_winning_symbols <- function(txt) {
-    txt <- text_chunk(txt,"[3WINNINGSYMBOLS]")
-    if (nzchar(str_trim(txt))) txt else ""
+    txt <- str_trim(text_chunk(txt,"[3WINNINGSYMBOLS]"))
+    if (nzchar(txt)) tryCatch(winning_symbols_df(txt), error = function(e) "") else ""
+}
+
+winning_symbols_df <- function(txt) {
+    if (!is.character(txt) || length(txt) != 1 || nchar(txt) != 56) stop("unexpected format for winning_symbols string")
+    parts <- as.list(stringr::str_sub(txt, seq(1, 7*8, by = 8), seq(8, 7 * 8, by = 8)))
+    names(parts) <- c("S", "R", "A", "B", "D", "E", "F")
+    f <- function(z, start, end) strsplit(gsub("~", "", substr(z, start, end), ""), "")[[1]]
+    do.call(rbind, lapply(names(parts), function(nm) {
+        l <- f(parts[[nm]], 1, 4)
+        w <- f(parts[[nm]], 5, 8)
+        if (length(l) < 1 && length(w) < 1) return(NULL)
+        tibble(skill = nm, win_lose = c(rep("L", length(l)), rep("W", length(w))), code = c(l, w))
+    }))
+}
+
+winning_symbols_df2txt <- function(x) {
+    if (!is.data.frame(x) || !setequal(names(x), c("skill", "win_lose", "code")) || !all(c("S", "R", "A", "B", "D", "E", "F") %in% x$skill)) stop("input in unexpected format")
+    tildepad <- function(z) paste0(paste0(z, collapse = ""), paste0(rep("~", 4 - length(z)), collapse = ""))
+    out <- vapply(c("S", "R", "A", "B", "D", "E", "F"), function(z) {
+        paste0(tildepad(x$code[x$skill == z & x$win_lose == "L"]), tildepad(x$code[x$skill == z & x$win_lose == "W"]))
+    }, FUN.VALUE = "", USE.NAMES = FALSE)
+    paste0(out, collapse = "")
 }
 
 read_comments <- function(txt) {
