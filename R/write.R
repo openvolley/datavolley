@@ -225,6 +225,7 @@ dvw_header <- function(x, text_encoding, date_format) {
 dvw_scout <- function(x, text_encoding = text_encoding) {
     xp <- plays(x)
     if (is.null(xp)) stop("missing the plays component of the input object")
+    if (nrow(xp) < 1) return("[3SCOUT]")
     ## drop TTOs
     xp <- xp[!xp$skill %eq% "Technical timeout", ]
     ## if the data have been modified then the original code may need changing
