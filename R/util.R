@@ -368,7 +368,7 @@ dv_int2rgb <- function(z) {
     g <- floor((z - r * (256^2)) / 256)
     b <- z - floor(r * (256^2) + g * 256)
     out <- apply(cbind(r, g, b), 1, function(z) sprintf("#%02X%02X%02X", z[1], z[2], z[3]))
-    out[z < 0 | z > 16777215] <- NA_character_
+    out[z < 0 | z > 16777215 | is.na(z)] <- NA_character_
     out
 }
 
