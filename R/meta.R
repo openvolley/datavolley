@@ -225,7 +225,7 @@ read_attacks <- function(txt) {
         ##tryCatch({ p <- read.table(text=txt,sep=";",quote="",header=FALSE,stringsAsFactors=FALSE) },error=function(e) { stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") })
         tryCatch(p <- read_semi_text(txt, fallback = "read.table"), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
-        names(p)[1:9] <- c("code", "attacker_position", "side", "type", "X6", "description", "colour", "start_coordinate", "set_type")
+        names(p)[1:9] <- c("code", "attacker_position", "side", "type", "description", "X6", "colour", "start_coordinate", "set_type")
         try(p$colour <- dv_int2rgb(p$colour))
         p
     }
