@@ -155,8 +155,7 @@ read_teams <- function(txt) {
     names(p)[4] <- "coach"
     names(p)[5] <- "assistant"
     if (ncol(p) > 5) names(p)[6] <- "shirt_colour"
-    int2rgb <- function(z) {r <- floor(z / 256^2); g <- floor((z - r * (256^2)) / 256); b <- z - floor(r * (256^2) + g * 256); apply(cbind(r, g, b), 1, function(z) sprintf("#%02X%02X%02X", z[1], z[2], z[3])) }
-    try(p$shirt_colour <- int2rgb(p$shirt_colour), silent = TRUE)
+    try(p$shirt_colour <- dv_int2rgb(p$shirt_colour), silent = TRUE)
     p$home_away_team <- c("*","a")
     p$team_id <- str_trim(as.character(p$team_id)) ## force to be char
     p$team <- str_trim(p$team)
@@ -226,12 +225,8 @@ read_attacks <- function(txt) {
         ##tryCatch({ p <- read.table(text=txt,sep=";",quote="",header=FALSE,stringsAsFactors=FALSE) },error=function(e) { stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") })
         tryCatch(p <- read_semi_text(txt, fallback = "read.table"), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
-        names(p)[1] <- "code"
-        names(p)[2] <- "attacker_position"
-        names(p)[3] <- "side"
-        names(p)[4] <- "type" ## tempo, codes match attack skill types Q,M,T, etc
-        names(p)[5] <- "description"
-        names(p)[9] <- "set_type" ## some sort of set_type code, guessing S=setter dump, C=centre, B=backset, F=frontrow, P=pipe
+        names(p)[1:9] <- c("code", "attacker_position", "side", "type", "X6", "description", "colour", "start_coordinate", "set_type")
+        try(p$colour <- dv_int2rgb(p$colour))
         p
     }
 }
@@ -243,11 +238,9 @@ read_setter_calls <- function(txt) {
     } else {
         ## with read_semi_text, need to force col 9 to be char (it's a comma-separated string of ints) else it gets parsed into a single number
         tryCatch(p <- read_semi_text(txt, col_types = "c?c??iiic??"), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-        names(p)[1] <- "code"
-        names(p)[3] <- "description"
-        names(p)[6:8] <- c("start_coordinate", "mid_coordinate", "end_coordinate")
+        names(p)[1:9] <- c("code", "X2", "description", "X4", "colour", "start_coordinate", "mid_coordinate", "end_coordinate", "path")
         ## V9 is a comma-separated list of indices that give a path
-        names(p)[9] <- "path"
+        try(p$colour <- dv_int2rgb(p$colour))
         p
     }
 }

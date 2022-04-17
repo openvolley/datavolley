@@ -349,3 +349,34 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
         list(encodings = encodings_to_test[idx], error_score = min(encerrors))
     }
 }
+
+#' Convert integer colour to RGB
+#'
+#' DataVolley files use an integer representation of colours. These functions convert to and from hex colour strings as used in R.
+#'
+#' @param z integer: vector of integers
+#' @param x integer: vector of hex colour strings
+#'
+#' @return Character vector of hex RGB colour strings
+#'
+#' @examples
+#' dv_int2rgb(c(255, 16711680))
+#'
+#' @export
+dv_int2rgb <- function(z) {
+    r <- floor(z / 256^2)
+    g <- floor((z - r * (256^2)) / 256)
+    b <- z - floor(r * (256^2) + g * 256)
+    out <- apply(cbind(r, g, b), 1, function(z) sprintf("#%02X%02X%02X", z[1], z[2], z[3]))
+    out[z < 0 | z > 16777215] <- NA_character_
+    out
+}
+
+#' @export
+#' @rdname dv_int2rgb
+dv_rgb2int <- function(x) {
+    out <- grDevices::col2rgb(x)
+    out <- as.integer(apply(out, 2, function(z) z[1] * 256 * 256 + z[2] * 256 + z[3]))
+    out[is.na(x)] <- NA_integer_
+    out
+}
