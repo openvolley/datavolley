@@ -129,11 +129,17 @@ dvw_setter_calls <- function(x, text_encoding) {
         tmp$start_coordinate <- sprintf("%04d", tmp$start_coordinate)
         tmp$mid_coordinate <- sprintf("%04d", tmp$mid_coordinate)
         tmp$end_coordinate <- sprintf("%04d", tmp$end_coordinate)
+        if (is.character(tmp$colour)) tmp$colour <- dv_rgb2int(tmp$colour)
+        if ("path_colour" %in% names(tmp) && is.character(tmp$path_colour)) tmp$path_colour <- dv_rgb2int(tmp$path_colour)
         sect2txt(tmp, "meta$sets", "[3SETTERCALL]")
     }
 }
 
-dvw_attack_combos <- function(x, text_encoding) sect2txt(x$meta$attacks, "meta$attacks", "[3ATTACKCOMBINATION]")
+dvw_attack_combos <- function(x, text_encoding) {
+    tmp <- x$meta$attacks
+    if (is.character(tmp$colour)) tmp$colour <- dv_rgb2int(tmp$colour)
+    sect2txt(tmp, "meta$attacks", "[3ATTACKCOMBINATION]")
+}
 
 dvw_players_v <- function(x, text_encoding) {
     tmp <- x$meta$players_v[, setdiff(names(x$meta$players_v), "name")]
@@ -163,6 +169,7 @@ dvw_more <- function(x, text_encoding) c(sect2txt(x$meta$more, "meta$more ", "[3
 
 dvw_teams <- function(x, text_encoding) {
     tmp <- x$meta$teams[, setdiff(names(x$meta$teams), c("home_away_team", "won_match"))]
+    if (is.character(tmp$shirt_colour)) tmp$shirt_colour <- dv_rgb2int(tmp$shirt_colour)
     sect2txt(tmp, "meta$teams", "[3TEAMS]")
 }
 
