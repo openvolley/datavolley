@@ -238,9 +238,10 @@ read_setter_calls <- function(txt) {
     } else {
         ## with read_semi_text, need to force col 9 to be char (it's a comma-separated string of ints) else it gets parsed into a single number
         tryCatch(p <- read_semi_text(txt, col_types = "c?c??iiic??"), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-        names(p)[1:9] <- c("code", "X2", "description", "X4", "colour", "start_coordinate", "mid_coordinate", "end_coordinate", "path")
+        names(p)[1:10] <- c("code", "X2", "description", "X4", "colour", "start_coordinate", "mid_coordinate", "end_coordinate", "path", "path_colour")
         ## V9 is a comma-separated list of indices that give a path
         try(p$colour <- dv_int2rgb(p$colour))
+        try(p$path_colour <- dv_int2rgb(p$path_colour))
         p
     }
 }
