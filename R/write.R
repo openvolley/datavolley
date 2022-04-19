@@ -48,8 +48,8 @@ dv_write <- function(x, file, text_encoding = "UTF-8") {
              dvw_video(x, text_encoding = text_encoding),
              dvw_scout(x, text_encoding = text_encoding))
     if (!missing(file)) {
-        outf <- file(file, "wt") ## encoding??
-        writeLines(out, outf)
+        outf <- file(file, "wb") ## encoding??
+        writeLines(out, outf, sep = "\n")
         close(outf)
     }
     invisible(out)
