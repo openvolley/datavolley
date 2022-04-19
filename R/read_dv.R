@@ -420,8 +420,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out$plays$team_id <- temp_id
 
     ## keep track of who won each point
-    temp <- ddply(out$plays,c("point_id"),function(z)if (any(z$point)) z$team[z$point] else NA_character_)
-    names(temp) <- c("point_id","point_won_by")
+    temp <- as.data.frame(setNames(unique(out$plays[which(out$plays$point), c("point_id", "team")]), c("point_id", "point_won_by")))
     suppressMessages(out$plays <- join(out$plays,temp))
     ## catch any that we missed
     ##dud_point_id <- unique(out$plays$point_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
@@ -477,8 +476,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
 
     ## add serving_team info
-    who_served <- ddply(out$plays,c("match_id","point_id"),function(z)data.frame(serving_team=na.omit(z$team[z$skill %eq% "Serve"])[1],stringsAsFactors=FALSE))
-    out$plays <- plyr::join(out$plays,who_served,by=c("match_id","point_id"),match="first")
+    who_served <- unique(out$plays[out$plays$skill %eq% "Serve", c("match_id", "point_id", "team")])
+    who_served <- setNames(as.data.frame(who_served[!duplicated(who_served$point_id), ]), c("match_id", "point_id", "serving_team"))
+
+    out$plays <- plyr::join(out$plays, who_served, by = c("match_id", "point_id"), match = "first")
     out$plays$serving_team <- as.character(out$plays$serving_team) ## to be sure is not factor
 
     class(out) <- c("datavolley",class(out))

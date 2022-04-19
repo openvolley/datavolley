@@ -510,8 +510,8 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     out_evaluation[thisidx] <- "Error"
     done[thisidx] <- TRUE
     ## but do assign team here where possible
-    out_team[thisidx & grepl("^a",in_code)] <- "a"
-    out_team[thisidx & grepl("^\\*",in_code)] <- "*"
+    out_team[thisidx & substr(in_code, 1, 1) == "a"] <- "a"
+    out_team[thisidx & substr(in_code, 1, 1) == "*"] <- "*"
 
     ## sanctions that look like ">RED"
     ## actually anything starting with ">", are sanctions, rotation errors (dealt with above), etc
@@ -603,6 +603,8 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     out_substitution[thisidx] <- TRUE
     done[thisidx] <- TRUE
 
+    not_tilde <- function(z) nzchar(z) && z != "~" && z != "~~"
+
     notdone <- which(!done)
     for (ci in notdone) {
         code <- in_code[ci]
@@ -663,7 +665,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         ##special_code <- substr(code,12,12)
         some_codes <- str_sub(code,start=c(4,6,7,8,9,10,11,12),end=c(5,6,7,8,9,10,11,12))
         attack_code <- some_codes[1]##substr(code,4,5)
-        if (!any(attack_code==c("","~~"))) {
+        if (not_tilde(attack_code)) {
             if (skill=="A") {
                 out_attack_code[ci] <- attack_code
                 if (!any(attack_code==meta$attacks$code)) {
@@ -687,7 +689,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
             }
         }
         set_type <- some_codes[2]##substr(code,6,6)
-        if (!any(set_type==c("","~"))) {
+        if (not_tilde(set_type)) {
             if (skill == "E") {
                 out_set_type[ci] <- set_type
                 if (!is.na(set_type) && !set_type %in% c("F", "B", "C", "P", "S")) {
@@ -698,14 +700,14 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
             }
         }
         start_zone <- some_codes[3]##substr(code,7,7)
-        if (!any(start_zone==c("","~"))) {
+        if (not_tilde(start_zone)) {
             out_start_zone[ci] <- as.numeric(start_zone)
             if ((skill=="R" || skill=="S") && !any(start_zone==c(1,9,6,7,5))) {
                 msgs <- collect_messages(msgs,paste0("Unexpected serve/reception start zone: ",start_zone),code_line_num[ci],full_lines[ci],severity=2)
             }
         }
         end_zone <- some_codes[4]##substr(code,8,8)
-        if (!any(end_zone==c("", "~"))) {
+        if (not_tilde(end_zone)) {
             if (skill %eq% "A" && using_cones) {
                 out_end_cone[ci] <- as.integer(end_zone)
                 ## NOT YET
@@ -720,7 +722,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
             }
         }
         end_subzone <- some_codes[5]##substr(code,9,9)
-        if (!any(end_subzone==c("","~"))) {
+        if (not_tilde(end_subzone)) {
             out_end_subzone[ci] <- end_subzone
             if (!any(end_subzone==c("A","B","C","D"))) {
                 msgs <- collect_messages(msgs,paste0("Unexpected end subzone: ",end_subzone),code_line_num[ci],full_lines[ci],severity=1)
@@ -728,7 +730,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         }
         ## skill sub type ("TYPE OF HIT", p32)
         skill_subtype <- some_codes[6]##substr(code,10,10)
-        if (!any(skill_subtype==c("","~"))) {
+        if (not_tilde(skill_subtype)) {
             if (skill=="A") {
                 if (!any(skill_subtype==c("H","P","T"))) {
                     msgs <- collect_messages(msgs,paste0("Unexpected attack subtype: ",skill_subtype),code_line_num[ci],full_lines[ci],severity=1)
@@ -791,7 +793,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         }
         ## number of people ("PLAYERS", p33)
         num_players <- some_codes[7]##substr(code,11,11)
-        if (!any(num_players==c("","~"))) {
+        if (not_tilde(num_players)) {
             out_num_players_numeric[ci] <- as.numeric(num_players)
             if (skill=="A") {
                 if (!num_players %in% as.character(0:4)) {
@@ -856,7 +858,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         }
         ## special ("SPECIAL CODES", p33)
         special_code <- some_codes[8]##substr(code,12,12)
-        if (!any(special_code==c("","~"))) {
+        if (not_tilde(special_code)) {
             if (skill=="A") {
                 if (out_evaluation_code[ci] %eq% "=") { ##if (out_evaluation[ci]==evaluation_decoder("A","=")) {
                     ## error

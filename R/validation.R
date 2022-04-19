@@ -367,15 +367,14 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         liberos_h <- x$meta$players_h$number[grepl("L", x$meta$players_h$special_role)]
         pp <- plays[plays$skill %in% c("Serve", "Attack", "Block", "Dig", "Freeball", "Reception", "Set") & !is.na(plays$player_number) & !plays$player_name %eq% "Unknown player", ]
         if (nrow(pp) > 0) {
-            temp <- pp[, paste0("visiting_p", team_player_num)]
-            names(temp) <- paste0("player", team_player_num)
             idx <- pp$team %eq% pp$home_team
-            temp[idx, ] <- pp[idx, paste0("home_p", team_player_num)]
-            temp$which_team <- "visiting_team"
-            temp$which_team[idx] <- "home_team"
+            temp <- setNames(pp[, paste0("visiting_p", team_player_num)], paste0("player", team_player_num))
+            temp[idx, ] <- setNames(pp[idx, paste0("home_p", team_player_num)], paste0("player", team_player_num))
             temp <- as.data.frame(temp, stringsAsFactors = FALSE)
             rownames(temp) <- NULL
-            chk <- sapply(1:nrow(pp),function(z) !pp$player_number[z] %in% (if (temp$which_team[z]=="home_team") liberos_h else liberos_v) & (!pp$player_number[z] %in% temp[z,]))
+            chk <- rep(NA, nrow(pp))
+            chk[idx] <- vapply(which(idx), function(z) !pp$player_number[z] %in% liberos_h && (!pp$player_number[z] %in% temp[z, ]), FUN.VALUE = TRUE)
+            chk[!idx] <- vapply(which(!idx), function(z) !pp$player_number[z] %in% liberos_v && (!pp$player_number[z] %in% temp[z, ]), FUN.VALUE = TRUE)
             if (any(chk))
                 out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],video_time=video_time_from_raw(x$raw[pp$file_line_number[chk]]),message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
         }
@@ -415,10 +414,13 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             out <- rbind(out,chk_df(plays[idx+1,],"Consecutive actions by the same player",severity=3))
 
         ## every point (with any actual skill) should have a winning action or error
-        tmp <- plays
-        tmp$rowid <- seq_len(nrow(tmp))
-        chk <- plyr::ddply(tmp, "point_id", .fun = function(z) data.frame(any_skill = any(!is.na(z$skill) & !z$skill %in% c("Timeout", "Technical timeout", "Substitution")), win_err = any((z$skill %eq% "Block" & z$evaluation %eq% "Invasion") | (grepl("Error", z$evaluation)) | (grepl("Ace|Winning", z$evaluation))), rowid = max(z$rowid)))
-        chk <- chk$rowid[chk$any_skill & !chk$win_err]
+        tmp_any_skill <- !is.na(plays$skill) & !plays$skill %in% c("Timeout", "Technical timeout", "Substitution")
+        tmp_win_err <- (plays$skill %eq% "Block" & plays$evaluation %eq% "Invasion") | grepl("Error", plays$evaluation) | grepl("Ace|Winning", plays$evaluation)
+        chk <- unlist(lapply(unique(plays$point_id), function(pid) {
+            idx <- plays$point_id %eq% pid
+            if (any(tmp_any_skill[idx]) & !any(tmp_win_err[idx])) max(which(idx)) else NULL
+            }))
+
         if (length(chk) > 0) {
             out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Rally does not include a winning or losing action", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
         }
@@ -437,8 +439,9 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
 
         ## check scores columns against point_won_by entries
         temp <- plays[!is.na(plays$set_number) & !is.na(plays$point_won_by),]
-        temp <- ddply(temp,c("point_id"),.fun=function(z) tail(z[,c("set_number","home_team","visiting_team","home_team_score","visiting_team_score","point_won_by","file_line_number")],1))
-        temp <- temp[order(temp$point_id),]
+        temp <- do.call(rbind, lapply(sort(unique(temp$point_id)), function(pid) {
+            tail(temp[which(temp$point_id == pid), c("point_id", "set_number", "home_team", "visiting_team", "home_team_score", "visiting_team_score", "point_won_by", "file_line_number")], 1)
+        }))
         temp$won_by_home <- temp$point_won_by==temp$home_team
         ## dplyr call: temp <- plays %>% group_by(point_id) %>% do(.[,c("set_number","home_team","visiting_team","home_team_score","visiting_team_score","point_won_by")] %>% filter(!is.na(set_number)) %>% distinct()) %>% ungroup %>% filter(!is.na(point_won_by)) %>% arrange(point_id) %>% mutate(won_by_home=point_won_by==home_team)
         temp$home_team_diff <- diff(c(0,temp$home_team_score))
@@ -486,7 +489,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
 
         ## check for incorrect rotation changes
         rotleft <- function(x) if (is.data.frame(x)) { out <- cbind(x[, -1], x[, 1]); names(out) <- names(x); out} else c(x[-1], x[1])
-        isrotleft <- function(x,y) all(as.numeric(rotleft(x)) == as.numeric(y)) ## is y a left-rotated version of x?
+        isrotleft <- function(x, y) all(as.numeric(rotleft(x)) == as.numeric(y)) ## is y a left-rotated version of x?
         for (tm in c("*", "a")) {
             rot_cols <- if (tm == "a") paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
             temp <- plays[!tolower(plays$skill) %eq% "technical timeout", ]
@@ -504,7 +507,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             }
             idx[nsk < 1L] <- FALSE
             for (k in which(idx)) {
-                if (!isrotleft(rx[k - 1, ], rx[k, ]))
+                if (!isrotleft(as.numeric(rx[k - 1, ]), as.numeric(rx[k, ])))
                     out <- rbind(out, data.frame(file_line_number = temp$file_line_number[k], video_time = video_time_from_raw(x$raw[temp$file_line_number[k]]), message = paste0(if (tm == "a") "Visiting" else "Home"," team rotation has changed incorrectly"), file_line = x$raw[temp$file_line_number[k]], severity = 3, stringsAsFactors = FALSE))
             }
         }

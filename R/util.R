@@ -22,7 +22,7 @@ collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FA
 raw_vt_dv <- function(z) {
     tryCatch({
         if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
-            as.numeric(read.csv(text = z, sep = ";", header = FALSE, stringsAsFactors = FALSE)[1,13])
+            as.numeric(strsplit(z, ";")[[1]][13])
         } else {
             NA_real_
         }},
