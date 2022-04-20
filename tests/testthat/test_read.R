@@ -106,6 +106,6 @@ test_that("various utils work", {
 test_that("internal reader utils work", {
     x <- dv_read(dv_example_file(1), insert_technical_timeouts = FALSE)
     ws <- x$meta$winning_symbols
-    expect_identical(ws, datavolley:::winning_symbols_df2txt(datavolley:::winning_symbols_df(ws)))
+    expect_identical(ws, datavolley:::winning_symbols_df(datavolley:::winning_symbols_df2txt(ws)))
     expect_error(datavolley:::winning_symbols_df("blah"))
 })
