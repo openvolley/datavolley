@@ -1,3 +1,9 @@
+datavolley 1.2.9
+=================
+- convert colour columns to hex colour strings (previously integer-encoded)
+- minor speed improvements when reading
+- meta$winning_symbols is now a data frame
+
 datavolley 1.2.3
 =================
 - utilities to make files scouted by ClickNScout more useful
