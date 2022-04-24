@@ -36,9 +36,8 @@ VBStats](http://peranasports.com/software/vbstatshd/) software.
 ## Installation
 
 ``` r
-options(repos = c(openvolley = "https://openvolley.r-universe.dev",
-                  CRAN = "https://cloud.r-project.org"))
-install.packages("datavolley")
+install.packages("datavolley", repos = c("https://openvolley.r-universe.dev",
+                                         "https://cloud.r-project.org"))
 
 ## or
 

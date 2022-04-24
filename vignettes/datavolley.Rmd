@@ -26,8 +26,8 @@ The [peranavolley](https://github.com/openvolley/peranavolley) package provides 
 ## Installation
 
 ```{r eval=FALSE}
-
-install.packages("datavolley", repos = "https://openvolley.r-universe.dev")
+install.packages("datavolley", repos = c("https://openvolley.r-universe.dev",
+                                         "https://cloud.r-project.org"))
 
 ## or
 
