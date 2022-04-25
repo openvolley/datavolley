@@ -438,39 +438,41 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Point awarded to incorrect team (or \"",plays$evaluation[chk],"\" evaluation incorrect)"),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
 
         ## check scores columns against point_won_by entries
-        temp <- plays[!is.na(plays$set_number) & !is.na(plays$point_won_by),]
+        temp <- plays[!is.na(plays$set_number) & !is.na(plays$point_won_by), ]
         temp <- do.call(rbind, lapply(sort(unique(temp$point_id)), function(pid) {
             tail(temp[which(temp$point_id == pid), c("point_id", "set_number", "home_team", "visiting_team", "home_team_score", "visiting_team_score", "point_won_by", "file_line_number")], 1)
         }))
-        temp$won_by_home <- temp$point_won_by==temp$home_team
-        ## dplyr call: temp <- plays %>% group_by(point_id) %>% do(.[,c("set_number","home_team","visiting_team","home_team_score","visiting_team_score","point_won_by")] %>% filter(!is.na(set_number)) %>% distinct()) %>% ungroup %>% filter(!is.na(point_won_by)) %>% arrange(point_id) %>% mutate(won_by_home=point_won_by==home_team)
-        temp$home_team_diff <- diff(c(0,temp$home_team_score))
-        temp$visiting_team_diff <- diff(c(0,temp$visiting_team_score))
-        temp$point_lost_by <- temp$home_team
-        idx <- temp$point_won_by %eq% temp$home_team
-        temp$point_lost_by[idx] <- temp$visiting_team[idx]
-        temp$ok <- rep(TRUE, nrow(temp))
-        idx <- temp$won_by_home
-        temp$ok[idx] <- temp$home_team_diff[idx]==1 & temp$visiting_team_diff[idx]==0
-        idx <- !temp$won_by_home
-        temp$ok[idx] <- temp$visiting_team_diff[idx]==1 & temp$home_team_diff[idx]==0
-        ## these won't be valid for first point of each set other than first set
-        for (ss in 2:5) {
-            idx <- temp$set_number==ss
-            if (any(idx)) {
-                idx <- min(which(idx)) ## first point of set ss
-                temp$ok[idx] <- (temp$won_by_home[idx] && temp$home_team_score[idx]==1 && temp$visiting_team_score[idx]==0) || (!temp$won_by_home[idx] && temp$home_team_score[idx]==0 && temp$visiting_team_score[idx]==1)
+        if (!is.null(temp) && nrow(temp) > 0) {
+            temp$won_by_home <- temp$point_won_by==temp$home_team
+            ## dplyr call: temp <- plays %>% group_by(point_id) %>% do(.[,c("set_number","home_team","visiting_team","home_team_score","visiting_team_score","point_won_by")] %>% filter(!is.na(set_number)) %>% distinct()) %>% ungroup %>% filter(!is.na(point_won_by)) %>% arrange(point_id) %>% mutate(won_by_home=point_won_by==home_team)
+            temp$home_team_diff <- diff(c(0, temp$home_team_score))
+            temp$visiting_team_diff <- diff(c(0, temp$visiting_team_score))
+            temp$point_lost_by <- temp$home_team
+            idx <- temp$point_won_by %eq% temp$home_team
+            temp$point_lost_by[idx] <- temp$visiting_team[idx]
+            temp$ok <- rep(TRUE, nrow(temp))
+            idx <- temp$won_by_home
+            temp$ok[idx] <- temp$home_team_diff[idx]==1 & temp$visiting_team_diff[idx]==0
+            idx <- !temp$won_by_home
+            temp$ok[idx] <- temp$visiting_team_diff[idx]==1 & temp$home_team_diff[idx]==0
+            ## these won't be valid for first point of each set other than first set
+            for (ss in 2:5) {
+                idx <- temp$set_number==ss
+                if (any(idx)) {
+                    idx <- min(which(idx)) ## first point of set ss
+                    temp$ok[idx] <- (temp$won_by_home[idx] && temp$home_team_score[idx]==1 && temp$visiting_team_score[idx]==0) || (!temp$won_by_home[idx] && temp$home_team_score[idx]==0 && temp$visiting_team_score[idx]==1)
+                }
             }
-        }
-        if (any(is.na(temp$point_won_by))) {
-            ## should not see this
-            ## just assume were ok
-            temp$ok[is.na(temp$point_won_by)] <- TRUE
-        }
-        temp <- temp[!temp$ok,]
-        if (nrow(temp)>0) {
-            for (chk in seq_len(nrow(temp))) {
-                out <- rbind(out,data.frame(file_line_number=temp$file_line_number[chk],video_time=video_time_from_raw(x$raw[temp$file_line_number[chk]]),message=paste0("Point assigned to incorrect team or scores incorrect (point was won by ",temp$point_won_by[chk]," but score was incremented for ",temp$point_lost_by[chk],")"),file_line=x$raw[temp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+            if (any(is.na(temp$point_won_by))) {
+                ## should not see this
+                ## just assume were ok
+                temp$ok[is.na(temp$point_won_by)] <- TRUE
+            }
+            temp <- temp[!temp$ok,]
+            if (nrow(temp)>0) {
+                for (chk in seq_len(nrow(temp))) {
+                    out <- rbind(out,data.frame(file_line_number=temp$file_line_number[chk],video_time=video_time_from_raw(x$raw[temp$file_line_number[chk]]),message=paste0("Point assigned to incorrect team or scores incorrect (point was won by ",temp$point_won_by[chk]," but score was incremented for ",temp$point_lost_by[chk],")"),file_line=x$raw[temp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+                }
             }
         }
 
