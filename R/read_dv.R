@@ -635,11 +635,12 @@ print.summary.datavolleylist <- function(x,...) {
 }
 
 
-#' Extract the plays component from a datavolley object
+#' Extract the plays component from a datavolley object, or assign a new one
 #'
 #' @param x datavolley: a datavolley object as returned by \code{dv_read}
+#' @param value datavolleyplays: new data
 #'
-#' @return The plays component of x (a data.frame)
+#' @return The plays component of x (a data.frame), or a modified version of x with the new plays component inserted
 #'
 #' @seealso \code{\link{dv_read}}
 #'
@@ -647,12 +648,21 @@ print.summary.datavolleylist <- function(x,...) {
 #' \dontrun{
 #'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
 #'   inspect(plays(x))
+#'
+#'   p2 <- plays(x)
+#'   plays(x) <- p2
 #' }
 #' @export
 plays <- function(x) {
     if ("plays" %in% names(x)) x$plays else stop("input has no plays component")
 }
 
+#' @rdname plays
+#' @export
+`plays<-` <- function(x, value) {
+    x$plays <- value
+    x
+}
 
 #' Convenience function for inspecting the plays component of a datavolley object
 #'

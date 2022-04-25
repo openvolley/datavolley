@@ -2,23 +2,31 @@
 % Please edit documentation in R/read_dv.R
 \name{plays}
 \alias{plays}
-\title{Extract the plays component from a datavolley object}
+\alias{plays<-}
+\title{Extract the plays component from a datavolley object, or assign a new one}
 \usage{
 plays(x)
+
+plays(x) <- value
 }
 \arguments{
 \item{x}{datavolley: a datavolley object as returned by \code{dv_read}}
+
+\item{value}{datavolleyplays: new data}
 }
 \value{
-The plays component of x (a data.frame)
+The plays component of x (a data.frame), or a modified version of x with the new plays component inserted
 }
 \description{
-Extract the plays component from a datavolley object
+Extract the plays component from a datavolley object, or assign a new one
 }
 \examples{
 \dontrun{
   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
   inspect(plays(x))
+
+  p2 <- plays(x)
+  plays(x) <- p2
 }
 }
 \seealso{

@@ -91,6 +91,12 @@ test_that("various utils work", {
     expect_error(plays(x$plays), "no plays component")
     expect_error(plays(list()), "no plays component")
 
+    px <- plays(x)
+    px$team[1] <- "blah"
+    expect_false(isTRUE(all.equal(plays(x), px)))
+    plays(x) <- px
+    expect_equal(plays(x), px)
+
     wo <- getOption("width")
     options(width = 1000L)
     xi <- capture.output(inspect(head(plays(x))))
