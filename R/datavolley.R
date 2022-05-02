@@ -16,7 +16,7 @@
 #' @importFrom stringr str_match str_trim regex fixed str_replace_all str_to_title str_locate str_sub
 #' @importFrom stats na.omit runif setNames
 #' @importFrom tibble tibble
-#' @importFrom utils adist capture.output packageVersion read.csv read.table tail
+#' @importFrom utils adist capture.output head packageVersion read.csv read.table tail
 NULL
 
 

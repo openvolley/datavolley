@@ -54,6 +54,10 @@ The current validation messages/checks are:
   \item message "Attack type ([type]) does not match set type ([type])": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
   \item message "Block type ([type]) does not match attack type ([type])": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
   \item message "Dig type ([type]) does not match attack type ([type])": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
+  \item message "Multiple serves in a single rally"
+  \item message "Multiple receptions in a single rally"
+  \item message "Serve (that was not an error) did not have an accompanying reception"
+  \item message "Rally had ball contacts but no serve"
 }
 }
 \examples{

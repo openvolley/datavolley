@@ -34,6 +34,10 @@
 #'   \item message "Attack type ([type]) does not match set type ([type])": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
 #'   \item message "Block type ([type]) does not match attack type ([type])": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
 #'   \item message "Dig type ([type]) does not match attack type ([type])": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
+#'   \item message "Multiple serves in a single rally"
+#'   \item message "Multiple receptions in a single rally"
+#'   \item message "Serve (that was not an error) did not have an accompanying reception"
+#'   \item message "Rally had ball contacts but no serve"
 #' }
 #' 
 #' @param x datavolley: datavolley object as returned by \code{dv_read}
@@ -163,6 +167,35 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         lag <- function(x, n = 1L, default = NA) laglead(x, -abs(n), default = default)
         lead <- function(x, n = 1L, default = NA) laglead(x, abs(n), default = default)
 
+        ## at most one serve and one reception per rally
+        pid <- ddply(plays, "point_id", function(rx) sum(rx$skill %eq% "Serve") > 1)
+        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
+        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Multiple serves in a single rally", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+
+        pid <- ddply(plays, "point_id", function(rx) sum(rx$skill %eq% "Reception") > 1)
+        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        chk <- plays$skill %eq% "Reception" & plays$point_id %in% pid
+        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Multiple receptions in a single rally", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+
+        ## no reception coded, but there was a serve and it wasn't an error, and there wasn't a rotation error
+        pid <- ddply(plays, "point_id", function(rx) {
+            !any(rx$skill %eq% "Reception") && any(rx$skill %eq% "Serve") && !any(rx$skill %eq% "Serve" & rx$evaluation %eq% "Error") && !any(rx$skill %eq% "Rotation error")
+        })
+        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
+        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Serve (that was not an error) did not have an accompanying reception", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+
+        ## rally had actions but not a serve
+        pid <- ddply(plays, "point_id", function(rx) {
+            any(rx$skill %in% c("Reception", "Set", "Attack", "Block", "Dig", "Freeball")) && !any(rx$skill %eq% "Serve")
+        })
+        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        if (length(pid)) {
+            chk <- sapply(pid, function(thispid) head(which(plays$point_id == thispid & !is.na(plays$skill)), 1))
+            if (length(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Rally had ball contacts but no serve", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+        }
+
         ## receive type must match serve type
         idx <- which(plays$skill %eq% "Reception" & lag(plays$skill) %eq% "Serve")
         idx2 <- idx[plays$skill_type[idx] != paste0(plays$skill_type[idx-1], " reception") & (plays$skill_type[idx] != "Unknown serve reception type" & plays$skill_type[idx-1] != "Unknown serve type")]
@@ -268,7 +301,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             find_should_be_aces <- function(rally,rotation_error_is_ace=FALSE) {
                 sv <- which(rally$skill=="Serve")
                 if (length(sv)==1) {
-                    was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
+                    was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) && (!"Reception" %in% rally$skill || (sum(rally$skill %eq% "Reception") == 1 && rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error")) && (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
                     if (!rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- FALSE ## to avoid warnings
                     ## also skip this check if the next skill not reception (or rotation error), since that's likely to affect this
                     if (!is.na(rally$skill[sv + 1]) && (!rally$skill[sv + 1] %in% c("Rotation error","Reception"))) was_ace <- FALSE
@@ -292,7 +325,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                 ## so that warnings won't be issued when rotation errors present
                 sv <- which(rally$skill=="Serve")
                 if (length(sv)==1) {
-                    was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) & (!"Reception" %in% rally$skill || rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error") & (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
+                    was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) && (!"Reception" %in% rally$skill || (sum(rally$skill %eq% "Reception") == 1 && rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error")) && (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
                     if (rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- TRUE ## to avoid warnings
                     if (!was_ace & identical(rally$evaluation[sv],"Ace")) {
                         TRUE
@@ -303,7 +336,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                     NA
                 }
             }
-            pid <- ddply(plays,"point_id",find_should_not_be_aces)
+            pid <- ddply(plays, "point_id", find_should_not_be_aces)
             pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
             chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
             if (any(chk))
