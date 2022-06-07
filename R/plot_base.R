@@ -217,6 +217,7 @@ dv_plot_new <- function(x, y, legend, court, margins, par_args, ...) {
                         c(0, 7))
     }
     if (!is.null(x) && inherits(x, "RasterLayer")) {
+        check_raster_available()
         xy <- raster::xyFromCell(x, seq_len(raster::ncell(x))) ## or sp::coordinates(x)
         y <- xy[, 2]
         x <- xy[, 1]
@@ -254,6 +255,8 @@ dv_plot_new <- function(x, y, legend, court, margins, par_args, ...) {
     graphics::plot.window(xlim = xlims, ylim = ylims, asp = 1, ...)##, xaxt = "n", yaxt = "n")
     #par(opar)
 }
+
+check_raster_available <- function() if (!requireNamespace("raster", quietly = TRUE)) stop("the raster package is required for heatmaps in base graphics. Either install it with \"install.packages('raster')\" or use ggplot") else invisible(TRUE)
 
 #' Plot a court heatmap, using base graphics
 #'
@@ -320,6 +323,7 @@ dv_plot_new <- function(x, y, legend, court, margins, par_args, ...) {
 #'
 #' @export
 dv_heatmap <- function(x, y, z, col, zlim, legend = TRUE, legend_title = NULL, legend_title_font = 1, legend_title_cex = 0.7, legend_cex = 0.7, legend_pos = c(0.8, 0.85, 0.25, 0.75), res, add = FALSE) {
+    check_raster_available()
     assert_that(is.flag(add), !is.na(add))
     assert_that(is.flag(legend), !is.na(legend))
     if (missing(col)) col <- grDevices::colorRampPalette(c("#DEEBF7", "#C6DBEF", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C"))(21)
