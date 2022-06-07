@@ -1,6 +1,6 @@
 datavolley 1.3.0
 ================
-- the raster package has been shifted from Depends to Suggests, meaning that it won't be installed by default. This only affects plotting of raster images (heatmaps) in base graphics. If you don't have raster installed, it will prompt
+- the raster package has been shifted from Imports to Suggests, meaning that it won't be installed by default. This only affects plotting of raster images (heatmaps) in base graphics. If you don't have raster installed, it will prompt
 
 datavolley 1.2.9
 =================
