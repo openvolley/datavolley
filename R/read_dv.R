@@ -206,28 +206,47 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
     if (metadata_only) return(out)
     this_main <- NULL
+    thismsg <- NULL
     tryCatch({
-        thismsg <- NULL
-        if (!do_warn) {
-            this_main <- suppressWarnings(read_main(filename))
-        } else {
-            this_main <- read_main(filename)
-        }},
-        error=function(e) {
-            ## if file ends with 0x00, fread from the file will fail
-            ## but already have the file contents as file_text, so use that
-            if (grepl("Expected sep (';') but new line, EOF (or other non printing character) ends field 0",e$message,fixed=TRUE)) {
-                thismsg <<- data.frame(file_line_number=length(file_text),video_time=NA_real_,message="File ends with null line",file_line="",severity=3,stringsAsFactors=FALSE)
-                suppressWarnings(tmp <- file_text[grep("[3SCOUT]",file_text,fixed=TRUE):length(file_text)])
+        ## try using the already-read file text first, because it has been read with the proper encoding
+        try({
+            idx <- grep("[3SCOUT]", file_text, fixed = TRUE)
+            if (length(idx) == 1 && idx < length(file_text)) {
+                tmp <- file_text[idx:length(file_text)]
+                if (!do_warn) {
+                    suppressWarnings(this_main <- read_main(file_text = tmp))
+                } else {
+                    this_main <- read_main(file_text = tmp)
+                }
+            }
+        }, silent = TRUE)
+        if (is.null(this_main)) {
+            if (!do_warn) {
+                this_main <- suppressWarnings(read_main(filename))
+            } else {
+                this_main <- read_main(filename)
+            }
+        }
+    }, error=function(e) {
+        ## if file ends with 0x00, fread from the file will fail
+        ## but already have the file contents as file_text, so use that
+        if (grepl("Expected sep (';') but new line, EOF (or other non printing character) ends field 0", e$message, fixed = TRUE)) {
+            thismsg <<- data.frame(file_line_number = length(file_text), video_time = NA_real_, message = "File ends with null line", file_line = "", severity = 3, stringsAsFactors = FALSE)
+            idx <- grep("[3SCOUT]", file_text, fixed = TRUE)
+            if (length(idx) == 1 && idx < length(file_text)) {
+                tmp <- file_text[idx:length(file_text)]
                 if (!do_warn) {
                     suppressWarnings(this_main <<- read_main(file_text = tmp))
                 } else {
                     this_main <<- read_main(file_text = tmp)
                 }
             } else {
-                stop("could not read file (error message was: ",e$message,")")
+                stop("could not read file (error message was: ", e$message, ")")
             }
-        })
+        } else {
+            stop("could not read file (error message was: ", e$message, ")")
+        }
+    })
     if (is.null(this_main)) stop("could not read dv file (unspecified error)")
     ##if (!is.null(thismsg)) mymsgs <- rbind.fill(mymsgs,thismsg)
     ## don't actually issue this warning, for now at least

@@ -407,6 +407,9 @@ read_main <- function(filename, file_text) {
         stop("file has no scouted data (the [3SCOUT] section of the file is empty)")
     }
     names(x)[1] <- "code"
+    ## nonstandard chars in the custom chars can cause problems
+    ## should not be a problem if file_text was provided, because this should have been read with the proper encoding
+    if (missing(file_text)) x$code <- stri_trans_general(x$code, "latin-ascii")
     ## col 2 is "point/sideout"; "p" = winning attack in breakpoint, "s" = winning attack in sideout
     names(x)[2] <- "point_phase"
     this <- x$point_phase
