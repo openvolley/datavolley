@@ -878,8 +878,7 @@ dv_xy2cone <- function(x, y = NULL, start_zones, force_center_zone = FALSE) {
                 for (ppi in unique(this_cpp$cone_number)) {
                     this_pp <- this_cpp[this_cpp$cone_number %eq% ppi, ]
                     this_pp <- rbind(this_pp, this_pp[1, ])
-                    cidx <- sp::point.in.polygon(x[idx], y[idx], pol.x = this_pp$x, pol.y = this_pp$y)
-                    cidx <- which(cidx > 0)
+                    cidx <- which(abs(polyclip::pointinpolygon(P = list(x = x[idx], y = y[idx]), A = list(x = this_pp$x, y = this_pp$y))) > 0)
                     out[idx[cidx]] <- ppi
                 }
             }

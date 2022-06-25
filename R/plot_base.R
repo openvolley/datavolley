@@ -218,7 +218,7 @@ dv_plot_new <- function(x, y, legend, court, margins, par_args, ...) {
     }
     if (!is.null(x) && inherits(x, "RasterLayer")) {
         check_raster_available()
-        xy <- raster::xyFromCell(x, seq_len(raster::ncell(x))) ## or sp::coordinates(x)
+        xy <- raster::xyFromCell(x, seq_len(raster::ncell(x)))
         y <- xy[, 2]
         x <- xy[, 1]
     }
