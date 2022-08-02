@@ -1,7 +1,7 @@
 pandoc: 2.17.1.1
-pkgdown: 2.0.2
+pkgdown: 2.0.3
 pkgdown_sha: ~
 articles:
   datavolley: datavolley.html
-last_built: 2022-04-24T03:06Z
+last_built: 2022-08-02T07:45Z
 

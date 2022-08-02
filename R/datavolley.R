@@ -1,6 +1,6 @@
 #' \pkg{datavolley}
 #'
-#' Provides basic functions for parsing Datavolley scouting files. Datavolley is a software package used for scouting and summarizing volleyball matches.
+#' Provides basic functions for parsing Datavolley scout files. Datavolley is a software package used for scouting and summarizing volleyball matches.
 #' 
 #' The example data files provided with the datavolley package came from \url{http://www.odbojka.si/}.
 #'

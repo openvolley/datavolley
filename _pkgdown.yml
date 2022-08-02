@@ -1,0 +1,10 @@
+template:
+  bootstrap: 5
+  bootswatch: yeti
+  bslib:
+    base_font: {google: "Raleway"}
+    heading_font: {google: "Patua One"}
+    code_font: {google: "Source Code Pro"}
+    fg: "#151515"
+    bg: "#FFFFFF"
+    primary: "#010F66"
