@@ -6,6 +6,8 @@ Authors@R: c(person("Ben", "Raymond", email = "ben@untan.gl", role = c("aut", "c
 Description: Provides functions for parsing and working with volleyball match files in DataVolley format.
 Depends:
     R (>= 3.2.4)
+URL: https://datavolley.openvolley.org, https://github.com/openvolley/datavolley
+BugReports: https://github.com/openvolley/datavolley/issues
 Imports:
     assertthat,
     data.table,
