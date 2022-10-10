@@ -213,6 +213,7 @@ read_players <- function(txt,team,surname_case) {
     p$starting_position_set4 <- str_trim(as.character(p$starting_position_set4))
     p$starting_position_set5 <- str_trim(as.character(p$starting_position_set5))
     p$foreign[is.na(p$foreign)] <- FALSE
+    p$number <- as.integer(p$number)
     p
 }
 
