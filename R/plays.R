@@ -562,10 +562,12 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         done[thisidx] <- TRUE
     }
 
-    thisidx <- grepl("^.[PC]",in_code)
+    thisidx <- grepl("^.[PC]", in_code) & !grepl(">LUp", in_code, ignore.case = TRUE) ## no LUp lines, i.e. don't treat setter assignments as subs
     ## substitution of setter (P) or other player (C)
     out_substitution[thisidx] <- TRUE
     done[thisidx] <- TRUE
+    ## also mark LUp lineup lines as done, since we don't need to do anything more with them
+    done[grep(">LUp", in_code, ignore.case = TRUE)] <- TRUE
 
     thisidx <- grepl("^.\\$\\$&",in_code)
     ## green code: win or loss of a point in an undefined way
