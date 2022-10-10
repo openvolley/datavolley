@@ -1,3 +1,9 @@
+datavolley 1.3.3
+================
+Minor updates:
+- initial setter assignments (at the start of each set) are no longer marked as substitutions
+- better handling of corrupted position coordinates in dvw files
+
 datavolley 1.3.0
 ================
 - the raster package has been shifted from Imports to Suggests, meaning that it won't be installed by default. This only affects plotting of raster images (heatmaps) in base graphics. If you don't have raster installed, it will prompt

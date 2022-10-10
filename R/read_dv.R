@@ -270,21 +270,22 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
     cxy <- dv_index2xy() ## grid of coords in our ggcourt space
     temp <- out$plays$start_coordinate
-    temp[temp %in% c("-1-1", "")] <- NA_real_
+    ##temp[temp %in% c("-1-1", "")] <- NA_real_
+    temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_ ## missing is usually "-1-1", but in some cases (DV bug?) can be e.g. "80-1", so turf out anything with "-" (or empty string)
     temp <- as.numeric(temp)
     temp[temp<1] <- NA_real_
     out$plays$start_coordinate <- temp
     out$plays$start_coordinate_x <- cxy[out$plays$start_coordinate, 1]
     out$plays$start_coordinate_y <- cxy[out$plays$start_coordinate, 2]
     temp <- out$plays$mid_coordinate
-    temp[temp %in% c("-1-1", "")] <- NA_real_
+    temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_
     temp <- as.numeric(temp)
     temp[temp<1] <- NA_real_
     out$plays$mid_coordinate <- temp
     out$plays$mid_coordinate_x <- cxy[out$plays$mid_coordinate, 1]
     out$plays$mid_coordinate_y <- cxy[out$plays$mid_coordinate, 2]
     temp <- out$plays$end_coordinate
-    temp[temp %in% c("-1-1", "")] <- NA_real_
+    temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_
     temp <- as.numeric(temp)
     temp[temp<1] <- NA_real_
     out$plays$end_coordinate <- temp
