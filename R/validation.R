@@ -489,7 +489,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             idx <- !temp$won_by_home
             temp$ok[idx] <- temp$visiting_team_diff[idx]==1 & temp$home_team_diff[idx]==0
             ## these won't be valid for first point of each set other than first set
-            for (ss in 2:5) {
+            for (ss in seq_len(max(temp$set_number, na.rm = TRUE))[-1]) {
                 idx <- temp$set_number==ss
                 if (any(idx)) {
                     idx <- min(which(idx)) ## first point of set ss
@@ -511,7 +511,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
 
         ## scores not in proper sequence
         ## a team's score should never increase by more than 1 at a time. May be negative (change of sets)
-        temp <- plays[,c("home_team_score","visiting_team_score","set_number")]
+        temp <- plays[, c("home_team_score","visiting_team_score","set_number")]
         temp <- apply(temp,2,diff)
         ## either score increases by more than one, or (decreases and not end of set)
         chk <- which((temp[,1]>1 | temp[,2]>1) | ((temp[,1]<0 | temp[,2]<0) & !(is.na(temp[,3]) | temp[,3]>0)))

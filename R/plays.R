@@ -597,13 +597,13 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         done[thisidx] <- TRUE
     }
 
-    thisidx <- grepl("^.T",in_code)
+    thisidx <- grepl("^.T", in_code)
     ## timeout by this team
     out_timeout[thisidx] <- TRUE
     out_skill[thisidx] <- "Timeout"
     done[thisidx] <- TRUE
 
-    thisidx <- grepl("^.c",in_code)
+    thisidx <- grepl("^.c", in_code)
     ## substitution
     out_substitution[thisidx] <- TRUE
     done[thisidx] <- TRUE
