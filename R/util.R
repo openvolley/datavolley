@@ -298,7 +298,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     ## may need to consider removing penalty on armenian/arabic chars too
     ## 0x2000 to 0x206f (general punctuation) likely wrong, 0x01-0x07 are control characters we don't expect to see
     badchars <- c(badchars,0x2000:0x206f, 0x00:0x07)
-    badchars <- c(badchars, utf8ToInt("\u253c\ud7\u44d\u42d\u3ad"))
+    badchars <- c(badchars, utf8ToInt("\u253c\ud7\u3ad")) ##?? \u44d\u42d
     badchars <- c(badchars, 0x2500:0x25ff) ## box-drawing characters (seen with Japanese misidentified as Korean)
     badwords <- tolower(c("S\u159RENSEN","S\u159gaard","S\u159ren","M\u159LLER","Ish\u159j","Vestsj\u107lland","KJ\u107R","M\u159rk","Hj\u159rn","\u139rhus")) ## these from windows-1252 (or ISO-8859-1) wrongly guessed as windows-1250
     badwords <- c(badwords,tolower(c("\ud9ukas","Pawe\uf9","\ud9omacz",paste0("Mo\ufd","d\ufdonek"),"W\uf9odarczyk"))) ## these from windows-1257/ISO-8859-13 wrongly guessed as windows-1252
@@ -320,6 +320,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     badwords <- c(badwords, tolower(c("\u171\ufc", "\u8e\u52"))) ## cp932 wrongly detected as ISO-8859-2 (there are heaps here)
     badwords <- c(badwords, tolower(c("\uc9\u57\uc9", "\ue2\u2122"))) ## cp932 wrongly detected as macintosh
     badwords <- c(badwords, c("\ufd\u79")) ## windows-1254 wrongly detected as 1250
+    badwords_trans <- c("oooo", "ouuoo", "oouoo", "uuou", "uuoo") ## badwords after transliteration, e.g. wrongly-detected cyrillic
     ## get the \uxx numbers from sprintf("%x",utf8ToInt(tolower(dodgy_string_or_char))) or paste0("\\u", sprintf("%x", utf8ToInt(tolower("dodgy"))), collapse = "")
     read_with_enc <- function(filename, enc_to_test) {
         ## read with specified encoding and convert to UTF8
@@ -329,7 +330,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     suppressWarnings({
         encerrors <- sapply(testtxt, function(z) {
             z <- paste(z[read_from:read_to], collapse = "")
-            if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars) + 10*sum(sapply(badwords, grepl, tolower(z), fixed = TRUE))
+            if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars) + 10*sum(sapply(badwords, grepl, tolower(z), fixed = TRUE)) + 10*sum(sapply(badwords_trans, grepl, stri_trans_general(tolower(z), "latin-ascii"), fixed = TRUE))
         })
     })
     if (expect_tildes) {
@@ -339,7 +340,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     }
     ## what badwords are matching a given encoding?
     ##cat("bw:\n")
-    ##print(lapply(testtxt[encodings_to_test == "windows-1250"], function(z) if (all(is.na(z))) Inf else { z <- paste(z[read_from:read_to], collapse = ""); print(z); which(sapply(badwords, grepl, tolower(z), fixed = TRUE))}))
+    ##print(lapply(testtxt[encodings_to_test == "CP1251"], function(z) if (all(is.na(z))) Inf else { z <- paste(z[read_from:read_to], collapse = ""); print(z); which(sapply(badwords, grepl, tolower(z), fixed = TRUE))}))
     ## errors per encodings_to_test
     ##cat("encerrors:\n"); print(sort(encerrors))
     idx <- encerrors==min(encerrors)

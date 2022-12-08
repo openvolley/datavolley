@@ -1,3 +1,8 @@
+datavolley 1.3.5
+================
+Minor updates:
+- better detection of Cyrillic text encoding
+
 datavolley 1.3.3
 ================
 Minor updates:

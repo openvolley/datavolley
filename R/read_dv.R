@@ -121,7 +121,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             ##if (any(xiso_idx))
             ##    encoding <- c(encoding,gsub("^x\\-iso","iso",encoding[xiso_idx]))
             ## add common ones
-            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS", "CP932")) ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
+            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS", "CP932", "windows-1251")) ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
             encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
             ##if (length(encoding)<=1) encoding <- iconvlist()
         }
