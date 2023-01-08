@@ -320,6 +320,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     badwords <- c(badwords, tolower(c("\u171\ufc", "\u8e\u52"))) ## cp932 wrongly detected as ISO-8859-2 (there are heaps here)
     badwords <- c(badwords, tolower(c("\uc9\u57\uc9", "\ue2\u2122"))) ## cp932 wrongly detected as macintosh
     badwords <- c(badwords, c("\ufd\u79")) ## windows-1254 wrongly detected as 1250
+    badwords <- c(badwords, c("\u6e\u434\u45a\u69\u434\u45a", "\u76\u69\u434\u45a")) ## "ncic" and "vic" but c with caron (Serbian/Czech/etc) wrongly detected as cyrillic
     badwords_trans <- c("oooo", "ouuoo", "oouoo", "uuou", "uuoo") ## badwords after transliteration, e.g. wrongly-detected cyrillic
     ## get the \uxx numbers from sprintf("%x",utf8ToInt(tolower(dodgy_string_or_char))) or paste0("\\u", sprintf("%x", utf8ToInt(tolower("dodgy"))), collapse = "")
     read_with_enc <- function(filename, enc_to_test) {
@@ -330,7 +331,8 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     suppressWarnings({
         encerrors <- sapply(testtxt, function(z) {
             z <- paste(z[read_from:read_to], collapse = "")
-            if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars) + 10*sum(sapply(badwords, grepl, tolower(z), fixed = TRUE)) + 10*sum(sapply(badwords_trans, grepl, stri_trans_general(tolower(z), "latin-ascii"), fixed = TRUE))
+            if (is.na(z)) Inf else sum(utf8ToInt(z) %in% badchars) + 10*sum(sapply(badwords, grepl, tolower(z), fixed = TRUE)) + 10*(sum(sapply(badwords_trans, grepl, stri_trans_general(tolower(z), "latin-ascii"), fixed = TRUE)) - sum(sapply(badwords_trans, grepl, tolower(z), fixed = TRUE)))
+            ## the latter term penalizes text that matches badwords_trans when transliterated to ASCII but doesn't match when not transliterated. Which will generally be streams of gibberish accented characters (e.g. Cyrillic processed as something else)
         })
     })
     if (expect_tildes) {
@@ -342,7 +344,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     ##cat("bw:\n")
     ##print(lapply(testtxt[encodings_to_test == "CP1251"], function(z) if (all(is.na(z))) Inf else { z <- paste(z[read_from:read_to], collapse = ""); print(z); which(sapply(badwords, grepl, tolower(z), fixed = TRUE))}))
     ## errors per encodings_to_test
-    ##cat("encerrors:\n"); print(sort(encerrors))
+    ##cat("encerrors:\n"); print(sort(setNames(encerrors, encodings_to_test)))
     idx <- encerrors==min(encerrors)
     if (!any(idx)) {
         list(encodings = character(), error_score = NA_integer_)
