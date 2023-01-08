@@ -16,6 +16,9 @@ test_that("dv_write behaves", {
             ## don't compare raw yet
             dvw1$raw <- NULL
             dvw2$raw <- NULL
+            ## and raw content appears here too
+            dvw1$messages$file_line <- NULL
+            dvw2$messages$file_line <- NULL
         } else {
             ## drop trailing empty line in dvw1 if it exists
             if (!nzchar(dvw1$raw[length(dvw1$raw)])) dvw1$raw <- dvw1$raw[-length(dvw1$raw)]
