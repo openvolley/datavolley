@@ -145,6 +145,7 @@ read_result <- function(txt) {
 ## teams
 read_teams <- function(txt) {
     idx <- grep("[3TEAMS]", txt, fixed = TRUE)
+    txt0 <- txt
     txt <- text_chunk(txt, "[3TEAMS]")
     msgs <- list()
     ##suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE,sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") }))
@@ -160,14 +161,23 @@ read_teams <- function(txt) {
     p$team_id <- str_trim(as.character(p$team_id)) ## force to be char
     p$team <- str_trim(p$team)
     suppressWarnings(p$sets_won <- as.integer(p$sets_won))
+    ## check for missing team names
+    if (is.na(p$team[1]) || !nzchar(p$team[1])) {
+        msgs <- collect_messages(msgs, "The home team name is missing", idx+1, txt0[idx + 1], severity = 1)
+        p$team[1] <- "Unknown team"
+    }
+    if (is.na(p$team[2]) || !nzchar(p$team[2])) {
+        msgs <- collect_messages(msgs, "The visiting team name is missing", idx+2, txt0[idx + 2], severity = 1)
+        p$team[2] <- "Unknown team"
+    }
     ## check for identical team names
     if (p$team[1] %eq% p$team[2]) {
-        msgs <- collect_messages(msgs, "The two team names are identical. They will be modified here but this may still cause problems", idx+1, txt[idx+1], severity = 1)
+        msgs <- collect_messages(msgs, "The two team names are identical. They will be modified here but this may still cause problems", idx+1, txt0[idx+1], severity = 1)
         p$team[1] <- paste0(p$team[1]," (home)")
         p$team[2] <- paste0(p$team[2]," (visiting)")
     }
     if (p$team_id[1] %eq% p$team_id[2]) {
-        msgs <- collect_messages(msgs, "The two team IDs are identical. They will be modified here but this may still cause problems", idx+1, txt[idx+1], severity = 1)
+        msgs <- collect_messages(msgs, "The two team IDs are identical. They will be modified here but this may still cause problems", idx+1, txt0[idx+1], severity = 1)
         p$team_id[1] <- paste0(p$team_id[1]," (home)")
         p$team_id[2] <- paste0(p$team_id[2]," (visiting)")
     }
