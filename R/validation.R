@@ -79,20 +79,22 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
     if (validation_level<1) return(out)
 
     ## metadata checks
-    for (py in c("players_h", "players_v")) {
-        plyrs <- x$meta[[py]]
-        tempid <- plyrs$player_id[!is.na(plyrs$player_id)]
-        if (any(duplicated(tempid))) {
-            dpids <- tempid[duplicated(tempid)]
-            for (dpid in unique(dpids)) {
-                idx <- plyrs$player_id %eq% dpid
-                this_players <- paste0(plyrs$name[idx], " [jersey number ", plyrs$number[idx], "]", collapse=", ")
-                msg <- if (py == "players_h") paste0("Home team (", home_team(x), ")") else paste0("Visiting team (", visiting_team(x), ")")
-                msg <- paste0(msg, " players ", this_players, " have the same player ID (", dpid, ")")
-                out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
-            }
-        }
+    ## check for duplicate player IDs across both teams
+    ph <- x$meta$players_h
+    ph$team <- home_team(x)
+    ph$hv <- "home"
+    pv <- x$meta$players_v
+    pv$team <- visiting_team(x)
+    pv$hv <- "visiting"
+    plyrs <- rbind(ph, pv)
+    dpids <- plyrs$player_id[duplicated(plyrs$player_id)]
+    for (dpid in unique(dpids)) {
+        idx <- plyrs$player_id %eq% dpid
+        msg <- paste0("Players have the same player ID (", dpid, "): ")
+        this_players <- paste0(plyrs$name[idx], " (", plyrs$hv[idx], " team ", plyrs$team[idx], " #", plyrs$number[idx], ")", collapse=", ")
+        out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = paste0(msg, this_players), file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
     }
+
     if (file_type == "indoor") {
         ## check for missing player roles
         for (py in c("players_h", "players_v")) {

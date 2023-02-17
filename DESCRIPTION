@@ -1,6 +1,6 @@
 Package: datavolley
 Title: Reading and Analyzing DataVolley Scout Files
-Version: 1.3.7
+Version: 1.3.8
 Authors@R: c(person("Ben", "Raymond", email = "ben@untan.gl", role = c("aut", "cre")),
              person("openvolley.org", role = "org"))
 Description: Provides functions for parsing and working with volleyball match files in DataVolley format.
@@ -33,5 +33,5 @@ Suggests:
 Encoding: UTF-8
 License: MIT + file LICENSE
 LazyData: true
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 VignetteBuilder: knitr
