@@ -53,7 +53,9 @@ raw_vt_pv <- function(z) {
 }
 
 video_time_from_raw <- function(raw_lines) {
-    tryCatch(vapply(raw_lines,function(z) if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else raw_vt_dv(z), FUN.VALUE = 1.0, USE.NAMES = FALSE), error = function(e) rep(NA_real_, length(raw_lines)))
+    out <- tryCatch(vapply(raw_lines, function(z) if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else raw_vt_dv(z), FUN.VALUE = 1.0, USE.NAMES = FALSE), error = function(e) rep(NA_real_, length(raw_lines)))
+    if (length(out) < 1) out <- NA_real_
+    out
 }
 
 join_messages <- function(msgs1,msgs2) {

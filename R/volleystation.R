@@ -552,39 +552,44 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$phase <- play_phase(px)
 
     ##x$px <- px ## temporarily
-    x$plays <- px %>% mutate(time = as.POSIXct(NA),
+    x$plays <- px %>% mutate(video_time = round(.data$time / 10),
+                             time = as.POSIXct(NA), video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
                              end_cone = NA_integer_,
                              start_coordinate = NA_integer_, mid_coordinate = NA_integer_, end_coordinate = NA_integer_,
                              start_coordinate_x = NA_real_, start_coordinate_y = NA_real_,
                              mid_coordinate_x = NA_real_, mid_coordinate_y = NA_real_,
-                             end_coordinate_x = NA_real_, end_coordinate_y = NA_real_
+                             end_coordinate_x = NA_real_, end_coordinate_y = NA_real_,
+                             file_line_number = NA_integer_
                              ) %>%
-        dplyr::select("match_id", "point_id", ##"time", "video_file_number", "video_time",
-                      "code", "team", "player_number", "player_name", "player_id", "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type", "start_zone", "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout", "end_of_set",
-                      "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", 
-## custom_code = ,
-## file_line_number = ,
-"home_p1", "home_p2", "home_p3", "home_p4", "home_p5", "home_p6", "visiting_p1", "visiting_p2", "visiting_p3", "visiting_p4", "visiting_p5", "visiting_p6", 
-"start_coordinate", "mid_coordinate", "end_coordinate", 
-## point_phase = ,
-## attack_phase = ,
-"start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y",
-"home_player_id1", "home_player_id2", "home_player_id3", "home_player_id4", "home_player_id5", "home_player_id6", "visiting_player_id1", "visiting_player_id2", "visiting_player_id3", "visiting_player_id4", "visiting_player_id5", "visiting_player_id6",
-"set_number", "team_touch_id", "home_team", "visiting_team", "home_team_id", "visiting_team_id", "team_id", "point_won_by", "winning_attack", "serving_team", "phase", "home_score_start_of_point", "visiting_score_start_of_point")
+        dplyr::select("match_id", "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id",
+                      "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type",
+                      "start_zone", "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout",
+                      "end_of_set", "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position",
+                      ## custom_code = ,
+                      "file_line_number", "home_p1", "home_p2", "home_p3", "home_p4", "home_p5", "home_p6",
+                      "visiting_p1", "visiting_p2", "visiting_p3", "visiting_p4", "visiting_p5", "visiting_p6",
+                      "start_coordinate", "mid_coordinate", "end_coordinate",
+                      ## point_phase = ,
+                      ## attack_phase = ,
+                      "start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y",
+                      "home_player_id1", "home_player_id2", "home_player_id3", "home_player_id4", "home_player_id5", "home_player_id6",
+                      "visiting_player_id1", "visiting_player_id2", "visiting_player_id3", "visiting_player_id4", "visiting_player_id5", "visiting_player_id6",
+                      "set_number", "team_touch_id", "home_team", "visiting_team", "home_team_id", "visiting_team_id", "team_id", "point_won_by",
+                      "winning_attack", "serving_team", "phase", "home_score_start_of_point", "visiting_score_start_of_point")
     class(x$plays) <- c("datavolleyplays", class(x$plays))
     class(x) <- c("datavolley", class(x))
 
-##    ## apply additional validation
-##    if (extra_validation > 0) {
-##        moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
-##        if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
-##    }
-##    if (is.null(x$messages)) x$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE) ## should not happen, but just to be sure
-##    ##if (!is.null(x$messages) && nrow(x$messages) > 0) {
-##    ##    x$messages$file_line_number <- as.integer(x$messages$file_line_number)
-##    ##    x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE),]
-##    ##    row.names(x$messages) <- NULL
-##    ##}
+    ## apply additional validation
+    if (extra_validation > 0) {
+        moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
+        if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
+    }
+    if (is.null(x$messages)) x$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE) ## should not happen, but just to be sure
+    ##if (!is.null(x$messages) && nrow(x$messages) > 0) {
+    ##    x$messages$file_line_number <- as.integer(x$messages$file_line_number)
+    ##    x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE),]
+    ##    row.names(x$messages) <- NULL
+    ##}
     x
 }
 

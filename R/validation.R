@@ -72,9 +72,11 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
 
     out <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
+    mt2nachar <- function(z) if (length(z) < 1) NA_character_
     chk_df <- function(chk, msg, severity = 2) {
         vt <- video_time_from_raw(x$raw[chk$file_line_number])
-        data.frame(file_line_number=chk$file_line_number, video_time=vt, message=msg, file_line=x$raw[chk$file_line_number], severity=severity, stringsAsFactors=FALSE)
+        if (length(vt) < 1) vt <- NA_integer_
+        data.frame(file_line_number = chk$file_line_number, video_time = vt, message = msg, file_line = mt2nachar(x$raw[chk$file_line_number]), severity = severity, stringsAsFactors = FALSE)
     }
     if (validation_level<1) return(out)
 
@@ -173,12 +175,12 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         pid <- ddply(plays, "point_id", function(rx) sum(rx$skill %eq% "Serve") > 1)
         pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
         chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
-        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Multiple serves in a single rally", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Multiple serves in a single rally", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
 
         pid <- ddply(plays, "point_id", function(rx) sum(rx$skill %eq% "Reception") > 1)
         pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
         chk <- plays$skill %eq% "Reception" & plays$point_id %in% pid
-        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Multiple receptions in a single rally", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Multiple receptions in a single rally", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
 
         ## no reception coded, but there was a serve and it wasn't an error, and there wasn't a rotation error
         pid <- ddply(plays, "point_id", function(rx) {
@@ -186,7 +188,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         })
         pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
         chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
-        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Serve (that was not an error) did not have an accompanying reception", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+        if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Serve (that was not an error) did not have an accompanying reception", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
 
         ## rally had actions but not a serve
         pid <- ddply(plays, "point_id", function(rx) {
@@ -195,7 +197,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
         if (length(pid)) {
             chk <- sapply(pid, function(thispid) head(which(plays$point_id == thispid & !is.na(plays$skill)), 1))
-            if (length(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Rally had ball contacts but no serve", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+            if (length(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Rally had ball contacts but no serve", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
         }
 
         ## receive type must match serve type
@@ -210,7 +212,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             ##    zz <- dv_xy2zone(plays$end_coordinate[idx])
             ##    chk <- which(plays$end_zone[idx] != zz)
             ##    if (length(chk) > 0) {
-            ##        out <- rbind(out, data.frame(file_line_number = plays$file_line[idx[chk]], video_time = plays$video_time[idx[chk]], message = paste0("End zone of serve (", plays$end_zone[idx[chk]], ") does not match the end zone implied by the end coordinate (", zz[chk], ")"), file_line = x$raw[plays$file_line[idx[chk]]], severity = 3, stringsAsFactors = FALSE))
+            ##        out <- rbind(out, data.frame(file_line_number = plays$file_line[idx[chk]], video_time = plays$video_time[idx[chk]], message = paste0("End zone of serve (", plays$end_zone[idx[chk]], ") does not match the end zone implied by the end coordinate (", zz[chk], ")"), file_line = mt2nachar(x$raw[plays$file_line[idx[chk]]]), severity = 3, stringsAsFactors = FALSE))
             ##    }
             ##}
             ## reception zones must match serve zones
@@ -294,8 +296,9 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             chk <- (plays$skill %eq% "Block") &
                 (((plays$team %eq% plays$home_team) & (plays$player_number %eq% plays$home_p5 | plays$player_number %eq% plays$home_p6 | plays$player_number %eq% plays$home_p1)) |
                  ((plays$team %eq% plays$visiting_team) & (plays$player_number %eq% plays$visiting_p5 | plays$player_number %eq% plays$visiting_p6 | plays$player_number %eq% plays$visiting_p1)))
-            if (any(chk))
-                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Block by a back-row player",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+            if (any(chk)) {
+                out <- rbind(out,data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Block by a back-row player", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
+            }
 
             ## for the next two, not sure if we should assume rotation errors should be aces or not
             ##  so the default rotation_error_is_ace for each is set to not warn when rotation errors are present
@@ -320,7 +323,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
             chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
             if (any(chk))
-                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Winning serve not coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Winning serve not coded as an ace",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
             ## and vice-versa: serves that were coded as aces, but should not have been
             find_should_not_be_aces <- function(rally,rotation_error_is_ace=TRUE) {
                 ## by default assume rotation errors should be aces here (opposite to above)
@@ -342,12 +345,12 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
             chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
             if (any(chk))
-                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Non-winning serve was coded as an ace",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Non-winning serve was coded as an ace",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
 
             ## server not in position 1
             chk <- (plays$skill %eq% "Serve") & (((plays$team %eq% plays$home_team) & (!plays$player_number %eq% plays$home_p1)) | ((plays$team %eq% plays$visiting_team) & (!plays$player_number %eq% plays$visiting_p1)))
             if (any(chk))
-                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Serving player not in position 1",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Serving player not in position 1",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
         }
 
         ## number of blockers (for an attack) should be >=1 if it is followed by a block
@@ -376,7 +379,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                     cc <- dv_xy2cone(plays$end_coordinate[idx], start_zones = plays$start_zone[idx])
                     chk <- which(plays$end_cone[idx] != cc)
                     if (length(chk) > 0) {
-                        out <- rbind(out, data.frame(file_line_number = plays$file_line[idx[chk]], video_time = plays$video_time[idx[chk]], message = paste0("Attack cone (", plays$end_cone[idx[chk]], ") does not match the cone implied by the end coordinate (", cc[chk], ")"), file_line = x$raw[plays$file_line[idx[chk]]], severity = 3, stringsAsFactors = FALSE))
+                        out <- rbind(out, data.frame(file_line_number = plays$file_line[idx[chk]], video_time = plays$video_time[idx[chk]], message = paste0("Attack cone (", plays$end_cone[idx[chk]], ") does not match the cone implied by the end coordinate (", cc[chk], ")"), file_line = mt2nachar(x$raw[plays$file_line[idx[chk]]]), severity = 3, stringsAsFactors = FALSE))
                     }
                 }
             } else if (x$meta$match$zones_or_cones %eq% "Z") {
@@ -385,7 +388,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                     zz <- dv_xy2zone(plays$end_coordinate[idx])
                     chk <- which(plays$end_zone[idx] != zz)
                     if (length(chk) > 0) {
-                        out <- rbind(out, data.frame(file_line_number = plays$file_line[idx[chk]], video_time = plays$video_time[idx[chk]], message = paste0("End zone of attack (", plays$end_zone[idx[chk]], ") does not match the end zone implied by the end coordinate (", zz[chk], ")"), file_line = x$raw[plays$file_line[idx[chk]]], severity = 3, stringsAsFactors = FALSE))
+                        out <- rbind(out, data.frame(file_line_number = plays$file_line[idx[chk]], video_time = plays$video_time[idx[chk]], message = paste0("End zone of attack (", plays$end_zone[idx[chk]], ") does not match the end zone implied by the end coordinate (", zz[chk], ")"), file_line = mt2nachar(x$raw[plays$file_line[idx[chk]]]), severity = 3, stringsAsFactors = FALSE))
                     }
                 }
             } else {
@@ -393,7 +396,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                 ## check this before enabling
                 ##fln <- grep("[3MATCH]", x$raw, fixed = TRUE)
                 ##if (length(fln) != 1) fln <- NA_integer_
-                ##out <- rbind(out, data.frame(file_line_number = fln, video_time = NA_real_, message = "The file does not indicate whether attacks were scouted with cones or zones", file_line = ifelse(is.na(fln), NA_character_, x$raw[fln], severity = 3, stringsAsFactors = FALSE)))
+                ##out <- rbind(out, data.frame(file_line_number = fln, video_time = NA_real_, message = "The file does not indicate whether attacks were scouted with cones or zones", file_line = mt2nachar(ifelse(is.na(fln), NA_character_, x$raw[fln])), severity = 3, stringsAsFactors = FALSE)))
             }
         }
 
@@ -410,21 +413,23 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             chk <- rep(NA, nrow(pp))
             chk[idx] <- vapply(which(idx), function(z) !pp$player_number[z] %in% liberos_h && (!pp$player_number[z] %in% temp[z, ]), FUN.VALUE = TRUE)
             chk[!idx] <- vapply(which(!idx), function(z) !pp$player_number[z] %in% liberos_v && (!pp$player_number[z] %in% temp[z, ]), FUN.VALUE = TRUE)
-            if (any(chk))
-                out <- rbind(out,data.frame(file_line_number=pp$file_line_number[chk],video_time=video_time_from_raw(x$raw[pp$file_line_number[chk]]),message="The listed player is not on court in this rotation",file_line=x$raw[pp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+            if (any(chk)) {
+                out <- rbind(out, data.frame(file_line_number = pp$file_line_number[chk], video_time = video_time_from_raw(x$raw[pp$file_line_number[chk]]), message = "The listed player is not on court in this rotation", file_line = mt2nachar(x$raw[pp$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
+            }
         }
 
         if (file_type == "indoor") {
             ## liberos doing stuff they oughtn't be doing
             if (length(liberos_h)>0) {
                 chk <- (plays$skill %in% c("Serve", "Attack", "Block")) & (plays$home_team %eq% plays$team) & (plays$player_number %in% liberos_h)
-                if (any(chk))
-                    out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+                if (any(chk)) {
+                    out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
+                }
             }
             if (length(liberos_v)>0) {
                 chk <- (plays$skill %in% c("Serve","Attack","Block")) & (plays$visiting_team %eq% plays$team) & (plays$player_number %in% liberos_v)
                 if (any(chk))
-                    out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+                    out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
             }
             ## TO DO, perhaps: check for liberos making a front-court set that is then attacked
         }
@@ -436,7 +441,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                      (plays$player_number[-1] %eq% plays$player_number[-nrow(plays)])
                      )+1
         if (length(idx) > 0)
-            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[idx],video_time=video_time_from_raw(x$raw[plays$file_line_number[idx]]),message="Repeated row with same skill and evaluation_code for the same player",file_line=x$raw[plays$file_line_number[idx]],severity=3,stringsAsFactors=FALSE))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[idx],video_time=video_time_from_raw(x$raw[plays$file_line_number[idx]]),message="Repeated row with same skill and evaluation_code for the same player",file_line=mt2nachar(x$raw[plays$file_line_number[idx]]),severity=3,stringsAsFactors=FALSE))
 
         ## consecutive actions by the same player
         ## be selective about which skill sequences count here, because some scouts might record duplicate skills for the same player (e.g. reception and set) for one physical action
@@ -457,20 +462,20 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             }))
 
         if (length(chk) > 0) {
-            out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Rally does not include a winning or losing action", file_line = x$raw[plays$file_line_number[chk]], severity = 3, stringsAsFactors = FALSE))
+            out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Rally does not include a winning or losing action", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
         }
 
         ## point not awarded to right team following error
         chk <- (plays$evaluation_code %eq% "=" | (plays$skill %eq% "Block" & grepl("invasion", plays$evaluation, ignore.case=TRUE))) &  ## error or block Invasion
             (plays$team %eq% plays$point_won_by)
         if (any(chk))
-            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Point awarded to incorrect team following error (or \"error\" evaluation incorrect)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Point awarded to incorrect team following error (or \"error\" evaluation incorrect)",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
 
         ## point not awarded to right team following win
         chk <- (plays$skill %in% c("Serve","Attack","Block") & plays$evaluation_code %eq% "#") &  ## ace or winning attack or block
             (!plays$team %eq% plays$point_won_by)
         if (any(chk))
-            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Point awarded to incorrect team (or \"",plays$evaluation[chk],"\" evaluation incorrect)"),file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message=paste0("Point awarded to incorrect team (or \"",plays$evaluation[chk],"\" evaluation incorrect)"),file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
 
         ## check scores columns against point_won_by entries
         temp <- plays[!is.na(plays$set_number) & !is.na(plays$point_won_by), ]
@@ -506,7 +511,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             temp <- temp[!temp$ok,]
             if (nrow(temp)>0) {
                 for (chk in seq_len(nrow(temp))) {
-                    out <- rbind(out,data.frame(file_line_number=temp$file_line_number[chk],video_time=video_time_from_raw(x$raw[temp$file_line_number[chk]]),message=paste0("Point assigned to incorrect team or scores incorrect (point was won by ",temp$point_won_by[chk]," but score was incremented for ",temp$point_lost_by[chk],")"),file_line=x$raw[temp$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+                    out <- rbind(out,data.frame(file_line_number=temp$file_line_number[chk],video_time=video_time_from_raw(x$raw[temp$file_line_number[chk]]),message=paste0("Point assigned to incorrect team or scores incorrect (point was won by ",temp$point_won_by[chk]," but score was incremented for ",temp$point_lost_by[chk],")"),file_line=mt2nachar(x$raw[temp$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
                 }
             }
         }
@@ -521,7 +526,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         ##if (any(chk))
         if (length(chk)>0) {
             chk <- chk+1 
-           out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Scores do not follow proper sequence (note that the error may be in the point before this one)",file_line=x$raw[plays$file_line_number[chk]],severity=3,stringsAsFactors=FALSE))
+           out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Scores do not follow proper sequence (note that the error may be in the point before this one)",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
         }
 
         ## check for incorrect rotation changes
@@ -545,7 +550,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             idx[nsk < 1L] <- FALSE
             for (k in which(idx)) {
                 if (!isrotleft(as.numeric(rx[k - 1, ]), as.numeric(rx[k, ])))
-                    out <- rbind(out, data.frame(file_line_number = temp$file_line_number[k], video_time = video_time_from_raw(x$raw[temp$file_line_number[k]]), message = paste0(if (tm == "a") "Visiting" else "Home"," team rotation has changed incorrectly"), file_line = x$raw[temp$file_line_number[k]], severity = 3, stringsAsFactors = FALSE))
+                    out <- rbind(out, data.frame(file_line_number = temp$file_line_number[k], video_time = video_time_from_raw(x$raw[temp$file_line_number[k]]), message = paste0(if (tm == "a") "Visiting" else "Home"," team rotation has changed incorrectly"), file_line = mt2nachar(x$raw[temp$file_line_number[k]]), severity = 3, stringsAsFactors = FALSE))
             }
         }
 
@@ -571,18 +576,18 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             
             if (all(new_rot==prev_rot)) {
                 ## players did not change
-                rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
+                rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=mt2nachar(x$raw[plays$file_line_number[k]]),severity=3,stringsAsFactors=FALSE)
                 next
             }
             if (!grepl("^.c[[:digit:]]+:[[:digit:]]+", plays$code[k])) {
-                rot_errors[[length(rot_errors) + 1]] <- data.frame(file_line_number = plays$file_line_number[k], video_time = video_time_from_raw(x$raw[plays$file_line_number[k]]), message = paste0("The substitution code (", plays$code[k], ") does not follow the expected format"), file_line = x$raw[plays$file_line_number[k]], severity = 3, stringsAsFactors = FALSE)
+                rot_errors[[length(rot_errors) + 1]] <- data.frame(file_line_number = plays$file_line_number[k], video_time = video_time_from_raw(x$raw[plays$file_line_number[k]]), message = paste0("The substitution code (", plays$code[k], ") does not follow the expected format"), file_line = mt2nachar(x$raw[plays$file_line_number[k]]), severity = 3, stringsAsFactors = FALSE)
                 next
             } else {
                 subtxt <- strsplit(sub("^.c", "", plays$code[k]), ":")[[1]]
                 sub_out <- as.numeric(subtxt[1]) ## outgoing player
                 sub_in <- as.numeric(subtxt[2]) ## incoming player
                 if (!sub_out %in% prev_rot || !sub_in %in% new_rot || sub_in %in% prev_rot || sub_out %in% new_rot) {
-                    rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"),file_line=x$raw[plays$file_line_number[k]],severity=3,stringsAsFactors=FALSE)
+                    rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"),file_line=mt2nachar(x$raw[plays$file_line_number[k]]),severity=3,stringsAsFactors=FALSE)
                     next
                 }
             }
