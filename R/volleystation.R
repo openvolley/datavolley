@@ -175,11 +175,11 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             if (!is.na(thisex$point[j])) {
                 ## point code
                 pc <- paste0(thisex$point[j], "p", lead0(thisev$score$home[j], na = "99"), ":", lead0(thisev$score$away[j], na = "99"))
-                ## auto codes. codes to vs_auto_codes need to be real ones
+                ## auto codes. codes to dv_auto_codes need to be real ones
                 if (!all(thisp$team %in% c("a", "*"))) { print(dplyr::glimpse(thisp)); stop("tm") }
                 ss1 <- function(x) case_when(!is.na(x) & nzchar(x) ~ substr(x, 1, 1), TRUE ~ "~")
                 temp_codes <- c(paste0(ss1(thisp$team), lead0(thisp$player, na = "00"), ss1(thisp$skill), ss1(thisp$hitType), ss1(thisp$effect)), pc)
-                codes2 <- vs_auto_codes(temp_codes, mx)
+                codes2 <- dv_auto_codes(temp_codes, mx)
                 ## the last element of codes2 will be the point code pc, any other extras need to be injected
                 if (length(codes2) > (nrow(thisp) + 1L)) {
                     newcodes <- codes2[seq(from = nrow(thisp) + 1L, to = length(codes2) - 1L, by = 1L)] ## add these codes
