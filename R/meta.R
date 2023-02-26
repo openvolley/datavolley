@@ -11,15 +11,12 @@ roles_int2str <- function(x) {
     out
 }
 
-## simpler
 ##roles_int2str <- function(x) {
-##    idx <- as.integer(x)
 ##    out <- rep(NA_character_, length(x))
-##    rmap <- c("libero", "outside", "opposite", "middle", "setter", "unknown")
-##    out[idx %in% 1:6] <- rmap[idx[idx %in% 1:6]]
+##    idx <- x %in% 1:6
+##    out[idx] <- c("libero", "outside", "opposite", "middle", "setter", "unknown")[x[idx]]
 ##    out
 ##}
-
 
 roles_str2int <- function(x) {
     out <- rep(0L, length(x))
@@ -39,7 +36,7 @@ read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
         suppressWarnings(suppressMessages(out <- readr::read_delim(I(txt), delim = sep, col_names = FALSE, quote = "", locale = readr::locale(encoding = "UTF-8"), progress = FALSE, ...)))
         ## strip the extra attributes that readr adds, and convert from spec_tbl_df back to plain old tbl_df
         attr(out, "spec") <- NULL
-        tibble::as_tibble(out)
+        as_tibble(out)
     }, error = function(e) {
         if (fallback == "fread") {
             data.table::fread(txt, data.table = FALSE, sep = sep, header = FALSE, na.strings = "NA", logical01 = FALSE) ## seems to cope with embedded quotes
@@ -192,7 +189,7 @@ read_players <- function(txt,team,surname_case) {
     txt <- text_chunk(txt, chnkmarker)
 ##    suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") }))
     tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-    if (ncol(p) < 1) p <- tibble::as_tibble(setNames(as.data.frame(matrix(nrow = 0, ncol = 18)), paste0("X", 1:18)))
+    if (ncol(p) < 1) p <- as_tibble(setNames(as.data.frame(matrix(nrow = 0, ncol = 18)), paste0("X", 1:18)))
     names(p)[c(2, 4:15)] <- c("number", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role", "foreign")
     if (is.character(surname_case)) {
         p$lastname <- switch(tolower(surname_case),
@@ -382,10 +379,7 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
     tryCatch(out$sets <- read_setter_calls(txt),
              error=function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
-    temp <- out$match[1:8]
-    temp$home_team <- out$teams$team[out$teams$home_away_team=="*"]
-    temp$visiting_team <- out$teams$team[out$teams$home_away_team=="a"]
-    out$match_id <- digest(temp)
+    out$match_id <- make_match_id(out)
     if (length(msgs)>0) {
         msgs <- ldply(msgs, as.data.frame)
     } else {
@@ -395,6 +389,13 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
     list(meta=out,messages=msgs)
 }
 
+make_match_id <- function(mz) {
+    ## mz is a meta object
+    temp <- mz$match[1:8]
+    temp$home_team <- mz$teams$team[mz$teams$home_away_team == "*"]
+    temp$visiting_team <- mz$teams$team[mz$teams$home_away_team == "a"]
+    digest(temp)
+}
 
 get_player_name <- function(team,number,meta) {
     out <- rep(NA_character_, length(number))

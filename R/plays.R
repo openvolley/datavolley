@@ -792,6 +792,10 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
                                                 T="Tip",
                                                 P="Soft spike",
                                                 paste0("Unknown dig subtype ",skill_subtype))
+                if ((is.na(out_skill_subtype[ci]) || grepl("^Unknown ", out_skill_subtype[ci])) && grepl("(Positive|Poor) block cover", out_evaluation[ci])) {
+                    ## volleymetrics scouted block cover D/ or D!
+                    out_skill_subtype[ci] <- "Spike cover"
+                }
             } else {
                 out_skill_subtype[ci] <- paste0("Unknown ",skill_subtype)
             }

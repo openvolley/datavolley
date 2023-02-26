@@ -383,3 +383,19 @@ dv_rgb2int <- function(x) {
     out[is.na(x)] <- NA_integer_
     out
 }
+
+camel_to_underscore <- function(x) {
+    s <- gsub("([a-z0-9])([A-Z])", "\\1_\\L\\2", x, perl = TRUE)
+    sub("^(.[a-z])", "\\L\\1", s, perl = TRUE) # make 1st char lower case if second is lower
+}
+
+lead0 <- function(x, width = 2, pad = "0", na = NULL) {
+    out <- character(length(x))
+    naidx <- rep(FALSE, length(x))
+    if (!is.null(na)) {
+        naidx <- is.na(x) | !nzchar(x)
+        out[naidx] <- na
+    }
+    out[!naidx] <- stringr::str_pad(as.numeric(x[!naidx]), width = width, pad = pad)
+    out
+}
