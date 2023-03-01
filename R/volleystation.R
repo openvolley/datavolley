@@ -76,8 +76,16 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                               zones_or_cones = "Z", ## cones not supported in VS
                               X12 = NA, X13 = NA, X14 = NA, X15 = NA, X16 = NA),
                more = tibble(referees = NA_character_, spectators = NA_character_, receipts = NA, city = NA_character_, arena = NA_character_,
-                             scout = NA_character_, X7 = NA, X8 = NA, X9 = NA, X10 = NA, X11 = NA), ## TODO surely the scout name at least is in the json
-               comments = tibble(comment_1 = NA, comment_2 = NA, comment_3 = NA, comment_4 = NA, comment_5 = NA))
+                             scout = NA_character_, X7 = NA, X8 = NA, X9 = NA, X10 = NA, X11 = NA)) ## TODO surely the scout name at least is in the json
+    if ("comment" %in% names(jx)) {
+        ## e.g. "---- summary ----\nno comments\n\n---- match description ----\n\n\n---- coach home ----\n\n\n---- coach away ----\n"
+        cx <- strsplit(jx$comment, "\n\\-\\-\\-\\-[[:space:]]*")[[1]]
+        cx <- sub("\n+$", "", sub(".*\\-\\-\\-\\-\n", "", cx))
+        cx <- c(cx, rep(NA_character_, 5 - length(cx)))
+        mx$comments = tibble(comment_1 = cx[1], comment_2 = cx[2], comment_3 = cx[3], comment_4 = cx[4], comment_5 = cx[5])
+    } else {
+        mx$comments = tibble(comment_1 = NA_character_, comment_2 = NA_character_, comment_3 = NA_character_, comment_4 = NA_character_, comment_5 = NA_character_)
+    }
     mx$result <- tibble(played = TRUE, score_intermediate1 = NA_character_, score_intermediate2 = NA_character_, score_intermediate3 = NA_character_,
                         score = paste0(jx$scout$sets$score$home, "-", jx$scout$sets$score$away),
                         duration = NA_real_, ## update below
@@ -92,7 +100,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if (length(a1) < 1) a1 <- NA_character_
     a2 <- paste(paste(jx$team$away$staff$assistantCoach$firstName, jx$team$away$staff$assistantCoach$lastName), paste(jx$team$away$staff$assistantCoach2$firstName, jx$team$away$staff$assistantCoach2$lastName), collapse = " / ")
     if (length(a2) < 1) a2 <- NA_character_
-    mx$teams <- tibble(team_id = c(jx$team$home$code, jx$team$away$code), ## could also be shortCode
+    mx$teams <- tibble(team_id = c(jx$team$home$code, jx$team$away$code),
                        team = c(jx$team$home$name, jx$team$away$name),
                        sets_won = c(NA_integer_, NA_integer_), ## update below
                        coach = c(c1, c2),
@@ -317,7 +325,29 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             } else {
                 ## faster - row-bind the plays, timeouts, subs, and points, with care to ensure row ordering is correct
                 thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
-                    if (!is.null(thisex$plays[[j]])) thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) %>% dplyr::select(-"_id", -"originalTime") else NULL
+                    if (!is.null(thisex$plays[[j]])) {
+                        temp <- thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) %>% dplyr::select(-"_id", -"originalTime")
+                        if ("travelPath" %in% names(temp)) {
+                            tp <- bind_rows(lapply(temp$travelPath, function(z) {
+                                if (is.null(z)) {
+                                    tibble(start_coordinate_x = NA_integer_, start_coordinate_y = NA_integer_,
+                                           end_coordinate_x = NA_integer_, end_coordinate_y = NA_integer_)
+                                } else {
+                                    if (nrow(z) != 2) stop("travelPath not 2 rows")
+                                    ## convert to dv grid conventions
+                                    z$x <- z$x / 293.3333 + 0.447159
+                                    z$y <- z$y / 297 + 0.469697
+                                    tibble(start_coordinate_x = z$x[1], start_coordinate_y = z$y[1],
+                                           end_coordinate_x = z$x[2], end_coordinate_y = z$y[2])
+                                }
+                            }))
+                            cbind(temp %>% dplyr::select(-"travelPath"), tp)
+                        } else {
+                            temp
+                        }
+                    } else {
+                        NULL
+                    }
                 }))
                 thisex <- bind_rows(thisto %>% dplyr::group_by(.data$point_id) %>% mutate(sort_order = dplyr::row_number() / 10e7) %>% dplyr::ungroup() %>% mutate(sort_order = .data$point_id + .data$sort_order),
                                     thissub %>% dplyr::group_by(.data$point_id) %>% mutate(sort_order = dplyr::row_number() / 10e5) %>% dplyr::ungroup() %>% mutate(sort_order = .data$point_id + .data$sort_order),
@@ -808,15 +838,13 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$match_id <- mx$match_id
     px$phase <- play_phase(px)
 
+    for (vr in c("start_coordinate", "mid_coordinate", "end_coordinate")) if (!vr %in% names(px)) { px[[vr]] <- NA_integer_ }
+    for (vr in c("start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y")) if (!vr %in% names(px)) { px[[vr]] <- NA_real_ }
+
     ##x$px <- px ## temporarily
     x$plays <- px %>% mutate(video_time = round(.data$time / 10),
                              time = as.POSIXct(NA), video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
-                             end_cone = NA_integer_,
-                             start_coordinate = NA_integer_, mid_coordinate = NA_integer_, end_coordinate = NA_integer_,
-                             start_coordinate_x = NA_real_, start_coordinate_y = NA_real_,
-                             mid_coordinate_x = NA_real_, mid_coordinate_y = NA_real_,
-                             end_coordinate_x = NA_real_, end_coordinate_y = NA_real_,
-                             file_line_number = NA_integer_
+                             end_cone = NA_integer_, file_line_number = NA_integer_
                              ) %>%
         dplyr::select("match_id", "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id",
                       "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type",
