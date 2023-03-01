@@ -56,19 +56,24 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
     ## generic read of the first lines, to check formats
-    dvlines <- stringi::stri_trans_general(readLines(filename, warn = FALSE, n = 100L), "latin-ascii")
+    is_vsm <- grepl("\\.vsm$", filename, ignore.case = TRUE)
+    if (!is_vsm) dvlines <- stringi::stri_trans_general(readLines(filename, warn = FALSE, n = 100L), "latin-ascii")
     if (is.string(skill_evaluation_decode)) {
         skill_evaluation_decode <- match.arg(tolower(skill_evaluation_decode), c("default", "volleymetrics", "guess", "german"))
         if (skill_evaluation_decode == "guess") {
-            is_vm <- tryCatch({
-                any(grepl("volleymetric", dvlines, ignore.case = TRUE))
-            }, error = function(e) FALSE)
-            skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
+            if (is_vsm) {
+                skill_evaluation_decode <- "default"
+            } else {
+                is_vm <- tryCatch(any(grepl("volleymetric", dvlines, ignore.case = TRUE)), error = function(e) FALSE)
+                skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
+            }
+            if (!is_vsm && skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
         }
-        if (skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
         skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }
     assert_that(is.function(skill_evaluation_decode))
+    ## volleystation
+    if (is_vsm) return(dv_read_vsm(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, extra_validation = extra_validation, validation_options = validation_options))
     if (is.null(date_format_suggested)) {
         ## check if the decoder function is the volleymetrics one
         is_vm <- tryCatch(identical(get("dtbl", envir = environment(skill_evaluation_decode)), get("dtbl", envir = environment(skill_evaluation_decoder(style = "volleymetrics")))), error = function(e) FALSE)
