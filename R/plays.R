@@ -562,8 +562,8 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         done[thisidx] <- TRUE
     }
 
-    thisidx <- grepl("^.[PC]", in_code) & !grepl(">LUp", in_code, ignore.case = TRUE) ## no LUp lines, i.e. don't treat setter assignments as subs
-    ## substitution of setter (P) or other player (C)
+    thisidx <- grepl("^.[Pc]", in_code) & !grepl(">LUp", in_code, ignore.case = TRUE) ## no LUp lines, i.e. don't treat setter assignments as subs
+    ## substitution of setter (P) or other player (c) ## 2023-02-28 c changed to lower case, previously handled in semi-duplicate block below
     out_substitution[thisidx] <- TRUE
     done[thisidx] <- TRUE
     ## also mark LUp lineup lines as done, since we don't need to do anything more with them
@@ -603,10 +603,10 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     out_skill[thisidx] <- "Timeout"
     done[thisidx] <- TRUE
 
-    thisidx <- grepl("^.c", in_code)
-    ## substitution
-    out_substitution[thisidx] <- TRUE
-    done[thisidx] <- TRUE
+    ## thisidx <- grepl("^.c", in_code)
+    ## ## substitution
+    ## out_substitution[thisidx] <- TRUE
+    ## done[thisidx] <- TRUE
 
     not_tilde <- function(z) nzchar(z) && z != "~" && z != "~~"
 
