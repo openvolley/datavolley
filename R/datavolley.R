@@ -17,7 +17,7 @@
 #' @importFrom stringr fixed regex str_locate str_match str_replace_all str_sub str_to_title str_trim
 #' @importFrom stats na.omit runif setNames
 #' @importFrom utils adist capture.output head packageVersion read.csv read.table tail
-#' @importFrom vscoututils dv_auto_codes
+#' @importFrom vscoututils dv_green_codes dv_default_winning_symbols dv_update_meta
 NULL
 
 

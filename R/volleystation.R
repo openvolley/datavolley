@@ -73,14 +73,14 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                               season = NA, league = NA, phase = NA, home_away = NA, day_number = NA, match_number = NA,
                               text_encoding = "UTF-8",
                               regulation = if (isTRUE(jx$gameType == "indoor")) "indoor rally point" else stop("unexpected gameType: ", jx$gameType),
-                              zones_or_cones = "Z", ## TODO cones
+                              zones_or_cones = "Z", ## cones not supported in VS
                               X12 = NA, X13 = NA, X14 = NA, X15 = NA, X16 = NA),
                more = tibble(referees = NA_character_, spectators = NA_character_, receipts = NA, city = NA_character_, arena = NA_character_,
                              scout = NA_character_, X7 = NA, X8 = NA, X9 = NA, X10 = NA, X11 = NA), ## TODO surely the scout name at least is in the json
                comments = tibble(comment_1 = NA, comment_2 = NA, comment_3 = NA, comment_4 = NA, comment_5 = NA))
     mx$result <- tibble(played = TRUE, score_intermediate1 = NA_character_, score_intermediate2 = NA_character_, score_intermediate3 = NA_character_,
                         score = paste0(jx$scout$sets$score$home, "-", jx$scout$sets$score$away),
-                        duration = NA_real_, ## update below TODO
+                        duration = NA_real_, ## update below
                         X7 = NA,
                         score_home_team = jx$scout$sets$score$home,
                         score_visiting_team = jx$scout$sets$score$away)
@@ -92,9 +92,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if (length(a1) < 1) a1 <- NA_character_
     a2 <- paste(paste(jx$team$away$staff$assistantCoach$firstName, jx$team$away$staff$assistantCoach$lastName), paste(jx$team$away$staff$assistantCoach2$firstName, jx$team$away$staff$assistantCoach2$lastName), collapse = " / ")
     if (length(a2) < 1) a2 <- NA_character_
-    mx$teams <- tibble(team_id = c(jx$team$home$code, jx$team$away$code), ## shortCode
+    mx$teams <- tibble(team_id = c(jx$team$home$code, jx$team$away$code), ## could also be shortCode
                        team = c(jx$team$home$name, jx$team$away$name),
-                       sets_won = c(NA_integer_, NA_integer_), ## update later ^^^
+                       sets_won = c(NA_integer_, NA_integer_), ## update below
                        coach = c(c1, c2),
                        assistant = c(a1, a2),
                        shirt_colour = NA_character_,
@@ -138,7 +138,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                       start_coordinate = NA_integer_, mid_coordinate = NA_integer_, end_coordinate = NA_integer_,
                       path = NA_character_,  path_colour = NA_character_, X11 = NA)
 
-    mx$winning_symbols <- winning_symbols_df(txt = "=~~~#~~~=~~~~~~~=/~~#~~~=/~~#~~~=~~~~~~~=~~~~~~~=~~~~~~~") ## TODO can this vary from vsm file to vsm file?
+    mx$winning_symbols <- dv_default_winning_symbols() ## TODO can this vary from vsm file to vsm file?
     mx$match_id <- make_match_id(mx)
 
     vf <- if (length(jx$scout$video) < 1 || length(jx$scout$video$path) < 1) character() else if (length(jx$scout$video$path) > 1) { warning("multiple video files not yet supported, using only the first"); jx$scout$video$path[1] } else jx$scout$video$path[1]
@@ -152,79 +152,336 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     ## plays
     temp_pid <- 0L
+    prev_time <- NA_real_
     px <- bind_rows(lapply(seq_along(jx$scout$sets$events), function(si) {
         thisev <- jx$scout$sets$events[[si]]
         thisex <- thisev$exchange
         this_point_ids <- temp_pid + seq_len(nrow(thisex))
         temp_pid <<- max(this_point_ids)
         pwb <- tibble(point_won_by = thisex$point, point_id = this_point_ids)
-        thisto <- if (is.data.frame(thisev$timeout)) thisev$timeout %>% mutate(point_id = this_point_ids, skill = "Timeout", timeout = TRUE) %>% dplyr::filter(!is.na(.data$team)) else tibble(point_id = integer(), team = character(), skill = character(), timeout = logical())
-        ## sub is [a*]cOUT:IN
-        thissub <- if (is.data.frame(thisev$substitution)) thisev$substitution %>% mutate(point_id = this_point_ids) %>% dplyr::filter(!is.na(.data$team)) %>% mutate(code = paste0(.data$team, "c", lead0(.data$playerOut, na = "00"), ":", lead0(.data$playerIn, na = "00")), substitution = TRUE) %>% dplyr::select(-"playerIn", -"playerOut") else tibble(point_id = integer(), team = character(), code = character(), substitution = logical())
-        thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
-            thisp <- if (!is.null(thisex$plays[[j]])) thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) else NULL
-            ## if this "exchange" was a timeout, then thisp is likely NULL here, but deal with possibility that it isn't
-            ## bind timeouts to start of this plays df
-            if (this_point_ids[j] %in% thisto$point_id) {
-                thisp <- bind_rows(thisto %>% dplyr::filter(.data$point_id == this_point_ids[j]), if (!is.null(thisp)) thisp)
-            }
-            ## similarly insert sub rows, with NA skill
-            if (this_point_ids[j] %in% thissub$point_id) {
-                thisp <- bind_rows(thissub %>% dplyr::filter(.data$point_id == this_point_ids[j]), if (!is.null(thisp)) thisp)
-            }
-            if (!is.na(thisex$point[j])) {
-                ## point code
-                pc <- paste0(thisex$point[j], "p", lead0(thisev$score$home[j], na = "99"), ":", lead0(thisev$score$away[j], na = "99"))
-                ## auto codes. codes to dv_auto_codes need to be real ones
-                if (!all(thisp$team %in% c("a", "*"))) { print(dplyr::glimpse(thisp)); stop("tm") }
-                ss1 <- function(x) case_when(!is.na(x) & nzchar(x) ~ substr(x, 1, 1), TRUE ~ "~")
-                temp_codes <- c(paste0(ss1(thisp$team), lead0(thisp$player, na = "00"), ss1(thisp$skill), ss1(thisp$hitType), ss1(thisp$effect)), pc)
-                codes2 <- dv_auto_codes(temp_codes, mx)
-                ## the last element of codes2 will be the point code pc, any other extras need to be injected
-                if (length(codes2) > (nrow(thisp) + 1L)) {
-                    newcodes <- codes2[seq(from = nrow(thisp) + 1L, to = length(codes2) - 1L, by = 1L)] ## add these codes
-                    thisp <- bind_rows(thisp,
-                                       tibble(team = substr(newcodes, 1, 1), point_id = this_point_ids[j], time = tail(thisp$time, 1), point = FALSE, code = newcodes))
+        thisto <- if (is.data.frame(thisev$timeout)) thisev$timeout %>% mutate(code = paste0(.data$team, "T"), point_id = this_point_ids, skill = "Timeout", timeout = TRUE) %>% dplyr::filter(!is.na(.data$team)) else tibble(code = character(), point_id = integer(), team = character(), skill = character(), timeout = logical())
+        ## sub is [a*]c[OUT]:[IN] (or P for sub of setter) ^^^TODO P
+        thissub <- if (is.data.frame(thisev$substitution)) {
+                       thisev$substitution %>% mutate(point_id = this_point_ids) %>% dplyr::filter(!is.na(.data$team)) %>% mutate(code = paste0(.data$team, "c", lead0(.data$playerOut, na = "00"), ":", lead0(.data$playerIn, na = "00")), substitution = TRUE) ##%>% dplyr::select(-"playerIn", -"playerOut")
+                   } else {
+                       tibble(point_id = integer(), team = character(), code = character(), substitution = logical())
+                   }
+        if (FALSE) {
+            thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
+                next_time <- if (j < length(thisex$plays) && is.data.frame(thisex$plays[[j + 1]]) && "plays" %in% names(thisex$plays[[j + 1]])) min(thisex$plays[[j + 1]]$time, na.rm = TRUE) else prev_time
+                thisp <- if (!is.null(thisex$plays[[j]])) thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) else NULL
+                this_start_time <- if (is.data.frame(thisp) && "time" %in% names(thisp)) min(thisp$time, na.rm = TRUE) else prev_time ## TO CHECK
+                this_end_time <- if (is.data.frame(thisp) && "time" %in% names(thisp)) max(thisp$time, na.rm = TRUE) else next_time ## TO CHECK
+                ## if this "exchange" was a timeout, then thisp is likely NULL here, but deal with possibility that it isn't
+                ## bind timeouts to start of this plays df
+                if (this_point_ids[j] %in% thisto$point_id) {
+                    thisp <- bind_rows(thisto %>% dplyr::filter(.data$point_id == this_point_ids[j]) %>% mutate(time = prev_time), if (!is.null(thisp)) thisp)
                 }
-                thisp <- bind_rows(thisp, tibble(team = thisex$point[j], point_id = this_point_ids[j], time = tail(thisp$time, 1), point = TRUE, code = pc)) ## add the point code
+                ## similarly insert sub rows, with NA skill
+                if (this_point_ids[j] %in% thissub$point_id) {
+                    thisp <- bind_rows(thissub %>% dplyr::filter(.data$point_id == this_point_ids[j]) %>% mutate(time = this_start_time), if (!is.null(thisp)) thisp)
+                }
+                ## do we need setter position codes? (not on first point, those come in the >LUp codes)
+                spcodes <- c()
+                if (j > 1 && (!thisev$lineup$home$setterAt[j] %eq% thisev$lineup$home$setterAt[j - 1])) {
+                    spcodes <- paste0("*z", thisev$lineup$home$setterAt[j])
+                }
+                if (j > 1 && (!thisev$lineup$away$setterAt[j] %eq% thisev$lineup$away$setterAt[j - 1])) {
+                    spcodes <- c(spcodes, paste0("az", thisev$lineup$away$setterAt[j]))
+                }
+                if (length(spcodes) > 0) {
+                    thisp <- bind_rows(tibble(team = substr(spcodes, 1, 1), point_id = this_point_ids[j], time = this_start_time, point = FALSE, code = spcodes), thisp)
+                }
+                ## ^^^ TODO check if setter was substituted
+                score_changed <- j == 1 || (!thisev$score$home[j] %eq% thisev$score$home[j - 1]) || (!thisev$score$away[j] %eq% thisev$score$away[j - 1])
+                ## TODO can these blocks be consolidated?
+                if (!is.na(thisex$point[j])) {
+                    ## point code
+                    pc <- paste0(thisex$point[j], "p", lead0(thisev$score$home[j], na = "99"), ":", lead0(thisev$score$away[j], na = "99"))
+                    ## add green codes - codes to dv_green_codes need to be real ones
+                    if (!all(thisp$team %in% c("a", "*"))) { print(dplyr::glimpse(thisp)); stop("tm") }
+                    ss1 <- function(x) case_when(!is.na(x) & nzchar(x) ~ substr(x, 1, 1), TRUE ~ "~")
+                    temp_codes <- c(paste0(ss1(thisp$team), lead0(thisp$player, na = "00"), ss1(thisp$skill), ss1(thisp$hitType), ss1(thisp$effect)), pc)
+                    codes2 <- dv_green_codes(temp_codes, mx)
+                    ## the last element of codes2 will be the point code pc, any other extras need to be injected
+                    if (length(codes2) > (nrow(thisp) + 1L)) {
+                        newcodes <- codes2[seq(from = nrow(thisp) + 1L, to = length(codes2) - 1L, by = 1L)] ## add these codes
+                        thisp <- bind_rows(thisp,
+                                           tibble(team = substr(newcodes, 1, 1), point_id = this_point_ids[j], time = this_end_time, point = FALSE, code = newcodes))
+                    }
+                    thisp <- bind_rows(thisp, tibble(team = thisex$point[j], point_id = this_point_ids[j], time = this_end_time, point = TRUE, code = pc)) ## add the point code
+                } else if (score_changed) {
+                    ## can have a score correction, which will have a score but an empty plays frame, no timeout, no sub, and assuming NA point
+                    ## so add pc rows if needed, there may need to be more than one
+                    last_scores <- if (j == 1) c(0, 0) else as.numeric(thisev$score[j - 1, ]) ## TODO ensure not missing
+                    hts_delta <- thisev$score$home[j] - last_scores[1] ## change in home team score
+                    vts_delta <- thisev$score$away[j] - last_scores[2] ## change in visiting team score
+                    newcodes <- newscores_h <- newscores_v <- c()
+                    temptm <- c() ## the team being assigned each of these points, also use this to keep track of the number of points to insert, use to adjust point_id
+                    if (hts_delta != 0) {
+                        for (sci in (seq_len(abs(hts_delta)) * sign(hts_delta))) {
+                            newcodes <- c(newcodes, dv_green_codes(paste0("*p", lead0(last_scores[1] + sci), ":", lead0(last_scores[2])), mx))
+                            newscores_h <- c(newscores_h, last_scores[1] + sci)
+                        }
+                        newscores_v <- rep(last_scores[2], length(newscores_h))
+                        temptm <- c(temptm, rep("*", abs(hts_delta) * 3))
+                        last_scores[1] <- thisev$score$home[j]
+                    }
+                    if (vts_delta != 0) {
+                        for (sci in (seq_len(abs(vts_delta)) * sign(vts_delta))) {
+                            newcodes <- c(newcodes, dv_green_codes(paste0("ap", lead0(last_scores[1]), ":", lead0(last_scores[2] + sci)), mx))
+                            newscores_v <- c(newscores_v, last_scores[2] + sci)
+                        }
+                        temptm <- c(temptm, rep("a", abs(vts_delta) * 3))
+                        newscores_h <- c(newscores_h, rep(last_scores[1], length(newscores_v) - length(newscores_h)))
+                    }
+                    ## ^^^ TODO also adjust the home_setter_position and visiting_setter_position so that those *zX and azX codes get entered (?)
+                    ##   and in that case also change the lineups?
+                    ## TO CHECK if a point is being subtracted, is it still given a # green code ("point win") for that team?
+                    temp_point_ids <- this_point_ids[j] + rep(seq_len(abs(hts_delta) + abs(vts_delta)), each = 3) / (abs(hts_delta) + abs(vts_delta) + 1L)
+                    ## ^^^ TODO add home_setter_position and visiting_setter_position cols here, lineups, scores
+                    thisp <- bind_rows(thisp, tibble(team = temptm, point_id = temp_point_ids, time = this_end_time, point = TRUE, code = newcodes, home_team_score_corrected = rep(newscores_h, each = 3), visiting_team_score_corrected = rep(newscores_v, each = 3)))
+                }
+                if ("time" %in% names(thisp) && !all(is.na(thisp$time))) prev_time <<- max(thisp$time, na.rm = TRUE)
+                thisp
+            }))
+            if (!"home_team_score_corrected" %in% names(thisex)) thisex$home_team_score_corrected <- NA_integer_
+            if (!"visiting_team_score_corrected" %in% names(thisex)) thisex$visiting_team_score_corrected <- NA_integer_
+            if (!"substitution" %in% names(thisex)) thisex$substitution <- FALSE
+            if (!"timeout" %in% names(thisex)) thisex$timeout <- FALSE
+            thisex <- left_join(thisex, pwb, by = "point_id") %>% mutate(set_number = si)
+            this_pts <- thisev$score %>% mutate(point_id = this_point_ids) %>% dplyr::rename(home_team_score = "home", visiting_team_score = "away")
+            thisex <- left_join(thisex, this_pts, by = "point_id") %>%
+                mutate(home_team_score = case_when(!is.na(.data$home_team_score_corrected) ~ as.integer(.data$home_team_score_corrected), TRUE ~ as.integer(.data$home_team_score)),
+                       visiting_team_score = case_when(!is.na(.data$visiting_team_score_corrected) ~ as.integer(.data$visiting_team_score_corrected), TRUE ~ as.integer(.data$visiting_team_score))) %>%
+                dplyr::select(-"home_team_score_corrected", -"visiting_team_score_corrected")
+            ## home team lineup
+            this_htl <- tibble(home_setter_position = thisev$lineup$home$setterAt, point_id = this_point_ids)
+            thisex <- left_join(thisex, this_htl, by = "point_id")
+            this_htl <- thisev$lineup$home$positions %>% mutate(point_id = this_point_ids) %>%
+                dplyr::rename(home_p1 = "1", home_p2 = "2", home_p3 = "3", home_p4 = "4", home_p5 = "5", home_p6 = "6")
+            thisex <- left_join(thisex, this_htl, by = "point_id")
+            ## visiting team lineup
+            this_vtl <- tibble(visiting_setter_position = thisev$lineup$away$setterAt, point_id = this_point_ids)
+            thisex <- left_join(thisex, this_vtl, by = "point_id")
+            this_vtl <- thisev$lineup$away$positions %>% mutate(point_id = this_point_ids) %>%
+                dplyr::rename(visiting_p1 = "1", visiting_p2 = "2", visiting_p3 = "3", visiting_p4 = "4", visiting_p5 = "5", visiting_p6 = "6")
+            thisex <- left_join(thisex, this_vtl, by = "point_id")
+            thisex$substitution[is.na(thisex$substitution)] <- FALSE
+            thisex$timeout[is.na(thisex$timeout)] <- FALSE
+            ## insert >LUp codes at start of set
+            hs <- tryCatch(unlist(thisex[1, paste0("home_p", team_player_num)])[thisex$home_setter_position[1]], error = function(e) 0L)
+            vs <- tryCatch(unlist(thisex[1, paste0("visiting_p", team_player_num)])[thisex$visiting_setter_position[1]], error = function(e) 0L)
+            lineup_codes <- paste0(c(paste0("*P", lead0(hs)), paste0("*z", thisex$home_setter_position[1]), paste0("aP", lead0(vs)), paste0("az", thisex$visiting_setter_position[1])), ">LUp")
+            lineup_df <- tibble(point_id = thisex$point_id[1], code = lineup_codes, team = c("*", "*", "a", "a"), substitution = FALSE, timeout = FALSE, point = FALSE, set_number = si)
+            lineup_df <- dplyr::bind_cols(lineup_df, thisex[1, c("point_won_by", "home_team_score", "visiting_team_score", paste0("home_p", team_player_num), paste0("visiting_p", team_player_num))])
+            thisex <- bind_rows(lineup_df, thisex)
+            ## **Xset code at end
+            eos_df <- tibble(point_id = max(thisex$point_id, na.rm = TRUE) + 1L, code = paste0("**", si, "set"), set_number = si, timeout = FALSE, substitution = FALSE, end_of_set = TRUE, point = FALSE, time = max(thisex$time, na.rm = TRUE))
+            eos_df <- dplyr::bind_cols(eos_df, thisex[nrow(thisex), c("home_team_score", "visiting_team_score", paste0("home_p", team_player_num), paste0("visiting_p", team_player_num))])
+            thisex <- bind_rows(thisex, eos_df)
+            names(thisex) <- camel_to_underscore(names(thisex))
+        } else {
+            ## scores
+            this_pts <- thisev$score %>% mutate(point_id = this_point_ids) %>% dplyr::rename(home_team_score = "home", visiting_team_score = "away") %>%
+                mutate(code = case_when(dplyr::row_number() == 1 & .data$home_team_score > 0 ~ "*",
+                                        dplyr::row_number() == 1 & .data$visiting_team_score > 0 ~ "a",
+                                        .data$home_team_score != dplyr::lag(.data$home_team_score) ~ "*",
+                                        .data$visiting_team_score != dplyr::lag(.data$visiting_team_score) ~ "a",
+                                        TRUE ~ "~"), ## ~ denoting no score change, so no *p/ap code to add
+                       ## note that negative score changes also count as "points", they will appear in score correction lines
+                       ## only insert p-code when scores change (e.g. not subs)
+                       code = case_when(code != "~" ~ paste0(.data$code, "p", lead0(.data$home_team_score, na = "99"), ":", lead0(.data$visiting_team_score, na = "99"))),
+                       point = !is.na(.data$code), team = substr(.data$code, 1, 1))
+            ## columns to preserve when adding new rows to the dataframe
+            keepcols <- c("point_id", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number",
+                          "home_setter_position", "visiting_setter_position", "home_p1", "home_p2", "home_p3", "home_p4", "home_p5", "home_p6",
+                          "visiting_p1", "visiting_p2", "visiting_p3", "visiting_p4", "visiting_p5", "visiting_p6")
+            if (FALSE) {
+                ## the filter-within-loop is very slow
+                thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
+                    next_time <- if (j < length(thisex$plays) && is.data.frame(thisex$plays[[j + 1]]) && "plays" %in% names(thisex$plays[[j + 1]])) min(thisex$plays[[j + 1]]$time, na.rm = TRUE) else prev_time
+                    thisp <- if (!is.null(thisex$plays[[j]])) thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) %>% dplyr::select(-"_id", -"originalTime") else NULL
+                    this_start_time <- if (is.data.frame(thisp) && "time" %in% names(thisp)) min(thisp$time, na.rm = TRUE) else prev_time ## TO CHECK
+                    this_end_time <- if (is.data.frame(thisp) && "time" %in% names(thisp)) max(thisp$time, na.rm = TRUE) else next_time ## TO CHECK
+                    thisp <- bind_rows(thisto %>% dplyr::filter(.data$point_id == this_point_ids[j]) %>% mutate(time = prev_time),
+                                       thissub %>% dplyr::filter(.data$point_id == this_point_ids[j]) %>% mutate(time = this_start_time),
+                                       thisp,
+                                       this_pts %>% dplyr::filter(.data$point, .data$point_id == this_point_ids[j]) %>% dplyr::select(-"home_team_score", -"visiting_team_score") %>% mutate(time = this_end_time))
+                    ## (don't add home_team_score and visiting_team_score on the last row here, otherwise it's missing from other rows in the rally). left-join below
+                    if ("time" %in% names(thisp) && !all(is.na(thisp$time))) prev_time <<- max(thisp$time, na.rm = TRUE)
+                    thisp
+                })) %>% mutate(substitution = case_when(is.na(.data$substitution) ~ FALSE, TRUE ~ .data$substitution),
+                               timeout = case_when(is.na(.data$timeout) ~ FALSE, TRUE ~ .data$timeout),
+                               point = case_when(is.na(.data$point) ~ FALSE, TRUE ~ .data$point))
+            } else {
+                ## faster - row-bind the plays, timeouts, subs, and points, with care to ensure row ordering is correct
+                thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
+                    if (!is.null(thisex$plays[[j]])) thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) %>% dplyr::select(-"_id", -"originalTime") else NULL
+                }))
+                thisex <- bind_rows(thisto %>% dplyr::group_by(.data$point_id) %>% mutate(sort_order = dplyr::row_number() / 10e7) %>% dplyr::ungroup() %>% mutate(sort_order = .data$point_id + .data$sort_order),
+                                    thissub %>% dplyr::group_by(.data$point_id) %>% mutate(sort_order = dplyr::row_number() / 10e5) %>% dplyr::ungroup() %>% mutate(sort_order = .data$point_id + .data$sort_order),
+                                    thisex %>% dplyr::group_by(.data$point_id) %>% mutate(sort_order = dplyr::row_number() / 10e3) %>% dplyr::ungroup() %>% mutate(sort_order = .data$point_id + .data$sort_order),
+                                    this_pts %>% dplyr::filter(.data$point) %>% dplyr::select(-"home_team_score", -"visiting_team_score") %>% dplyr::group_by(.data$point_id) %>% mutate(sort_order = dplyr::row_number() / 10e1) %>% dplyr::ungroup() %>% mutate(sort_order = .data$point_id + .data$sort_order)) %>%
+                    dplyr::arrange(.data$sort_order) %>% dplyr::select(-"sort_order") %>%
+                    mutate(substitution = case_when(is.na(.data$substitution) ~ FALSE, TRUE ~ .data$substitution),
+                           timeout = case_when(is.na(.data$timeout) ~ FALSE, TRUE ~ .data$timeout),
+                           point = case_when(is.na(.data$point) ~ FALSE, TRUE ~ .data$point))
+                ## fill in missing times
+                tms <- thisex %>% dplyr::group_by(.data$point_id) %>%
+                    dplyr::summarize(this_start_time = if (!all(is.na(.data$time))) min(.data$time, na.rm = TRUE) else NA_integer_,
+                                     this_end_time = if (!all(is.na(.data$time))) max(.data$time, na.rm = TRUE) else NA_integer_) %>%
+                    mutate(prev_time = dplyr::lag(.data$this_end_time), next_time = dplyr::lead(.data$this_start_time),
+                           this_start_time = case_when(!is.na(.data$this_start_time) ~ .data$this_start_time, TRUE ~ pmin(.data$prev_time, .data$this_end_time, .data$next_time, na.rm = TRUE)),
+                           this_end_time = case_when(!is.na(.data$this_end_time) ~ .data$this_end_time, TRUE ~ pmax(.data$prev_time, .data$this_end_time, .data$next_time, na.rm = TRUE)),
+                           prev_time = case_when(!is.na(.data$prev_time) ~ .data$prev_time, TRUE ~ .data$this_start_time))
+                thisex <- left_join(thisex, tms, by = "point_id") %>% mutate(time = case_when(!is.na(.data$time) ~ .data$time,
+                                                                                              .data$substitution ~ .data$this_start_time,
+                                                                                              .data$point ~ .data$this_end_time,
+                                                                                              .data$timeout ~ .data$prev_time)) %>%
+                    dplyr::select(-"this_start_time", -"this_end_time", -"prev_time", -"next_time")
             }
-            thisp
-        }))
-        if (!"substitution" %in% names(thisex)) thisex$substitution <- FALSE
-        if (!"timeout" %in% names(thisex)) thisex$timeout <- FALSE
-        thisex <- left_join(thisex, pwb, by = "point_id") %>% mutate(set_number = si)
-        this_pts <- thisev$score %>% mutate(point_id = this_point_ids) %>% dplyr::rename(home_team_score = "home", visiting_team_score = "away")
-        thisex <- left_join(thisex, this_pts, by = "point_id")
-        ## home team lineup
-        this_htl <- tibble(home_setter_position = thisev$lineup$home$setterAt, point_id = this_point_ids)
-        thisex <- left_join(thisex, this_htl, by = "point_id")
-        this_htl <- thisev$lineup$home$positions %>% mutate(point_id = this_point_ids) %>%
-            dplyr::rename(home_p1 = "1", home_p2 = "2", home_p3 = "3", home_p4 = "4", home_p5 = "5", home_p6 = "6")
-        thisex <- left_join(thisex, this_htl, by = "point_id")
-        ## visiting team lineup
-        this_vtl <- tibble(visiting_setter_position = thisev$lineup$away$setterAt, point_id = this_point_ids)
-        thisex <- left_join(thisex, this_vtl, by = "point_id")
-        this_vtl <- thisev$lineup$away$positions %>% mutate(point_id = this_point_ids) %>%
-            dplyr::rename(visiting_p1 = "1", visiting_p2 = "2", visiting_p3 = "3", visiting_p4 = "4", visiting_p5 = "5", visiting_p6 = "6")
-        thisex <- left_join(thisex, this_vtl, by = "point_id")
-        thisex$substitution[is.na(thisex$substitution)] <- FALSE
-        thisex$timeout[is.na(thisex$timeout)] <- FALSE
-        ## insert >LUp codes at start of set
-        hs <- tryCatch(unlist(thisex[1, paste0("home_p", team_player_num)])[thisex$home_setter_position[1]], error = function(e) 0L)
-        vs <- tryCatch(unlist(thisex[1, paste0("visiting_p", team_player_num)])[thisex$visiting_setter_position[1]], error = function(e) 0L)
-        lineup_codes <- paste0(c(paste0("*P", lead0(hs)), paste0("*z", thisex$home_setter_position[1]), paste0("aP", lead0(vs)), paste0("az", thisex$visiting_setter_position[1])), ">LUp")
-        lineup_df <- tibble(point_id = thisex$point_id[1], code = lineup_codes, team = c("*", "*", "a", "a"), substitution = FALSE, timeout = FALSE, point = FALSE, set_number = si)
-        lineup_df <- dplyr::bind_cols(lineup_df, thisex[1, c("home_team_score", "visiting_team_score", paste0("home_p", team_player_num), paste0("visiting_p", team_player_num))])
-        thisex <- bind_rows(lineup_df, thisex)
-        ## **Xset code at end
-        eos_df <- tibble(point_id = max(thisex$point_id, na.rm = TRUE) + 1L, code = paste0("**", si, "set"), ## video time, time,
-                         set_number = si, timeout = FALSE, substitution = FALSE, end_of_set = TRUE, point = FALSE)
-        eos_df <- dplyr::bind_cols(eos_df, thisex[nrow(thisex), c("home_team_score", "visiting_team_score", paste0("home_p", team_player_num), paste0("visiting_p", team_player_num))])
-        thisex <- bind_rows(thisex, eos_df)
+            names(thisex) <- camel_to_underscore(names(thisex))
+            ## point won by
+            thisex <- left_join(thisex, pwb, by = "point_id") %>% mutate(set_number = si)
+            ## scores
+            thisex <- left_join(thisex, this_pts %>% dplyr::select("point_id", "home_team_score", "visiting_team_score"), by = "point_id")
+            ## setter positions
+            this_htl <- tibble(home_setter_position = thisev$lineup$home$setterAt, point_id = this_point_ids)
+            thisex <- left_join(thisex, this_htl, by = "point_id")
+            this_vtl <- tibble(visiting_setter_position = thisev$lineup$away$setterAt, point_id = this_point_ids)
+            thisex <- left_join(thisex, this_vtl, by = "point_id")
+            ## home team lineup
+            this_htl <- thisev$lineup$home$positions %>% mutate(point_id = this_point_ids) %>%
+                dplyr::rename(home_p1 = "1", home_p2 = "2", home_p3 = "3", home_p4 = "4", home_p5 = "5", home_p6 = "6")
+            thisex <- left_join(thisex, this_htl, by = "point_id")
+            ## visiting team lineup
+            this_vtl <- thisev$lineup$away$positions %>% mutate(point_id = this_point_ids) %>%
+                dplyr::rename(visiting_p1 = "1", visiting_p2 = "2", visiting_p3 = "3", visiting_p4 = "4", visiting_p5 = "5", visiting_p6 = "6")
+            thisex <- left_join(thisex, this_vtl, by = "point_id")
+
+            fix_rally <- function(rx, last_hsp, last_vsp, last_hts, last_vts, meta) {
+                ## rx is a data.frame
+                ## last_hsp, last_vsp = last known setter positions
+                ## last_hts, last_vts = last team scores
+                if (nrow(rx) < 1) return(rx)
+                ## TODO ensure no missing times
+                is_sub <- is_to <- is_sc <- is_point <- FALSE
+                if (any(rx$substitution)) {
+                    stopifnot(nrow(rx) == 1)
+                    is_sub <- TRUE
+                } else if (any(rx$timeout)) {
+                    stopifnot(nrow(rx) == 1)
+                    is_to <- TRUE
+                } else if (nrow(rx) == 1 && isTRUE(rx$point)) {
+                    is_sc <- TRUE
+                } else if (any(rx$point)) {
+                    is_point <- TRUE
+                }
+                ## if this was this a substitution, did the setter get substituted?
+                if (is_sub) {
+                    if (rx$team %eq% "*") {
+                        setter_num <- tryCatch(rx[[paste0("home_p", rx$home_setter_position)]], error = NA_integer_)
+                    } else if (rx$team %eq% "a") {
+                        setter_num <- tryCatch(rx[[paste0("visiting_p", rx$visiting_setter_position)]], error = NA_integer_)
+                    } else {
+                        stop("sub for unknown team")
+                    }
+                    if (is.na(setter_num)) stop("unknown setter")
+                    if (rx$player_out == setter_num) substr(rx$code, 2, 2) <- "P" ## make the sub code a setter sub
+                }
+                ## $point indicates that the score changed, either through a genuine rally or via a score correction
+                if (is_sc) {
+                    ## score correction, add pc rows if needed, there may need to be more than one
+                    ## also discard the existing point code, because it will need to be re-created in sequence here
+                    last_scores <- c(last_hts, last_vts)
+                    hts_delta <- rx$home_team_score - last_scores[1] ## change in home team score
+                    vts_delta <- rx$visiting_team_score - last_scores[2] ## change in visiting team score
+                    n_adj <- abs(hts_delta) + abs(vts_delta) ## the number of score adjustments we'll insert
+                    newcodes <- newscores_h <- newscores_v <- c()
+                    ## note that we don't try and keep track of setter positions through this and enter the appropriate *z/az codes. Just enter the first one (code block below)
+                    if (hts_delta != 0) {
+                        for (sci in (seq_len(abs(hts_delta)) * sign(hts_delta))) {
+                            thiscodes <- dv_green_codes(paste0("*p", lead0(last_scores[1] + sci), ":", lead0(last_scores[2])), meta)
+                            newscores_h <- c(newscores_h, rep(last_scores[1] + sci, length(thiscodes)))
+                            newcodes <- c(newcodes, thiscodes)
+                        }
+                        newscores_v <- rep(last_scores[2], length(newscores_h))
+                        last_scores[1] <- rx$home_team_score
+                    }
+                    if (vts_delta != 0) {
+                        for (sci in (seq_len(abs(vts_delta)) * sign(vts_delta))) {
+                            thiscodes <- dv_green_codes(paste0("ap", lead0(last_scores[1]), ":", lead0(last_scores[2] + sci)), meta)
+                            newscores_v <- c(newscores_v, rep(last_scores[2] + sci, length(thiscodes)))
+                            newcodes <- c(newcodes, thiscodes)
+                            newscores_h <- c(newscores_h, rep(last_scores[1], length(thiscodes)))
+                        }
+                    }
+                    if (length(newcodes) != (n_adj * 3)) stop("adjustment length wrong?")
+                    ## TO CHECK if a point is being subtracted, is it still given a # green code ("point win") for that team?
+                    temp_point_ids <- rx$point_id
+                    if (n_adj > 1) temp_point_ids <- temp_point_ids + rep(seq_len(abs(hts_delta) + abs(vts_delta)), each = 3) / (n_adj + 1L)
+                    rx <- rx[rep(1L, length(newcodes)), keepcols] %>% mutate(team = substr(newcodes, 1, 1), point_id = temp_point_ids, point = substr(newcodes, 2, 2) == "p", code = newcodes, home_team_score = newscores_h, visiting_team_score = newscores_v)
+                } else if (is_point) {
+                    ## add green codes - reconstruct codes first, codes to dv_green_codes need to be real ones
+                    if (!all(rx$team %in% c("a", "*"))) { print(dplyr::glimpse(rx)); stop("tm") }
+                    ss1 <- function(x) case_when(!is.na(x) & nzchar(x) ~ substr(x, 1, 1), TRUE ~ "~")
+                    temp_codes <- paste0(ss1(rx$team), lead0(rx$player, na = "00"), ss1(rx$skill), ss1(rx$hit_type), ss1(rx$effect))
+                    temp_codes[which(rx$point)] <- rx$code[which(rx$point)] ## retain the original point code
+                    codes2 <- dv_green_codes(temp_codes, meta)
+                    ## the last element of codes2 will be the point code pc, any other extras need to be injected
+                    if (length(codes2) > nrow(rx)) {
+                        newcodes <- codes2[seq(from = nrow(rx), to = length(codes2) - 1L, by = 1L)] ## add these codes
+                        rx <- bind_rows(head(rx, -1), ## not the last row
+                                        rx[rep(nrow(rx) - 1L, length(newcodes)), keepcols] %>% mutate(team = substr(newcodes, 1, 1), point = FALSE, code = newcodes),
+                                        tail(rx, 1))
+                    }
+                }
+                ## insert setter position codes, when setter has changed position (and not on first point, those come in the >LUp codes - so for the first point, make sure that the last_hsp and last_vsp are passed as their starting values)
+                spcodes <- c()
+                if (!rx$home_setter_position[1] %eq% last_hsp) {
+                    spcodes <- paste0("*z", rx$home_setter_position[1])
+                }
+                if (!rx$visiting_setter_position[1] %eq% last_vsp) {
+                    spcodes <- c(spcodes, paste0("az", rx$visiting_setter_position[1]))
+                }
+                if (length(spcodes) > 0) {
+                    ## if this was a sub, the sub code should appear before the spcodes
+                    rx <- bind_rows(if (is_sub) rx, rx[rep(1, length(spcodes)), keepcols] %>% mutate(team = substr(spcodes, 1, 1), code = spcodes), if (!is_sub) rx)
+                }
+                rx
+            }
+            ## update each rally, deal with score adjustment, update setter positions, etc
+            temp <- list()
+            last_hts <- last_vts <- 0L
+            last_hsp <- thisex$home_setter_position[1]
+            last_vsp <- thisex$visiting_setter_position[1]
+            for (pid in unique(thisex$point_id)) {
+                this <- thisex[thisex$point_id == pid, ]
+                this <- fix_rally(this, last_hsp = last_hsp, last_vsp = last_vsp, last_hts = last_hts, last_vts = last_vts, meta = mx)
+                temp[[pid]] <- this
+                last_hts <- tail(this$home_team_score, 1)
+                last_vts <- tail(this$visiting_team_score, 1)
+                last_hsp <- tail(this$home_setter_position, 1)
+                last_vsp <- tail(this$visiting_setter_position, 1)
+            }
+
+            thisex <- bind_rows(temp)
+            ## insert >LUp codes at start of set
+            hs <- tryCatch(unlist(thisex[1, paste0("home_p", team_player_num)])[thisex$home_setter_position[1]], error = function(e) 0L)
+            vs <- tryCatch(unlist(thisex[1, paste0("visiting_p", team_player_num)])[thisex$visiting_setter_position[1]], error = function(e) 0L)
+            lineup_codes <- paste0(c(paste0("*P", lead0(hs)), paste0("*z", thisex$home_setter_position[1]), paste0("aP", lead0(vs)), paste0("az", thisex$visiting_setter_position[1])), ">LUp")
+            thisex <- bind_rows(thisex[rep(1, 4), keepcols] %>% mutate(code = lineup_codes, team = c("*", "*", "a", "a")), thisex)
+            ## **Xset code at end
+            thisex <- bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
+        }
         thisex
     }))
 
     px$end_of_set[is.na(px$end_of_set)] <- FALSE
+
+    ## re-create the proper scout code for skill rows, otherwise if we dv_write this and dv_read it, it will not work
+    px$code <- vsm_row2code(px)
 
     idx <- which(!px$skill %in% c("S", "R", "E", "A", "B", "D", "F", "Timeout", "Technical timeout", NA_character_))
     if (length(idx) > 0) {
@@ -234,7 +491,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     ##temp_skill[idx] <- NA_character_
     px$skill <- plyr::mapvalues(temp_skill, from = c("S", "R", "E", "A", "B", "D", "F"), to = c("Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball"), warn_missing = FALSE)
 
-    names(px) <- camel_to_underscore(names(px))
     names(px)[names(px) == "end_sub_zone"] <- "end_subzone"
     idx <- which(!is.na(px$hit_type))
     out_skill_type <- out_evaluation <- rep(NA_character_, nrow(px))
@@ -462,6 +718,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
 
     ## technical timeouts
+    ## ^^ TODO add video_time
     if (is.flag(insert_technical_timeouts)) {
         if (isTRUE(insert_technical_timeouts)) {
             insert_technical_timeouts <- if (grepl("beach", file_type)) list(function(s1, s2) (s1 + s2) == 21, NULL) else list(c(8, 16), NULL)
@@ -579,6 +836,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     class(x$plays) <- c("datavolleyplays", class(x$plays))
     class(x) <- c("datavolley", class(x))
 
+    ## update the set durations, subs, etc in the metadata
+    x <- dv_update_meta(x)
+
     ## apply additional validation
     if (extra_validation > 0) {
         moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
@@ -593,3 +853,36 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     x
 }
 
+## convert skill rows of the vsm exchanges data.frame to proper codes
+vsm_row2code <- function(x) {
+    if (nrow(x) < 1) return(character())
+    na2t <- function(z, width = 1) {
+        default <- stringr::str_flatten(rep("~", width))
+        if (is.null(z)) default else case_when(!is.na(z) & nchar(z) > 0 ~ stringr::str_pad(substr(z, 1, width), width, side = "right", pad = "~"), TRUE ~ default)
+    }
+    ##na2t(c("dsjfldjldk", "a", "", NA_character_, 99), 5) ==> "dsjfl" "a~~~~" "~~~~~" "~~~~~" "99~~~"
+    out <- x$code
+    ## only updating skill codes
+    idx <- x$skill %in% c("S", "R", "E", "A", "B", "D", "F")
+    if (!all(x$team[idx] %in% c("a", "*"))) {
+        warning("at least one missing team code for a skill row")
+        out[idx & !x$team %in% c("a", "*")] <- NA_character_
+    }
+    idx <- which(idx & x$team %in% c("a", "*"))
+    if (length(idx) < 1) return(out)
+    temp <- x[idx, ]
+    pnum <- lead0(case_when(is.na(temp$player) | temp$player %in% c("Unknown", "Unknown player") ~ "00", TRUE ~ temp$player))
+    pnum[nchar(pnum) > 2 | grepl("^\\-", pnum)] <- "00" ## illegal numbers, treat as unknown
+    out[idx] <- sub("~+$", "", paste0(temp$team, ## team code
+                                      pnum, ## zero-padded player number
+                                      temp$skill, ## skill
+                                      case_when(is.na(temp$hit_type) | temp$hit_type == "~" ~ tryCatch(default_scouting_table$skill_type[default_scouting_table$skill == temp$skill], error = function(e) "~"), TRUE ~ temp$hit_type), ## skill_type (tempo)
+                                      case_when(is.na(temp$effect) | temp$effect == "~" ~ tryCatch(default_scouting_table$evaluation_code[default_scouting_table$skill == temp$skill], error = function(e) "~"), TRUE ~ temp$effect), ## evaluation_code
+                                      na2t(temp$combination, 2), ## attack combo code or setter call
+                                      na2t(temp$target_attacker), ## target attacker
+                                      na2t(temp$start_zone), na2t(temp$end_zone), na2t(temp$end_sub_zone), ## start, end, end subzone
+                                      na2t(case_when((is.na(temp$skill_type) | temp$skill_type == "~") & temp$skill == "A" ~ "H", TRUE ~ temp$skill_type)), ## skill_subtype
+                                      na2t(temp$players), ## num_players
+                                      na2t(temp$special), na2t(temp$custom, 5)))
+    out
+}
