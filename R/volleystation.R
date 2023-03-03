@@ -49,49 +49,25 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     msgs <- list()
     file_type <- jx$gameType
-    team_player_num <- if (isTRUE(grepl("beach", file_type))) 1:2 else 1:6
-    x <- list(file_meta = data.frame(fileformat = "2.0",
-                                     generator_day = as.POSIXct(NA),
-                                     generator_idp = "DVW",
-                                     generator_prg = "VolleyStation",
-                                     generator_rel = "",
-                                     generator_ver = NA_character_,
-                                     generator_nam = "",
-                                     lastchange_day = as.POSIXct(NA),
-                                     lastchange_idp = "DVW",
-                                     lastchange_prg = "VolleyStation",
-                                     lastchange_rel = "",
-                                     lastchange_ver = NA_character_,
-                                     lastchange_nam = "",
-                                     preferred_date_format = "ymd",
-                                     file_type = file_type),
+    pseq <- if (isTRUE(grepl("beach", file_type))) 1:2 else 1:6
+    x <- list(file_meta = dv_create_file_meta(generator_day = as.POSIXct(NA), generator_idp = "DVW", generator_prg = "VolleyStation",
+                                     generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type),
               messages = data.frame())
 
-    temp <- lubridate::ymd_hms(jx$startDate)
-    mx <- list(match = tibble(date = as.Date(temp),
-                              time = tryCatch(lubridate::period(format(temp, "%HH %MM %SS")), error = function(e) lubridate::as.period(NA)),
-                              season = NA, league = NA, phase = NA, home_away = NA, day_number = NA, match_number = NA,
-                              text_encoding = "UTF-8",
-                              regulation = if (isTRUE(jx$gameType == "indoor")) "indoor rally point" else stop("unexpected gameType: ", jx$gameType),
-                              zones_or_cones = "Z", ## cones not supported in VS
-                              X12 = NA, X13 = NA, X14 = NA, X15 = NA, X16 = NA),
-               more = tibble(referees = NA_character_, spectators = NA_character_, receipts = NA, city = NA_character_, arena = NA_character_,
-                             scout = NA_character_, X7 = NA, X8 = NA, X9 = NA, X10 = NA, X11 = NA)) ## TODO surely the scout name at least is in the json
+    mx <- list(match = dv_create_meta_match(date = lubridate::ymd_hms(jx$startDate),
+                                            regulation = if (isTRUE(jx$gameType == "indoor")) "indoor rally point" else stop("unexpected gameType: ", jx$gameType),
+                                            zones_or_cones = "Z"), ## cones not supported in VS
+               more = dv_create_meta_more()) ## TODO surely the scout name at least is in the json
     if ("comment" %in% names(jx)) {
         ## e.g. "---- summary ----\nno comments\n\n---- match description ----\n\n\n---- coach home ----\n\n\n---- coach away ----\n"
         cx <- strsplit(jx$comment, "\n\\-\\-\\-\\-[[:space:]]*")[[1]]
         cx <- sub("\n+$", "", sub(".*\\-\\-\\-\\-\n", "", cx))
-        cx <- c(cx, rep(NA_character_, 5 - length(cx)))
-        mx$comments = tibble(comment_1 = cx[1], comment_2 = cx[2], comment_3 = cx[3], comment_4 = cx[4], comment_5 = cx[5])
+        cx <- c(cx, rep(NA_character_, 4 - length(cx)))
+        mx$comments = dv_create_meta_comments(summary = cx[1], match_description = cx[2], home_coach_comments = cx[3], visiting_coach_comments = cx[4])
     } else {
-        mx$comments = tibble(comment_1 = NA_character_, comment_2 = NA_character_, comment_3 = NA_character_, comment_4 = NA_character_, comment_5 = NA_character_)
+        mx$comments = dv_create_meta_comments()
     }
-    mx$result <- tibble(played = TRUE, score_intermediate1 = NA_character_, score_intermediate2 = NA_character_, score_intermediate3 = NA_character_,
-                        score = paste0(jx$scout$sets$score$home, "-", jx$scout$sets$score$away),
-                        duration = NA_real_, ## update below
-                        X7 = NA,
-                        score_home_team = jx$scout$sets$score$home,
-                        score_visiting_team = jx$scout$sets$score$away)
+    mx$result <- dv_create_meta_result(home_team_scores = jx$scout$sets$score$home, visiting_team_scores = jx$scout$sets$score$away) ## will be further populated by dv_update_meta below
     c1 <- paste(jx$team$home$staff$coach$firstName, jx$team$home$staff$coach$lastName)
     if (length(c1) < 1) c1 <- NA_character_
     c2 <- paste(jx$team$away$staff$coach$firstName, jx$team$away$staff$coach$lastName)
@@ -100,59 +76,28 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if (length(a1) < 1) a1 <- NA_character_
     a2 <- paste(paste(jx$team$away$staff$assistantCoach$firstName, jx$team$away$staff$assistantCoach$lastName), paste(jx$team$away$staff$assistantCoach2$firstName, jx$team$away$staff$assistantCoach2$lastName), collapse = " / ")
     if (length(a2) < 1) a2 <- NA_character_
-    mx$teams <- tibble(team_id = c(jx$team$home$code, jx$team$away$code),
-                       team = c(jx$team$home$name, jx$team$away$name),
-                       sets_won = c(NA_integer_, NA_integer_), ## update below
-                       coach = c(c1, c2),
-                       assistant = c(a1, a2),
-                       shirt_colour = NA_character_,
-                       X7 = NA, X8 = NA, X9 = NA, X10 = NA,
-                       home_away_team = c("*", "a"),
-                       won_match = if (mean(mx$result$score_home_team > mx$result$score_visiting_team, na.rm = TRUE) > 0.5) {
-                                       c(TRUE, FALSE)
-                                   } else if (mean(mx$result$score_home_team > mx$result$score_visiting_team, na.rm = TRUE) < 0.5) {
-                                       c(FALSE, TRUE)
-                                   } else {
-                                       NA
-                                   })
+    mx$teams <- dv_create_meta_teams(team_ids = c(jx$team$home$code, jx$team$away$code),
+                                     teams = c(jx$team$home$name, jx$team$away$name),
+                                     coaches = c(c1, c2),
+                                     assistants = c(a1, a2))
 
     mx$players_h <- vs_reformat_players(jx, "home")
     mx$players_v <- vs_reformat_players(jx, "visiting")
 
-    ax <- jx$attackCombinations
-    if (any(duplicated(ax$code))) {
-        warning("ignoring duplicate attack combination codes: ", paste0(unique(ax$code[duplicated(ax$code)]), collapse = ", "))
-        ax <- ax[!duplicated(ax$code), , drop = FALSE]
-    }
-    temp <- datavolley::dv_xy(zones = ax$start$zone, subzones = ax$start$subZone, end = "lower")
-    mx$attacks <- tibble(code = ax$code,
-                         attacker_position = ax$start$zone,
-                         side = NA, ## R,L,C,
-                         type = ax$hitType,
-                         description = ax$name,
-                         X6 = NA,
-                         colour = NA_character_,
-                         start_coordinate = datavolley::dv_xy2index(temp),
-                         set_type = ax$targetAttacker,
-                         X10 = NA, X11 = NA)
-    sx <- jx$setterCalls
-    if (any(duplicated(sx$code))) {
-        warning("ignoring duplicate setter calls: ", paste0(unique(sx$code[duplicated(sx$code)]), collapse = ", "))
-        sx <- sx[!duplicated(sx$code), , drop = FALSE]
-    }
-    ## sx$area seems to be zone and subzone of where the middle runs
-    mx$sets <- tibble(code = sx$code, X2 = NA, description = sx$name, X4 = NA,
-                      colour = NA_character_,
-                      start_coordinate = NA_integer_, mid_coordinate = NA_integer_, end_coordinate = NA_integer_,
-                      path = NA_character_,  path_colour = NA_character_, X11 = NA)
+    mx$attacks <- dv_create_meta_attack_combos(code = jx$attackCombinations$code,
+                                               start_zone = jx$attackCombinations$start$zone,
+                                               side = NA_character_, ## R,L,C,
+                                               tempo = jx$attackCombinations$hitType,
+                                               description = jx$attackCombinations$name,
+                                               start_coordinate = datavolley::dv_xy2index(datavolley::dv_xy(zones = jx$attackCombinations$start$zone, subzones = jx$attackCombinations$start$subZone, end = "lower")),
+                                               target_attacker = jx$attackCombinations$targetAttacker)
 
+    mx$sets <- dv_create_meta_setter_calls(code = jx$setterCalls$code, description = jx$setterCalls$name) ## jx$setterCalls$area seems to be zone and subzone of where the middle runs
     mx$winning_symbols <- dv_default_winning_symbols() ## TODO can this vary from vsm file to vsm file?
-    mx$match_id <- make_match_id(mx)
+    mx$match_id <- dv_create_meta_match_id(mx)
 
     vf <- if (length(jx$scout$video) < 1 || length(jx$scout$video$path) < 1) character() else if (length(jx$scout$video$path) > 1) { warning("multiple video files not yet supported, using only the first"); jx$scout$video$path[1] } else jx$scout$video$path[1]
-    mx$video <- data.frame(camera = if (length(vf) < 1) character() else "Camera0", file = vf)
-
-
+    mx$video <- dv_create_meta_video(vf)
 
     mx$filename <- filename
     x$meta <- mx
@@ -364,8 +309,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
         thisex <- bind_rows(temp)
         ## insert >LUp codes at start of set
-        hs <- tryCatch(unlist(thisex[1, paste0("home_p", team_player_num)])[thisex$home_setter_position[1]], error = function(e) 0L)
-        vs <- tryCatch(unlist(thisex[1, paste0("visiting_p", team_player_num)])[thisex$visiting_setter_position[1]], error = function(e) 0L)
+        hs <- tryCatch(unlist(thisex[1, paste0("home_p", pseq)])[thisex$home_setter_position[1]], error = function(e) 0L)
+        vs <- tryCatch(unlist(thisex[1, paste0("visiting_p", pseq)])[thisex$visiting_setter_position[1]], error = function(e) 0L)
         lineup_codes <- paste0(c(paste0("*P", lead0(hs)), paste0("*z", thisex$home_setter_position[1]), paste0("aP", lead0(vs)), paste0("az", thisex$visiting_setter_position[1])), ">LUp")
         thisex <- bind_rows(thisex[rep(1, 4), keepcols] %>% mutate(code = lineup_codes, team = c("*", "*", "a", "a")), thisex)
         ## **Xset code at end
@@ -382,8 +327,14 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         msgs <- collect_messages(msgs, paste0("Unexpected skill: ", px$skill[idx]), line_nums = NA_integer_, raw_lines = NA_character_, severity = 2)
     }
     temp_skill <- px$skill
-    ##temp_skill[idx] <- NA_character_
-    px$skill <- plyr::mapvalues(temp_skill, from = c("S", "R", "E", "A", "B", "D", "F"), to = c("Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball"), warn_missing = FALSE)
+    temp_skill <- case_when(temp_skill == "S" ~ "Serve",
+                            temp_skill == "R" ~ "Reception",
+                            temp_skill == "E" ~ "Set",
+                            temp_skill == "A" ~ "Attack",
+                            temp_skill == "B" ~ "Block",
+                            temp_skill == "D" ~ "Dig",
+                            temp_skill == "F" ~ "Freeball",
+                            TRUE ~ temp_skill)
 
     names(px)[names(px) == "end_sub_zone"] <- "end_subzone"
     idx <- which(!is.na(px$hit_type))
@@ -461,9 +412,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                            "Attack", "H", "Hard spike",
                            "Attack", "P", "Soft spike/topspin",
                            "Attack", "T", "Tip",
-                           "BlocK", "A", "Block assist",
-                           "BlocK", "T", "Block attempt",
-                           "BlocK", "P", "Block on soft spike",
+                           "Block", "A", "Block assist",
+                           "Block", "T", "Block attempt",
+                           "Block", "P", "Block on soft spike",
                            "Reception", "L", "On left",
                            "Reception", "R", "On right",
                            "Reception", "W", "Low",
@@ -632,7 +583,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                             idx <- idx[1]
                             px <- bind_rows(px[seq_len(idx - 1L), ],
                                             ##tibble(skill = "Technical timeout", point_id = px$point_id[idx] - 0.5, timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
-                                            px[idx, c("set_number", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", paste0("home_p", team_player_num), paste0("visiting_p", team_player_num), "home_score_start_of_point", "visiting_score_start_of_point")] %>% mutate(skill = "Technical timeout", point_id = px$point_id[idx] - 0.5, timeout = TRUE, point = FALSE, end_of_set = FALSE, substitution = FALSE),
+                                            px[idx, c("set_number", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq), "home_score_start_of_point", "visiting_score_start_of_point")] %>% mutate(skill = "Technical timeout", point_id = px$point_id[idx] - 0.5, timeout = TRUE, point = FALSE, end_of_set = FALSE, substitution = FALSE),
                                             px[setdiff(seq_len(nrow(px)), seq_len(idx - 1L)), ])
                         }
                     }
@@ -672,7 +623,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$team_touch_id <- temp_ttid
 
     ## add player_id values for home_p1 etc
-    for (thisp in team_player_num) {
+    for (thisp in pseq) {
         px[, paste0("home_player_id", thisp)] <- get_player_id(rep("*", nrow(px)), px[[paste0("home_p", thisp)]], mx)
         px[, paste0("visiting_player_id", thisp)] <- get_player_id(rep("a", nrow(px)), px[[paste0("visiting_p", thisp)]], mx)
     }

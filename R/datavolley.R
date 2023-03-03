@@ -17,7 +17,7 @@
 #' @importFrom stringr fixed regex str_locate str_match str_replace_all str_sub str_to_title str_trim
 #' @importFrom stats na.omit runif setNames
 #' @importFrom utils adist capture.output head packageVersion read.csv read.table tail
-#' @importFrom vscoututils dv_green_codes dv_default_winning_symbols dv_update_meta
+#' @importFrom vscoututils dv_create_file_meta dv_create_meta_attack_combos dv_create_meta_comments dv_create_meta_match dv_create_meta_match_id dv_create_meta_more dv_create_meta_result dv_create_meta_setter_calls dv_create_meta_teams dv_create_meta_video dv_green_codes dv_default_winning_symbols dv_update_meta
 NULL
 
 

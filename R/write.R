@@ -137,6 +137,9 @@ dvw_setter_calls <- function(x, text_encoding) {
 
 dvw_attack_combos <- function(x, text_encoding) {
     tmp <- x$meta$attacks
+    if (is.data.frame(tmp) && "set_type" %in% names(tmp)) {
+        tmp$set_type[tmp$set_type %in% c(NA_character_, "")] <- "-"
+    }
     if (is.character(tmp$colour)) tmp$colour <- dv_rgb2int(tmp$colour)
     sect2txt(tmp, "meta$attacks", "[3ATTACKCOMBINATION]")
 }

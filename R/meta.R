@@ -379,7 +379,7 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
     tryCatch(out$sets <- read_setter_calls(txt),
              error=function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
-    out$match_id <- make_match_id(out)
+    out$match_id <- dv_create_meta_match_id(out)
     if (length(msgs)>0) {
         msgs <- ldply(msgs, as.data.frame)
     } else {
@@ -387,14 +387,6 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
     }
     out$video <- read_video(txt)
     list(meta=out,messages=msgs)
-}
-
-make_match_id <- function(mz) {
-    ## mz is a meta object
-    temp <- mz$match[1:8]
-    temp$home_team <- mz$teams$team[mz$teams$home_away_team == "*"]
-    temp$visiting_team <- mz$teams$team[mz$teams$home_away_team == "a"]
-    digest(temp)
 }
 
 get_player_name <- function(team,number,meta) {

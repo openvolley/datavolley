@@ -22,7 +22,7 @@ Imports:
     readr,
     stringi,
     stringr,
-    vscoututils (>= 0.0.3)
+    vscoututils (>= 0.0.4)
 Suggests:
     testthat,
     ggplot2,
