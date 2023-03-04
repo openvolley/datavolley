@@ -108,13 +108,8 @@ read_more <- function(txt) {
     ##tryCatch(p <- read.table(text = txt[idx+1], sep = ";", quote = "", stringsAsFactors = FALSE, header = FALSE),
     ##         error=function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     tryCatch(p <- read_semi_text(txt[idx+1], fallback = "read.table"), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-    for (k in c(1, 4:6)) p[, k] <- as.character(p[, k])
-    names(p)[1] <- "referees"
-    names(p)[2] <- "spectators"
-    names(p)[3] <- "receipts"
-    names(p)[4] <- "city"
-    names(p)[5] <- "arena"
-    names(p)[6] <- "scout"
+    for (k in c(1, 4:6)) p[[k]] <- as.character(p[[k]])
+    names(p)[1:6] <- c("referees", "spectators", "receipts", "city", "arena","scout")
     p
 }
 
