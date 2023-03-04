@@ -45,14 +45,26 @@ vs_reformat_players <- function(jx, which = "home") {
 dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, extra_validation = 2, validation_options=list(), ...) {
     ## do_warn=FALSE, do_transliterate=FALSE,
     ## surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
-    jx <- jsonlite::fromJSON(filename)
-
+    x <- list(raw = readLines(filename, warn = FALSE))
+    jx <- jsonlite::fromJSON(x$raw)
+    x$raw <- str_split(str_replace_all(x$raw, fixed("{\"_id"), "\n{\"_id"), fixed("\n"))[[1]]
+    raw_id <- str_match(x$raw, "\"_id\":\"([^\"]+)\"")[, 2]
+    idlnum <- setNames(as.list(seq_along(raw_id)), raw_id) ## line numbers, named by their corresponding _id
+    px_lnum <- function(idx) {
+        ## raw line numbers associated with the rows idx in px
+        if (length(idx) < 1) return(integer())
+        ids <- px$`_id`[idx]
+        out <- rep(NA_integer_, length(idx))
+        oidx <- !is.na(ids) & ids %in% names(idlnum)
+        out[oidx] <- idlnum[ids[oidx]]
+        unlist(out)
+    }
     msgs <- list()
     file_type <- jx$gameType
     pseq <- if (isTRUE(grepl("beach", file_type))) 1:2 else 1:6
-    x <- list(file_meta = dv_create_file_meta(generator_day = as.POSIXct(NA), generator_idp = "DVW", generator_prg = "VolleyStation",
-                                     generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type),
-              messages = data.frame())
+    x$file_meta <- dv_create_file_meta(generator_day = as.POSIXct(NA), generator_idp = "DVW", generator_prg = "VolleyStation",
+                                      generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type)
+    x$messages <- data.frame()
 
     mx <- list(match = dv_create_meta_match(date = lubridate::ymd_hms(jx$startDate),
                                             regulation = if (isTRUE(jx$gameType == "indoor")) "indoor rally point" else stop("unexpected gameType: ", jx$gameType),
@@ -84,13 +96,19 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     mx$players_h <- vs_reformat_players(jx, "home")
     mx$players_v <- vs_reformat_players(jx, "visiting")
 
-    mx$attacks <- dv_create_meta_attack_combos(code = jx$attackCombinations$code,
-                                               start_zone = jx$attackCombinations$start$zone,
-                                               side = NA_character_, ## R,L,C,
-                                               tempo = jx$attackCombinations$hitType,
-                                               description = jx$attackCombinations$name,
-                                               start_coordinate = datavolley::dv_xy2index(datavolley::dv_xy(zones = jx$attackCombinations$start$zone, subzones = jx$attackCombinations$start$subZone, end = "lower")),
-                                               target_attacker = jx$attackCombinations$targetAttacker)
+    ax <- dv_create_meta_attack_combos(code = jx$attackCombinations$code,
+                                       start_zone = jx$attackCombinations$start$zone,
+                                       side = NA_character_, ## R,L,C,
+                                       tempo = jx$attackCombinations$hitType,
+                                       description = jx$attackCombinations$name,
+                                       start_coordinate = datavolley::dv_xy2index(datavolley::dv_xy(zones = jx$attackCombinations$start$zone, subzones = jx$attackCombinations$start$subZone, end = "lower")),
+                                       target_attacker = jx$attackCombinations$targetAttacker)
+    if (has_dvmsg(ax)) {
+        idx <- head(grep("attackCombinations", x$raw), 1)
+        if (length(idx) < 1) idx <- NA_integer_
+        msgs <- collect_messages(msgs, get_dvmsg(ax)$message, line_nums = idx + 1L, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx + 1L], severity = 3)
+    }
+    mx$attacks <- clear_dvmsg(ax)
 
     mx$sets <- dv_create_meta_setter_calls(code = jx$setterCalls$code, description = jx$setterCalls$name) ## jx$setterCalls$area seems to be zone and subzone of where the middle runs
     mx$winning_symbols <- dv_default_winning_symbols() ## TODO can this vary from vsm file to vsm file?
@@ -137,7 +155,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         ## row-bind the plays, timeouts, subs, and points, with care to ensure row ordering is correct
         thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
             if (!is.null(thisex$plays[[j]])) {
-                temp <- thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) %>% dplyr::select(-"_id", -"originalTime")
+                temp <- thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) %>% dplyr::select(-"originalTime")
                 if ("travelPath" %in% names(temp)) {
                     tp <- bind_rows(lapply(temp$travelPath, function(z) {
                         if (is.null(z)) {
@@ -324,49 +342,66 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     idx <- which(!px$skill %in% c("S", "R", "E", "A", "B", "D", "F", "Timeout", "Technical timeout", NA_character_))
     if (length(idx) > 0) {
-        msgs <- collect_messages(msgs, paste0("Unexpected skill: ", px$skill[idx]), line_nums = NA_integer_, raw_lines = NA_character_, severity = 2)
+        msgs <- collect_messages(msgs, paste0("Unexpected skill: ", px$skill[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
     temp_skill <- px$skill
-    temp_skill <- case_when(temp_skill == "S" ~ "Serve",
-                            temp_skill == "R" ~ "Reception",
-                            temp_skill == "E" ~ "Set",
-                            temp_skill == "A" ~ "Attack",
-                            temp_skill == "B" ~ "Block",
-                            temp_skill == "D" ~ "Dig",
-                            temp_skill == "F" ~ "Freeball",
-                            TRUE ~ temp_skill)
+    px$skill <- case_when(temp_skill == "S" ~ "Serve",
+                          temp_skill == "R" ~ "Reception",
+                          temp_skill == "E" ~ "Set",
+                          temp_skill == "A" ~ "Attack",
+                          temp_skill == "B" ~ "Block",
+                          temp_skill == "D" ~ "Dig",
+                          temp_skill == "F" ~ "Freeball",
+                          TRUE ~ temp_skill)
 
     names(px)[names(px) == "end_sub_zone"] <- "end_subzone"
     idx <- which(!is.na(px$hit_type))
-    out_skill_type <- out_evaluation <- rep(NA_character_, nrow(px))
-    for (ii in idx) {
-        tmp <- skill_type_decode(temp_skill[ii], px$hit_type[ii], NA_character_, NA_integer_, file_type = file_type)
-        out_skill_type[ii] <- tmp$decoded
-        msgs <- join_messages(msgs, tmp$messages)
-    }
     px$skill_subtype_code <- px$skill_type ## we use subtype for what volleystation is calling type
-    px$skill_type <- out_skill_type
+    if (FALSE) {
+        out_skill_type <- rep(NA_character_, nrow(px))
+        for (ii in idx) {
+            tmp <- skill_type_decode(temp_skill[ii], px$hit_type[ii], NA_character_, NA_integer_, file_type = file_type)
+            out_skill_type[ii] <- tmp$decoded
+            msgs <- join_messages(msgs, tmp$messages)
+        }
+        px$skill_type <- out_skill_type
+    } else {
+        temp <- dv_decode_skill_type(px$skill, px$hit_type)
+        if (has_dvmsg(temp)) {
+            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw, severity = 1)
+        }
+        px$skill_type <- clear_dvmsg(temp)
+    }
 
+    out_evaluation <- rep(NA_character_, nrow(px))
     px <- px %>% dplyr::rename(evaluation_code = "effect")
-    idx <- which(!is.na(px$evaluation_code)) ## evaluation code
-    for (ii in idx) {
-        if (is.na(temp_skill[ii])) {
-            msgs <- collect_messages(msgs, "Missing skill", NA_character_, NA_integer_, severity = 1)
-        } else {
-            out_evaluation[ii] <- skill_evaluation_decode(temp_skill[ii], px$evaluation_code[ii])
-            if (is.na(out_evaluation[ii])) {
-                msgs <- collect_messages(msgs, paste0("Unknown evaluation code: ", px$evaluation_code[ii]), NA_integer_, NA_character_, severity = 2)
-            }
-            if (grepl("unknown", out_evaluation[ii], ignore.case = TRUE)) {
-                ## out_evaluation[ii] will be something like "unknown dig evaluation"
-                ## make it more informative
-                temp <- paste0(out_evaluation[ii],": ", px$evaluation_code[ii])
-                temp <- paste0(toupper(substr(temp, 1, 1)), substr(temp, 2, nchar(temp)))
-                msgs <- collect_messages(msgs, temp, NA_integer_, NA_character_, severity = 2)
+    if (FALSE) {
+        idx <- which(!is.na(px$evaluation_code)) ## evaluation code
+        for (ii in idx) {
+            if (is.na(temp_skill[ii])) {
+                msgs <- collect_messages(msgs, "Missing skill", NA_character_, NA_integer_, severity = 1)
+            } else {
+                out_evaluation[ii] <- skill_evaluation_decode(temp_skill[ii], px$evaluation_code[ii])
+                if (is.na(out_evaluation[ii])) {
+                    msgs <- collect_messages(msgs, paste0("Unknown evaluation code: ", px$evaluation_code[ii]), NA_integer_, NA_character_, severity = 2)
+                }
+                if (grepl("unknown", out_evaluation[ii], ignore.case = TRUE)) {
+                    ## out_evaluation[ii] will be something like "unknown dig evaluation"
+                    ## make it more informative
+                    temp <- paste0(out_evaluation[ii],": ", px$evaluation_code[ii])
+                    temp <- paste0(toupper(substr(temp, 1, 1)), substr(temp, 2, nchar(temp)))
+                    msgs <- collect_messages(msgs, temp, NA_integer_, NA_character_, severity = 2)
+                }
             }
         }
+        px$evaluation <- out_evaluation
+    } else {
+        temp <- dv_decode_evaluation(px$skill, px$evaluation_code)
+        if (has_dvmsg(temp)) {
+            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw, severity = 1)
+        }
+        px$evaluation <- clear_dvmsg(temp)
     }
-    px$evaluation <- out_evaluation
 
     ## attack combination codes and setter calls
     ## TODO check known attack types
@@ -379,32 +414,32 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px <- px %>% dplyr::rename(set_type = "target_attacker")
     idx <- which(!px$set_type %in% c("F", "B", "C", "P", "S", NA_character_))
     if (length(idx) > 0) {
-        msgs <- collect_messages(msgs, paste0("Set type (attack target) should be F, B, C, P, or S but is : ", paste(unique(px$set_type[idx]), collapse = ", ")), line_nums = NA_integer_, raw_lines = NA_character_, severity = 2)
+        msgs <- collect_messages(msgs, paste0("Set type (attack target) should be F, B, C, P, or S but is : ", px$set_type[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
 
     ## start and end zones
     px$start_zone <- as.integer(px$start_zone)
     idx <- which(px$skill %in% c("Serve", "Reception") & !px$start_zone %in% c(1, 9, 6, 7, 5, NA_integer_))
     if (length(idx) > 0) {
-        msgs <- collect_messages(msgs,paste0("Unexpected serve/reception start zone: ", paste(unique(px$start_zone[idx]), collapse = ", ")), NA_integer_, NA_character_, severity = 2)
+        msgs <- collect_messages(msgs, paste0("Unexpected serve/reception start zone: ", px$start_zone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
     idx <- which(!px$start_zone %in% c(1:9, NA_integer_))
     if (length(idx) > 0) {
-        msgs <- collect_messages(msgs,paste0("Unexpected start zone: ", paste(unique(px$start_zone[idx]), collapse = ", ")), NA_integer_, NA_character_, severity = 2)
+        msgs <- collect_messages(msgs, paste0("Unexpected start zone: ", px$start_zone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
     px$end_zone <- as.integer(px$end_zone)
     idx <- which(px$skill %in% c("Block") & !px$end_zone %in% c(2:4, NA_integer_))
     if (length(idx) > 0) {
-        msgs <- collect_messages(msgs,paste0("Unexpected block end zone: ", paste(unique(px$end_zone[idx]), collapse = ", ")), NA_integer_, NA_character_, severity = 2)
+        msgs <- collect_messages(msgs, paste0("Unexpected block end zone: ", px$end_zone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
     idx <- which(!px$end_zone %in% c(1:9, NA_integer_))
     if (length(idx) > 0) {
-        msgs <- collect_messages(msgs,paste0("Unexpected end zone: ", paste(unique(px$end_zone[idx]), collapse = ", ")), NA_integer_, NA_character_, severity = 2)
+        msgs <- collect_messages(msgs, paste0("Unexpected end zone: ", px$end_zone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
     px$end_subzone <- toupper(as.character(px$end_subzone))
     idx <- which(!px$end_subzone %in% c("A", "B", "C", "D", NA_character_))
     if (length(idx) > 0) {
-        msgs <- collect_messages(msgs,paste0("Unexpected end subzone: ", paste(unique(px$end_subzone[idx]), collapse = ", ")), NA_integer_, NA_character_, severity = 2)
+        msgs <- collect_messages(msgs, paste0("Unexpected end subzone: ", px$end_subzone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
 
     ## skill sub type ("TYPE OF HIT", p32)
@@ -553,8 +588,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$player_name[idx] <- get_player_name(px$team[idx], px$player_number[idx], mx)
     px$player_id[idx] <- get_player_id(px$team[idx], px$player_number[idx], mx)
     dudidx <- (!is.na(px$player_number) & is.na(px$player_name)) | grepl("unknown player", px$player_name, ignore.case = TRUE)
-    if (any(dudidx))
-        msgs <- collect_messages(msgs, paste0("Player number ", px$player_number[dudidx], " could not be resolved to a player name/id"), NA_integer_, NA_character_, severity = 2)
+    if (any(dudidx)) {
+        msgs <- collect_messages(msgs, paste0("Player number ", px$player_number[dudidx], " could not be resolved to a player name/id"), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
+    }
 
 
     ## add scores at START of point
@@ -681,23 +717,24 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     ## update the set durations, subs, etc in the metadata
     x <- dv_update_meta(x)
-
+    x$messages <- bind_rows(msgs)
     ## apply additional validation
     if (extra_validation > 0) {
         moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
     }
     if (is.null(x$messages)) x$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE) ## should not happen, but just to be sure
-    ##if (!is.null(x$messages) && nrow(x$messages) > 0) {
-    ##    x$messages$file_line_number <- as.integer(x$messages$file_line_number)
-    ##    x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE),]
-    ##    row.names(x$messages) <- NULL
-    ##}
+    if (!is.null(x$messages) && nrow(x$messages) > 0) {
+        x$messages$file_line_number <- as.integer(x$messages$file_line_number)
+        x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE),]
+        row.names(x$messages) <- NULL
+    }
     x
 }
 
 ## convert skill rows of the vsm exchanges data.frame to proper codes
 vsm_row2code <- function(x) {
+    default_scouting_table <- dv_default_scouting_table()
     if (nrow(x) < 1) return(character())
     na2t <- function(z, width = 1) {
         default <- stringr::str_flatten(rep("~", width))
@@ -716,11 +753,18 @@ vsm_row2code <- function(x) {
     temp <- x[idx, ]
     pnum <- lead0(case_when(is.na(temp$player) | temp$player %in% c("Unknown", "Unknown player") ~ "00", TRUE ~ temp$player))
     pnum[nchar(pnum) > 2 | grepl("^\\-", pnum)] <- "00" ## illegal numbers, treat as unknown
+    ## defaults
+    if (is.null(default_scouting_table)) {
+        for (ski in seq_len(nrow(default_scouting_table))) {
+            temp$hit_type[temp$skill == default_scouting_table$skill[ski] & (is.na(temp$hit_type) | temp$hit_type == "~")] <- default_scouting_table$skill_type[ski]
+            temp$effect[temp$skill == default_scouting_table$skill[ski] & (is.na(temp$effect) | temp$effect == "~")] <- default_scouting_table$evaluation_code[ski]
+        }
+    }
     out[idx] <- sub("~+$", "", paste0(temp$team, ## team code
                                       pnum, ## zero-padded player number
                                       temp$skill, ## skill
-                                      case_when(is.na(temp$hit_type) | temp$hit_type == "~" ~ tryCatch(default_scouting_table$skill_type[default_scouting_table$skill == temp$skill], error = function(e) "~"), TRUE ~ temp$hit_type), ## skill_type (tempo)
-                                      case_when(is.na(temp$effect) | temp$effect == "~" ~ tryCatch(default_scouting_table$evaluation_code[default_scouting_table$skill == temp$skill], error = function(e) "~"), TRUE ~ temp$effect), ## evaluation_code
+                                      temp$hit_type, ## skill_type (tempo)
+                                      temp$effect, ## evaluation_code
                                       na2t(temp$combination, 2), ## attack combo code or setter call
                                       na2t(temp$target_attacker), ## target attacker
                                       na2t(temp$start_zone), na2t(temp$end_zone), na2t(temp$end_sub_zone), ## start, end, end subzone

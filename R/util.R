@@ -1,22 +1,48 @@
 ## Accumulate messages for later display
 ## Internal function, not exported
-## severity: 1=critical, 2=informative, may lead to misinterpretation of data, 3=minor, esp. those that might have resulted from selective post-processing of combo codes
-collect_messages <- function(msgs,msg_text,line_nums,raw_lines,severity,fatal=FALSE) {
-    if (missing(line_nums)) line_nums <- NA
-    if (missing(raw_lines)) raw_lines <- "[unknown]"
-    if (missing(severity)) severity <- NA
-    vt <- rep(NA_real_,length(line_nums))
-    if (!missing(raw_lines)) vt <- video_time_from_raw(raw_lines)
+## severity: 1 = critical
+##           2 = informative, may lead to misinterpretation of data
+##           3 = minor, esp. those that might have resulted from selective post-processing of combo codes
+collect_messages <- function(msgs, msg_text, line_nums, raw_lines, severity, fatal = FALSE, xraw) {
+    if (missing(line_nums)) line_nums <- NULL
+    if (missing(severity)) severity <- NULL
+    if (is.data.frame(msg_text)) {
+        if (is.null(line_nums) || all(is.na(line_nums))) line_nums <- msg_text$line_number
+        if (is.null(severity) || all(is.na(severity))) severity <- msg_text$severity
+        msg_text <- msg_text$message
+    }
+    n <- length(msg_text)
+    if (is.null(line_nums)) line_nums <- rep(NA_integer_, n)
+    if (missing(raw_lines)) {
+        raw_lines <- rep(NA_character_, n)
+        if (!missing(xraw)) {
+            raw_lines[!is.na(line_nums)] <- xraw[line_nums[!is.na(line_nums)]]
+        }
+    }
+    if (is.null(severity)) severity <- NA_integer_
+    if (length(severity) == 1 & n > 1) severity <- rep(severity, n)
+    vt <- rep(NA_real_, n)
+    if (!all(is.na(raw_lines))) vt <- video_time_from_raw(raw_lines)
+    raw_lines[is.na(raw_lines)] <- "[unknown]"
     if (fatal) {
         lnt <- as.character(line_nums)
         lnt[is.na(lnt)] <- "[unknown]"
-        txt <- paste0("line ",lnt,": ",msg_text," (line in file is: \"",raw_lines,"\")")
-        if (fatal) stop(paste(txt,collapse=" / "))
+        txt <- paste0("line ", lnt, ": ", msg_text, " (line in file is: \"", raw_lines, "\")")
+        if (fatal) stop(paste(txt, collapse = " / "))
     } else {
-        msgs[[length(msgs)+1]] <- list(file_line_number=line_nums,video_time=vt,message=msg_text,file_line=raw_lines,severity=severity)
+        msgs[[length(msgs)+1]] <- list(file_line_number = line_nums, video_time = vt, message = msg_text, file_line = raw_lines, severity = severity)
     }
     msgs
 }
+
+## messages stored as attributes of an object
+get_dvmsg <- function(x) attr(x, "dvmessages", exact = TRUE)
+set_dvmsg <- function(x, msg) {
+    attr(x, "dvmessages") <- msg
+    x
+}
+has_dvmsg <- function(x) !is.null(get_dvmsg(x)) && nrow(get_dvmsg(x)) > 0
+clear_dvmsg <- function(x) set_dvmsg(x, NULL)
 
 ## video time from raw line, for datavolley format
 raw_vt_dv <- function(z) {
@@ -30,30 +56,39 @@ raw_vt_dv <- function(z) {
 }
 
 ## video time from raw line, for peranavolley format
-raw_vt_pv <- function(z) {
-    if (!requireNamespace("jsonlite", quietly = TRUE)) {
-        NA_real_
+pv_pparse <- function(z, df = TRUE) {
+    temp <- sub("^[A-Z]+~", "", z)
+    if (grepl("^\\(?null\\)?", temp, ignore.case = TRUE)) {
+        if (df) tibble() else NULL
     } else {
-        pparse <- function(z, df = TRUE) {
-            temp <- sub("^[A-Z]+~", "", z)
-            if (grepl("^\\(?null\\)?", temp, ignore.case = TRUE)) {
-                if (df) tibble() else NULL
-            } else {
-                jsonlite::fromJSON(temp)
-            }
-        }
-        tryCatch({
-            if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
-                as.numeric(pparse(z)$videoDuration)
-            } else {
-                NA_real_
-            }},
-            error = function(e) NA_real_)
+        jsonlite::fromJSON(temp)
     }
+}
+raw_vt_pv <- function(z) {
+    tryCatch({
+        if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
+            as.numeric(pv_pparse(z)$videoDuration)
+        } else {
+            NA_real_
+        }
+    }, error = function(e) NA_real_)
+}
+
+## video time from raw line, vsm format
+raw_vt_vsm <- function(z) {
+    tryCatch({
+        if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
+            jsonlite::fromJSON(sub(",$", "", z))$time / 10
+        } else {
+            NA_real_
+        }
+    }, error = function(e) NA_real_)
 }
 
 video_time_from_raw <- function(raw_lines) {
-    out <- tryCatch(vapply(raw_lines, function(z) if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else raw_vt_dv(z), FUN.VALUE = 1.0, USE.NAMES = FALSE), error = function(e) rep(NA_real_, length(raw_lines)))
+    out <- tryCatch(vapply(raw_lines, function(z) {
+        if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else if (grepl("\"_id\":", z, fixed = TRUE)) raw_vt_vsm(z) else raw_vt_dv(z)
+    }, FUN.VALUE = 1.0, USE.NAMES = FALSE), error = function(e) rep(NA_real_, length(raw_lines)))
     if (length(out) < 1) out <- NA_real_
     out
 }
