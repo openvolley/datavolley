@@ -44,6 +44,8 @@ vs_reformat_players <- function(jx, which = "home") {
 dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, extra_validation = 2, validation_options=list(), ...) {
     ## do_warn=FALSE, do_transliterate=FALSE,
     ## surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
+    if (is.function(skill_evaluation_decode)) stop("providing a function to skill_evaluation_decode is not supported for vsm files")
+    skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "volleymetrics")) ## used as the 'style' parm to dv_decode_* and dv_default_*
     x <- list(raw = readLines(filename, warn = FALSE))
     jx <- jsonlite::fromJSON(x$raw)
     x$raw <- str_split(str_replace_all(x$raw, fixed("{\"_id"), "\n{\"_id"), fixed("\n"))[[1]]
@@ -62,6 +64,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
     msgs <- list()
     file_type <- jx$gameType
+    if (!file_type %in% c("indoor", "beach")) stop("file type: ", file_type, " is not supported yet, please contact the package authors")
+    if (file_type == "beach") warning("beach files have not been tested yet")
     pseq <- if (isTRUE(grepl("beach", file_type))) 1:2 else 1:6
     x$file_meta <- dv_create_file_meta(generator_day = as.POSIXct(NA), generator_idp = "DVW", generator_prg = "VolleyStation",
                                       generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type)
@@ -113,7 +117,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     mx$attacks <- clear_dvmsg(ax)
 
     mx$sets <- dv_create_meta_setter_calls(code = jx$setterCalls$code, description = jx$setterCalls$name) ## jx$setterCalls$area seems to be zone and subzone of where the middle runs
-    mx$winning_symbols <- dv_default_winning_symbols() ## TODO can this vary from vsm file to vsm file?
+    mx$winning_symbols <- dv_default_winning_symbols(data_type = file_type, style = skill_evaluation_decode) ## TODO can this vary from vsm file to vsm file?
     mx$match_id <- dv_create_meta_match_id(mx)
 
     vf <- if (length(jx$scout$video) < 1 || length(jx$scout$video$path) < 1) character() else if (length(jx$scout$video$path) > 1) { warning("multiple video files not yet supported, using only the first"); jx$scout$video$path[1] } else jx$scout$video$path[1]
@@ -374,7 +378,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$end_coordinate <- dv_xy2index(px$end_coordinate_x, px$end_coordinate_y)
 
     ## re-create the proper scout code for skill rows, otherwise if we dv_write this and dv_read it, it will not work
-    px$code <- vsm_row2code(px)
+    px$code <- vsm_row2code(px, data_type = file_type, style = skill_evaluation_decode)
 
     idx <- which(!px$skill %in% c("S", "R", "E", "A", "B", "D", "F", "Timeout", "Technical timeout", NA_character_))
     if (length(idx) > 0) {
@@ -401,9 +405,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         }
         px$skill_type <- out_skill_type
     } else {
-        temp <- dv_decode_skill_type(px$skill, px$hit_type)
+        temp <- dv_decode_skill_type(px$skill, px$hit_type, data_type = file_type, style = skill_evaluation_decode)
         if (has_dvmsg(temp)) {
-            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw, severity = 1)
+            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
         }
         px$skill_type <- clear_dvmsg(temp)
     }
@@ -431,9 +435,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         }
         px$evaluation <- out_evaluation
     } else {
-        temp <- dv_decode_evaluation(px$skill, px$evaluation_code)
+        temp <- dv_decode_evaluation(px$skill, px$evaluation_code, data_type = file_type, style = skill_evaluation_decode)
         if (has_dvmsg(temp)) {
-            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw, severity = 1)
+            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
         }
         px$evaluation <- clear_dvmsg(temp)
     }
@@ -475,139 +479,27 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
 
     ## skill sub type ("TYPE OF HIT", p32)
-    subtype_map <- tribble(~skill, ~skill_subtype_code, ~skill_subtype,
-                           "Attack", "H", "Hard spike",
-                           "Attack", "P", "Soft spike/topspin",
-                           "Attack", "T", "Tip",
-                           "Block", "A", "Block assist",
-                           "Block", "T", "Block attempt",
-                           "Block", "P", "Block on soft spike",
-                           "Reception", "L", "On left",
-                           "Reception", "R", "On right",
-                           "Reception", "W", "Low",
-                           "Reception", "O", "Overhand",
-                           "Reception", "M", "Middle line",
-                           "Set", "1", "1 hand set",
-                           "Set", "2", "2 hands set",
-                           "Set", "3", "Bump set",
-                           "Set", "4", "Other set",
-                           "Set", "5", "Underhand set",
-                           "Set", "O", "Hand set",
-                           "Set", "U", "Bump set",
-                           "Dig", "S", "On spike",
-                           "Dig", "C", "Spike cover",
-                           "Dig", "B", "After block",
-                           "Dig", "E", "Emergency",
-                           "Dig", "T", "Tip",
-                           "Dig", "P", "Soft spike")
-
-    px <- left_join(px, subtype_map, by = c("skill", "skill_subtype_code")) %>%
-        mutate(skill_subtype = case_when(is.na(.data$skill_subtype_code) & .data$skill == "Dig" & grepl("(Positive|Poor) block cover", .data$evaluation) ~ "Spike cover", ## volleymetrics scouted block cover D/ or D!
-                                         is.na(.data$skill_subtype) & !is.na(.data$skill_subtype_code) ~ paste0("Unknown ", tolower(.data$skill), " subtype: ", .data$skill_subtype_code),
-                                         TRUE ~ .data$skill_subtype)) %>%
-        dplyr::select(-"skill_subtype_code")
-    ## TODO messages for unknown skill subtype
+    temp <- dv_decode_skill_subtype(px$skill, skill_subtype_code = px$skill_subtype_code, evaluation = px$evaluation, data_type = file_type, style = skill_evaluation_decode)
+    if (has_dvmsg(temp)) {
+        msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+    }
+    px$skill_subtype <- clear_dvmsg(temp)
 
     ## number of people ("PLAYERS", p33)
     px <- dplyr::rename(px, num_players_numeric = "players") %>%
         mutate(num_players_numeric = as.integer(.data$num_players_numeric))
-    n_players_map <- if (grepl("beach", file_type)) {
-                         tribble(~skill, ~num_players_numeric, ~num_players,
-                                 "Attack", 0L, "No block",
-                                 "Attack", 1L, "Line block",
-                                 "Attack", 2L, "Crosscourt block",
-                                 "Attack", 3L, "Block jumps to line",
-                                 "Attack", 4L, "Block jumps to crosscourt",
-                                 "Block", 0L, "No block",
-                                 "Block", 1L, "Line block",
-                                 "Block", 2L, "Crosscourt block",
-                                 "Block", 3L, "Block jumps to line",
-                                 "Block", 4L, "Block jumps to crosscourt")
-                     } else {
-                         tribble(~skill, ~num_players_numeric, ~num_players,
-                                 "Attack", 0L, "No block",
-                                 "Attack", 1L, "1 player block",
-                                 "Attack", 2L, "2 player block",
-                                 "Attack", 3L, "3 player block",
-                                 "Attack", 4L, "Hole block",
-                                 "Block", 0L, "No block",
-                                 "Block", 1L, "1 player block",
-                                 "Block", 2L, "2 player block",
-                                 "Block", 3L, "3 player block",
-                                 "Block", 4L, "Hole block",
-                                 "Reception", 1L, "Two players receiving, the player on left receives",
-                                 "Reception", 2L, "Two players receiving, the player on right receives",
-                                 "Reception", 3L, "Three players receiving, the player on left receives",
-                                 "Reception", 4L, "Three players receiving, the player in center receives",
-                                 "Reception", 5L, "Three players receiving, the player on right receives",
-                                 "Reception", 6L, "Four players receiving, the player on left receives",
-                                 "Reception", 7L, "Four players receiving, the player on center-left receives",
-                                 "Reception", 8L, "Four players receiving, the player on center-right receives",
-                                 "Reception", 9L, "Four players receiving, the player on right receives")
-                     }
-
-    px <- left_join(px, n_players_map, by = c("skill", "num_players_numeric")) %>%
-        mutate(num_players = case_when(is.na(.data$num_players) & !is.na(.data$num_players_numeric) ~ paste0("Unexpected ", .data$num_players),
-                                       TRUE ~ .data$num_players))
-
-    ## TODO messages for unknown num players
+    temp <- dv_decode_num_players(px$skill, num_players_code = px$num_players_numeric, data_type = file_type, style = skill_evaluation_decode)
+    if (has_dvmsg(temp)) {
+        msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+    }
+    px$num_players <- clear_dvmsg(temp)
 
     ## special codes
-    px <- mutate(px, special_code = case_when(.data$skill == "Attack" & .data$evaluation == "Error" ~ case_when(.data$special == "S" ~ "Attack out - side",
-                                                                                                                .data$special == "O" ~ "Attack out - long",
-                                                                                                                .data$special == "N" ~ "Attack in net",
-                                                                                                                .data$special == "I" ~ "Net contact",
-                                                                                                                .data$special == "Z" ~ "Referee call",
-                                                                                                                .data$special == "A" ~ "Antenna",
-                                                                                                                !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for attack error")),
-                                              .data$skill == "Attack" & .data$evaluation == "Winning attack" ~ case_when(.data$special == "S" ~ "Block out - side",
-                                                                                                                         .data$special == "O" ~ "Block out - long",
-                                                                                                                         .data$special == "F" ~ "Block on floor",
-                                                                                                                         .data$special == "X" ~ "Direct on floor",
-                                                                                                                         .data$special == "N" ~ "Let",
-                                                                                                                         !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for attack kill")),
-                                              ## for A/ - continue codes applied to blocked attack - DV4 allows this
-                                              .data$skill == "Attack" ~ case_when(.data$special == "C" ~ "Block control",
-                                                                                  .data$special == "N" ~ "Let",
-                                                                                  !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for attack")),
-                                              .data$skill == "Block" ~ case_when(.data$special == "S" ~ "Ball out - side",
-                                                                                 .data$special == "O" ~ "Ball out - long",
-                                                                                 .data$special == "F" ~ "Ball on floor",
-                                                                                 .data$special == "X" ~ "Between hands",
-                                                                                 .data$special == "N" ~ "Hands - net",
-                                                                                 .data$special == "I" ~ "Net contact",
-                                                                                 .data$special == "A" ~ "Antenna",
-                                                                                 .data$special == "P" ~ "No jump",
-                                                                                 .data$special == "T" ~ "Position error",
-                                                                                 .data$special == "Z" ~ "Referee call",
-                                                                                 !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for block")),
-                                              ## NB DV doesn't define 'Lack of effort' for freeball
-                                              .data$skill %in% c("Reception", "Freeball") ~ case_when(.data$special == "U" ~ "Unplayable",
-                                                                                                      .data$special == "X" ~ "Body error",
-                                                                                                      .data$special == "P" ~ "Position error",
-                                                                                                      .data$special == "Z" ~ "Referee call",
-                                                                                                      .data$special == "E" ~ "Lack of effort",
-                                                                                                      !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for ", tolower(.data$skill))),
-                                              .data$skill == "Dig" ~ case_when(.data$special == "U" ~ "Unplayable",
-                                                                               .data$special == "X" ~ "Body error",
-                                                                               .data$special == "P" ~ "Position error",
-                                                                               .data$special == "Z" ~ "Referee call",
-                                                                               .data$special == "F" ~ "Ball on floor",
-                                                                               .data$special == "O" ~ "Ball out",
-                                                                               .data$special == "E" ~ "Lack of effort",
-                                                                               !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for dig")),
-                                              .data$skill == "Set" ~ case_when(.data$special == "U" ~ "Cannot be hit",
-                                                                               .data$special == "I" ~ "Net touch",
-                                                                               .data$special == "Z" ~ "Referee call",
-                                                                               !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for set")),
-                                              .data$skill == "Serve" & .data$evaluation == "Error" ~ case_when(.data$special == "O" ~ "Ball out - long",
-                                                                                                               .data$special == "L" ~ "Ball out - left",
-                                                                                                               .data$special == "R" ~ "Ball out - right",
-                                                                                                               .data$special == "N" ~ "Ball in net",
-                                                                                                               .data$special == "Z" ~ "Referee call",
-                                                                                                               !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for serve error")),
-                                              .data$skill == "Serve" ~ case_when(.data$special == "N" ~ "Let",
-                                                                                 !is.na(.data$special) ~ paste0("Unexpected special code ", .data$special, " for serve"))))
+    temp <- dv_decode_special_code(px$skill, special_code = px$special, evaluation = px$evaluation, data_type = file_type, style = skill_evaluation_decode)
+    if (has_dvmsg(temp)) {
+        msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+    }
+    px$special_code <- clear_dvmsg(temp)
 
     ## fill in player_name and player_id from player_number
     px <- dplyr::rename(px, player_number = "player") %>%
@@ -775,8 +667,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 }
 
 ## convert skill rows of the vsm exchanges data.frame to proper codes
-vsm_row2code <- function(x) {
-    default_scouting_table <- dv_default_scouting_table()
+vsm_row2code <- function(x, data_type, style) {
+    default_scouting_table <- dv_default_scouting_table(data_type = data_type, style = style)
     if (nrow(x) < 1) return(character())
     na2t <- function(z, width = 1) {
         default <- stringr::str_flatten(rep("~", width))
