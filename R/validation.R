@@ -561,22 +561,21 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         rot_errors <- list()
         for (k in idx) {
             rot_cols <- if (grepl("^a",plays$code[k])) paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
-            prev_rot <- plays[k-1,rot_cols]
+            prev_rot <- plays[k-1, rot_cols]
             if (any(is.na(prev_rot))) {
-                if (k>2) prev_rot <- plays[k-2,rot_cols]
+                if (k>2) prev_rot <- plays[k-2, rot_cols]
             }
             if (any(is.na(prev_rot))) next ## could perhaps search further backwards, but should not need to
             ## have only seen one NA rot row in sequence in files so far
-            
+
             new_rot <- plays[k+1,rot_cols]
             if (any(is.na(new_rot))) {
                 if (k<(nrow(plays)-2)) new_rot <- plays[k+2,rot_cols]
             }
             if (any(is.na(new_rot))) next
-            
-            if (all(new_rot==prev_rot)) {
+            if (all(new_rot == prev_rot)) {
                 ## players did not change
-                rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number=plays$file_line_number[k],video_time=video_time_from_raw(x$raw[plays$file_line_number[k]]),message=paste0("Player lineup did not change after substitution: was the sub recorded incorrectly?"),file_line=mt2nachar(x$raw[plays$file_line_number[k]]),severity=3,stringsAsFactors=FALSE)
+                rot_errors[[length(rot_errors)+1]] <- data.frame(file_line_number = plays$file_line_number[k], video_time = video_time_from_raw(x$raw[plays$file_line_number[k]]), message = paste0("Player lineup did not change after substitution: was the sub recorded incorrectly?"), file_line = mt2nachar(x$raw[plays$file_line_number[k]]), severity = 3, stringsAsFactors = FALSE)
                 next
             }
             if (!grepl("^.c[[:digit:]]+:[[:digit:]]+", plays$code[k])) {
@@ -594,6 +593,6 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         }
         if (length(rot_errors)>0) out <- rbind(out,do.call(rbind,rot_errors))
     } ## checking plays data
-    out <- out[4-out$severity<=validation_level,]
-    out[,setdiff(names(out),"severity")]
+    out <- out[(4 - out$severity) <= validation_level, ]
+    out[, setdiff(names(out), "severity")]
 }

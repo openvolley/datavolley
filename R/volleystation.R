@@ -41,7 +41,6 @@ vs_reformat_players <- function(jx, which = "home") {
     px
 }
 
-
 dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, extra_validation = 2, validation_options=list(), ...) {
     ## do_warn=FALSE, do_transliterate=FALSE,
     ## surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
@@ -50,12 +49,14 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     x$raw <- str_split(str_replace_all(x$raw, fixed("{\"_id"), "\n{\"_id"), fixed("\n"))[[1]]
     raw_id <- str_match(x$raw, "\"_id\":\"([^\"]+)\"")[, 2]
     idlnum <- setNames(as.list(seq_along(raw_id)), raw_id) ## line numbers, named by their corresponding _id
+    ## there should not be duplicate IDs, but they will cause problems so make sure
+    idlnum <- idlnum[!is.na(raw_id) & !raw_id %in% raw_id[duplicated(raw_id)]]
     px_lnum <- function(idx) {
         ## raw line numbers associated with the rows idx in px
         if (length(idx) < 1) return(integer())
         ids <- px$`_id`[idx]
         out <- rep(NA_integer_, length(idx))
-        oidx <- !is.na(ids) & ids %in% names(idlnum)
+        oidx <- ids %in% names(idlnum)
         out[oidx] <- idlnum[ids[oidx]]
         unlist(out)
     }
@@ -692,12 +693,22 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     for (vr in c("start_coordinate", "mid_coordinate", "end_coordinate")) if (!vr %in% names(px)) { px[[vr]] <- NA_integer_ }
     for (vr in c("start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y")) if (!vr %in% names(px)) { px[[vr]] <- NA_real_ }
 
+    ## use _ids to infer line numbers (though these are really only line numbers in x$raw, because the original file is a single line)
+    tempid <- tibble(`_id` = names(idlnum), file_line_number = unname(unlist(idlnum)))
+    px <- left_join(px, tempid, by = "_id")
+    ## fill in gaps, because subs and TOs didn't have _ids attached so they won't have line numbers, and neither will green codes or point adjustments
+    try({
+        idx <- is.na(px$file_line_number)
+        px$file_line_number[idx] <- round(approx(which(!idx), px$file_line_number[!idx], which(idx))$y)
+    })
+    ## these interpolated file line numbers won't be exact, but close enough to be (hopefully) useful
+
     ##x$px <- px ## temporarily
     x$plays <- px %>% mutate(video_time = round(.data$time / 10),
                              time = as.POSIXct(NA), video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
-                             end_cone = NA_integer_, file_line_number = NA_integer_
-                             ) %>%
-        dplyr::select("match_id", "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id",
+                             end_cone = NA_integer_) %>%
+        dplyr::select("match_id", ##"_id",
+                      "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id",
                       "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type",
                       "start_zone", "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout",
                       "end_of_set", "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position",
@@ -717,7 +728,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     ## update the set durations, subs, etc in the metadata
     x <- dv_update_meta(x)
-    x$messages <- bind_rows(msgs)
+    x$messages <- dplyr::select(bind_rows(msgs), -"severity")
     ## apply additional validation
     if (extra_validation > 0) {
         moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)

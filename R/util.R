@@ -75,13 +75,11 @@ raw_vt_pv <- function(z) {
 }
 
 ## video time from raw line, vsm format
+## can't guarantee that "lines" in vsm are valid json, because we somewhat-arbitrarily split the single-line input file
 raw_vt_vsm <- function(z) {
     tryCatch({
-        if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
-            jsonlite::fromJSON(sub(",$", "", z))$time / 10
-        } else {
-            NA_real_
-        }
+        temp <- str_match_all(z, "\"time\"[[:space:]]*:[[:space:]]*([^,\\}\\]]+)")[[1]][, 2]
+        if (length(temp) == 1) as.numeric(temp) / 10 else NA_real_
     }, error = function(e) NA_real_)
 }
 
