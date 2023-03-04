@@ -58,6 +58,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## generic read of the first lines, to check formats
     is_vsm <- grepl("\\.vsm$", filename, ignore.case = TRUE)
     if (!is_vsm) dvlines <- stringi::stri_trans_general(readLines(filename, warn = FALSE, n = 100L), "latin-ascii")
+    ## figure out the scouting conventions to follow
     if (is.string(skill_evaluation_decode)) {
         skill_evaluation_decode <- match.arg(tolower(skill_evaluation_decode), c("default", "volleymetrics", "guess", "german"))
         if (skill_evaluation_decode == "guess") {
@@ -69,11 +70,11 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             }
             if (!is_vsm && skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
         }
-        skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
+        if (!is_vsm) skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }
-    assert_that(is.function(skill_evaluation_decode))
     ## volleystation
     if (is_vsm) return(dv_read_vsm(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, extra_validation = extra_validation, validation_options = validation_options))
+    assert_that(is.function(skill_evaluation_decode))
     if (is.null(date_format_suggested)) {
         ## check if the decoder function is the volleymetrics one
         is_vm <- tryCatch(identical(get("dtbl", envir = environment(skill_evaluation_decode)), get("dtbl", envir = environment(skill_evaluation_decoder(style = "volleymetrics")))), error = function(e) FALSE)
