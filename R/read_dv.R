@@ -538,6 +538,20 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         out$messages <- out$messages[order(out$messages$file_line_number, na.last = FALSE),]
         row.names(out$messages) <- NULL
     }
+
+    ## some final fixes
+    ## VS-exported dvw's can have an incorrect end location on reception if serve does not have an end location, but the set has a location
+    idx <- out$plays$skill == "Reception" & lag(out$plays$skill) == "Serve" & lead(out$plays$skill) == "Set" & !is.na(out$plays$end_zone) & is.na(lag(out$plays$end_zone)) & out$plays$end_zone == lead(out$plays$end_zone)
+    if (any(idx, na.rm = TRUE)) {
+        out$plays <- mutate(out$plays, end_zone = case_when(idx ~ NA_integer_, TRUE ~ .data$end_zone),
+                            end_subzone = case_when(idx ~ NA_character_, TRUE ~ .data$end_subzone))
+        ## and remove the end zone/subzone from the codes on those rows
+        temp <- out$plays$code[which(idx)]
+        try({
+            substr(temp, 11, 12) <- "~~"
+            out$plays$code[which(idx)] <- sub("~+$", "", temp)
+        })
+    }
     if (do_warn) {
         ## spit the messages out
         for (k in 1:nrow(out$messages)) {
