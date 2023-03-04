@@ -11,7 +11,7 @@
 #' @importFrom plyr ddply join ldply mapvalues rbind.fill
 #' @importFrom data.table fread
 #' @importFrom digest digest
-#' @importFrom dplyr %>% as_tibble .data bind_rows case_when left_join mutate tibble tribble
+#' @importFrom dplyr %>% as_tibble .data bind_rows case_when lag lead left_join mutate tibble tribble
 #' @importFrom graphics lines par plot text
 #' @importFrom stringi stri_trans_general stri_enc_detect2
 #' @importFrom stringr fixed regex str_locate str_match str_match_all str_replace_all str_split str_sub str_to_title str_trim

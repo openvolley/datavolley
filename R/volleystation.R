@@ -67,6 +67,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                                       generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type)
     x$messages <- data.frame()
 
+    ## note that the vsm appears to include the startDate time as UTC, and so it can differ from the time in the same file exported to dvw
     mx <- list(match = dv_create_meta_match(date = lubridate::ymd_hms(jx$startDate),
                                             regulation = if (isTRUE(jx$gameType == "indoor")) "indoor rally point" else stop("unexpected gameType: ", jx$gameType),
                                             zones_or_cones = "Z"), ## cones not supported in VS
@@ -142,8 +143,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         this_pts <- thisev$score %>% mutate(point_id = this_point_ids) %>% dplyr::rename(home_team_score = "home", visiting_team_score = "away") %>%
             mutate(code = case_when(dplyr::row_number() == 1 & .data$home_team_score > 0 ~ "*",
                                     dplyr::row_number() == 1 & .data$visiting_team_score > 0 ~ "a",
-                                    .data$home_team_score != dplyr::lag(.data$home_team_score) ~ "*",
-                                    .data$visiting_team_score != dplyr::lag(.data$visiting_team_score) ~ "a",
+                                    .data$home_team_score != lag(.data$home_team_score) ~ "*",
+                                    .data$visiting_team_score != lag(.data$visiting_team_score) ~ "a",
                                     TRUE ~ "~"), ## ~ denoting no score change, so no *p/ap code to add
                    ## note that negative score changes also count as "points", they will appear in score correction lines
                    ## only insert p-code when scores change (e.g. not subs)
@@ -191,7 +192,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         tms <- thisex %>% dplyr::group_by(.data$point_id) %>%
             dplyr::summarize(this_start_time = if (!all(is.na(.data$time))) min(.data$time, na.rm = TRUE) else NA_integer_,
                              this_end_time = if (!all(is.na(.data$time))) max(.data$time, na.rm = TRUE) else NA_integer_) %>%
-            mutate(prev_time = dplyr::lag(.data$this_end_time), next_time = dplyr::lead(.data$this_start_time),
+            mutate(prev_time = lag(.data$this_end_time), next_time = lead(.data$this_start_time),
                    this_start_time = case_when(!is.na(.data$this_start_time) ~ .data$this_start_time, TRUE ~ pmin(.data$prev_time, .data$this_end_time, .data$next_time, na.rm = TRUE)),
                    this_end_time = case_when(!is.na(.data$this_end_time) ~ .data$this_end_time, TRUE ~ pmax(.data$prev_time, .data$this_end_time, .data$next_time, na.rm = TRUE)),
                    prev_time = case_when(!is.na(.data$prev_time) ~ .data$prev_time, TRUE ~ .data$this_start_time))
@@ -338,6 +339,50 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     px$end_of_set[is.na(px$end_of_set)] <- FALSE
 
+    ## other bits that need to be done before rebuilding the scout code
+    names(px)[names(px) == "end_sub_zone"] <- "end_subzone"
+    px$start_zone <- as.integer(px$start_zone)
+    px$end_zone <- as.integer(px$end_zone)
+    px$end_subzone <- toupper(as.character(px$end_subzone))
+
+    for (vr in c("start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y")) if (!vr %in% names(px)) { px[[vr]] <- NA_real_ }
+    ## convert x,y coords back to single-index coords too
+    px$start_coordinate <- dv_xy2index(px$start_coordinate_x, px$start_coordinate_y)
+    px$mid_coordinate <- dv_xy2index(px$mid_coordinate_x, px$mid_coordinate_y)
+    px$end_coordinate <- dv_xy2index(px$end_coordinate_x, px$end_coordinate_y)
+
+    ## reception locations might not be populated (especially the end location), use the serve positions if so
+    r_sc_missing <- px$skill == "R" & is.na(px$start_coordinate) & lag(px$skill) == "S"
+    r_mc_missing <- px$skill == "R" & is.na(px$mid_coordinate) & lag(px$skill) == "S"
+    r_ec_missing <- px$skill == "R" & is.na(px$end_coordinate) & lag(px$skill) == "S"
+    px <- px %>% mutate(start_zone = case_when(.data$skill == "R" & is.na(.data$start_zone) & lag(.data$skill) == "S" ~ lag(.data$start_zone),
+                                               TRUE ~ .data$start_zone),
+                        end_zone = case_when(.data$skill == "R" & is.na(.data$end_zone) & lag(.data$skill) == "S" ~ lag(.data$end_zone),
+                                             TRUE ~ .data$end_zone),
+                        end_subzone = case_when(.data$skill == "R" & is.na(.data$end_subzone) & lag(.data$skill) == "S" ~ lag(.data$end_subzone),
+                                                TRUE ~ .data$end_subzone),
+                        ## and do all coordinates, just in case
+                        start_coordinate = case_when(r_sc_missing ~ lag(.data$start_coordinate),
+                                                     TRUE ~ .data$start_coordinate),
+                        start_coordinate_x = case_when(r_sc_missing ~ lag(.data$start_coordinate_x),
+                                                       TRUE ~ .data$start_coordinate_x),
+                        start_coordinate_y = case_when(r_sc_missing ~ lag(.data$start_coordinate_y),
+                                                       TRUE ~ .data$start_coordinate_y),
+                        mid_coordinate = case_when(r_mc_missing ~ lag(.data$mid_coordinate),
+                                                   TRUE ~ .data$mid_coordinate),
+                        mid_coordinate_x = case_when(r_mc_missing ~ lag(.data$mid_coordinate_x),
+                                                     TRUE ~ .data$mid_coordinate_x),
+                        mid_coordinate_y = case_when(r_mc_missing ~ lag(.data$mid_coordinate_y),
+                                                     TRUE ~ .data$mid_coordinate_y),
+                        end_coordinate = case_when(r_ec_missing ~ lag(.data$end_coordinate),
+                                                   TRUE ~ .data$end_coordinate),
+                        end_coordinate_x = case_when(r_ec_missing ~ lag(.data$end_coordinate_x),
+                                                     TRUE ~ .data$end_coordinate_x),
+                        end_coordinate_y = case_when(r_ec_missing ~ lag(.data$end_coordinate_y),
+                                                     TRUE ~ .data$end_coordinate_y))
+
+    ## TODO check if need to do the same on e.g. attack/dig pairs, or anything else that might have been entered as a combination code
+
     ## re-create the proper scout code for skill rows, otherwise if we dv_write this and dv_read it, it will not work
     px$code <- vsm_row2code(px)
 
@@ -355,7 +400,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                           temp_skill == "F" ~ "Freeball",
                           TRUE ~ temp_skill)
 
-    names(px)[names(px) == "end_sub_zone"] <- "end_subzone"
     idx <- which(!is.na(px$hit_type))
     px$skill_subtype_code <- px$skill_type ## we use subtype for what volleystation is calling type
     if (FALSE) {
@@ -419,7 +463,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
 
     ## start and end zones
-    px$start_zone <- as.integer(px$start_zone)
     idx <- which(px$skill %in% c("Serve", "Reception") & !px$start_zone %in% c(1, 9, 6, 7, 5, NA_integer_))
     if (length(idx) > 0) {
         msgs <- collect_messages(msgs, paste0("Unexpected serve/reception start zone: ", px$start_zone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
@@ -428,7 +471,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if (length(idx) > 0) {
         msgs <- collect_messages(msgs, paste0("Unexpected start zone: ", px$start_zone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
-    px$end_zone <- as.integer(px$end_zone)
     idx <- which(px$skill %in% c("Block") & !px$end_zone %in% c(2:4, NA_integer_))
     if (length(idx) > 0) {
         msgs <- collect_messages(msgs, paste0("Unexpected block end zone: ", px$end_zone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
@@ -437,7 +479,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if (length(idx) > 0) {
         msgs <- collect_messages(msgs, paste0("Unexpected end zone: ", px$end_zone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
-    px$end_subzone <- toupper(as.character(px$end_subzone))
     idx <- which(!px$end_subzone %in% c("A", "B", "C", "D", NA_character_))
     if (length(idx) > 0) {
         msgs <- collect_messages(msgs, paste0("Unexpected end subzone: ", px$end_subzone[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
@@ -679,7 +720,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     ## winning attacks, just for backwards compatibility
     ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
-    px <- mutate(px, winning_attack = .data$skill %eq% "Attack" & (.data$evaluation %eq% "Winning attack" | (dplyr::lead(.data$skill %in% c("Dig", "Block")) & dplyr::lead(.data$evaluation %eq% "Error"))))
+    px <- mutate(px, winning_attack = .data$skill %eq% "Attack" & (.data$evaluation %eq% "Winning attack" | (lead(.data$skill %in% c("Dig", "Block")) & lead(.data$evaluation %eq% "Error"))))
 
     ## serving team
     px <- left_join(px,
@@ -689,9 +730,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     ## add play phase
     px$match_id <- mx$match_id
     px$phase <- play_phase(px)
-
-    for (vr in c("start_coordinate", "mid_coordinate", "end_coordinate")) if (!vr %in% names(px)) { px[[vr]] <- NA_integer_ }
-    for (vr in c("start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y")) if (!vr %in% names(px)) { px[[vr]] <- NA_real_ }
+    ## and the DV point_phase and attack_phase
+    px$point_phase <- dv_point_phase(px)
+    px$attack_phase <- dv_attack_phase(px)
 
     ## use _ids to infer line numbers (though these are really only line numbers in x$raw, because the original file is a single line)
     tempid <- tibble(`_id` = names(idlnum), file_line_number = unname(unlist(idlnum)))
@@ -704,6 +745,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     ## these interpolated file line numbers won't be exact, but close enough to be (hopefully) useful
 
     ##x$px <- px ## temporarily
+    if (!"custom" %in% names(px)) px$custom <- NA_character_
     x$plays <- px %>% mutate(video_time = round(.data$time / 10),
                              time = as.POSIXct(NA), video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
                              end_cone = NA_integer_) %>%
@@ -712,12 +754,10 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                       "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type",
                       "start_zone", "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout",
                       "end_of_set", "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position",
-                      ## custom_code = ,
-                      "file_line_number", "home_p1", "home_p2", "home_p3", "home_p4", "home_p5", "home_p6",
+                      custom_code = "custom", "file_line_number",
+                      "home_p1", "home_p2", "home_p3", "home_p4", "home_p5", "home_p6",
                       "visiting_p1", "visiting_p2", "visiting_p3", "visiting_p4", "visiting_p5", "visiting_p6",
-                      "start_coordinate", "mid_coordinate", "end_coordinate",
-                      ## point_phase = ,
-                      ## attack_phase = ,
+                      "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase",
                       "start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y",
                       "home_player_id1", "home_player_id2", "home_player_id3", "home_player_id4", "home_player_id5", "home_player_id6",
                       "visiting_player_id1", "visiting_player_id2", "visiting_player_id3", "visiting_player_id4", "visiting_player_id5", "visiting_player_id6",
@@ -778,7 +818,7 @@ vsm_row2code <- function(x) {
                                       temp$effect, ## evaluation_code
                                       na2t(temp$combination, 2), ## attack combo code or setter call
                                       na2t(temp$target_attacker), ## target attacker
-                                      na2t(temp$start_zone), na2t(temp$end_zone), na2t(temp$end_sub_zone), ## start, end, end subzone
+                                      na2t(temp$start_zone), na2t(temp$end_zone), na2t(temp$end_subzone), ## start, end, end subzone
                                       na2t(case_when((is.na(temp$skill_type) | temp$skill_type == "~") & temp$skill == "A" ~ "H", TRUE ~ temp$skill_type)), ## skill_subtype
                                       na2t(temp$players), ## num_players
                                       na2t(temp$special), na2t(temp$custom, 5)))
