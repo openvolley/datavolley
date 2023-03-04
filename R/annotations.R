@@ -55,3 +55,48 @@ play_phase <- function(x, method = "default") {
     phase[intersect(idx1, idx2)] <- "Reception"
     phase
 }
+
+#' Point phase
+#'
+#' Point phase as defined by DataVolley: either "Sideout" or "Breakpoint", assigned only to winning or losing actions (including green codes). Note that the point phase is inferred for the winning action (i.e. the point phase value for both the winning and losing action is "Sideout" if the winning team was receiving).
+#'
+#' @param x datavolleyplays: the plays component of a datavolley object as returned by [dv_read()]
+#'
+#' @return Character vector
+#'
+#' @export
+dv_point_phase <- function(x) {
+    if (nrow(x) < 1) return(character())
+    out <- rep(NA_character_, nrow(x))
+    lidx <- (!is.na(x$skill) & x$evaluation %in% c("Error", "Blocked", "Invasion")) | (x$code %in% c("*$$&H=", "a$$&H="))
+    widx <- (!is.na(x$skill) & x$evaluation %in% c("Ace", "Winning attack", "Winning block")) | (x$code %in% c("*$$&H#", "a$$&H#"))
+    if (any(lidx)) {
+        out[lidx & x$team %eq% x$serving_team] <- "Sideout"
+        out[lidx & !x$team %eq% x$serving_team] <- "Breakpoint"
+    }
+    if (any(widx)) {
+        out[widx & x$team %eq% x$serving_team] <- "Breakpoint"
+        out[widx & !x$team %eq% x$serving_team] <- "Sideout"
+    }
+    out
+}
+
+#' Attack phase
+#'
+#' Attack phase as defined by DataVolley: either "Reception", "Transition sideout" or "Transition breakpoint", assigned only to attack actions.
+#'
+#' @param x datavolleyplays: the plays component of a datavolley object as returned by [dv_read()]
+#'
+#' @return Character vector
+#'
+#' @export
+dv_attack_phase <- function(x) {
+    if (nrow(x) < 1) return(character())
+    if (!"phase" %in% names(x)) x$phase <- play_phase(x)
+    out <- rep(NA_character_, nrow(x))
+    out[x$skill %eq% "Attack" & x$phase %eq% "Reception"] <- "Reception"
+    out[x$skill %eq% "Attack" & x$team %eq% x$serving_team & x$phase %eq% "Transition"] <- "Transition breakpoint"
+    out[x$skill %eq% "Attack" & !x$team %eq% x$serving_team & x$phase %eq% "Transition"] <- "Transition sideout"
+    out
+}
+
