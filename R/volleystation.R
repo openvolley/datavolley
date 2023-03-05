@@ -7,8 +7,8 @@ vs_int2role <- function(x) {
 }
 
 vs_reformat_players <- function(jx, which = "home") {
-    jt <- if (which %in% "home") jx$team$home else jx$team$away
-    px <- tibble(X1 = 0L,
+    jt <- if (which == "home") jx$team$home else jx$team$away
+    px <- tibble(X1 = if (which == "home") 0L else 1L,
                  number = as.integer(jt$players$shirtNumber),
                  X3 = seq_len(nrow(jt$players)) + if (which %in% "home") 0L else nrow(jx$team$home$players),
                  starting_position_set1 = NA_character_,
@@ -38,7 +38,7 @@ vs_reformat_players <- function(jx, which = "home") {
     } else {
         warning("expecting a 2- or 6-column data frame for ", which, " team starting positions, ignoring")
     }
-    px
+    px %>% dplyr::arrange(.data$number) %>% mutate(X3 = dplyr::row_number())
 }
 
 dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, extra_validation = 2, validation_options=list(), ...) {
