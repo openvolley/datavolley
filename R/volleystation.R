@@ -42,8 +42,7 @@ vs_reformat_players <- function(jx, which = "home") {
 }
 
 dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, extra_validation = 2, validation_options=list(), ...) {
-    ## do_warn=FALSE, do_transliterate=FALSE,
-    ## surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
+    ## do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
     if (is.function(skill_evaluation_decode)) stop("providing a function to skill_evaluation_decode is not supported for vsm files")
     skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "volleymetrics")) ## used as the 'style' parm to dv_decode_* and dv_default_*
     x <- list(raw = readLines(filename, warn = FALSE))
@@ -54,6 +53,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     ## there should not be duplicate IDs, but they will cause problems so make sure
     idlnum <- idlnum[!is.na(raw_id) & !raw_id %in% raw_id[duplicated(raw_id)]]
     px_lnum <- function(idx) {
+        if (is.logical(idx)) idx <- which(idx)
         ## raw line numbers associated with the rows idx in px
         if (length(idx) < 1) return(integer())
         ids <- px$`_id`[idx]
@@ -144,7 +144,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         temp_pid <<- max(this_point_ids)
         pwb <- tibble(point_won_by = thisex$point, point_id = this_point_ids)
         thisto <- if (is.data.frame(thisev$timeout)) thisev$timeout %>% mutate(code = paste0(.data$team, "T"), point_id = this_point_ids, skill = "Timeout", timeout = TRUE) %>% dplyr::filter(!is.na(.data$team)) else tibble(code = character(), point_id = integer(), team = character(), skill = character(), timeout = logical())
-        ## sub is [a*]c[OUT]:[IN] (or P for sub of setter) ^^^TODO P
+        ## sub is [a*]c[OUT]:[IN]
         thissub <- if (is.data.frame(thisev$substitution)) {
                        thisev$substitution %>% mutate(point_id = this_point_ids) %>% dplyr::filter(!is.na(.data$team)) %>% mutate(code = paste0(.data$team, "c", lead0(.data$playerOut, na = "00"), ":", lead0(.data$playerIn, na = "00")), substitution = TRUE) ##%>% dplyr::select(-"playerIn", -"playerOut")
                    } else {
@@ -168,7 +168,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         ## row-bind the plays, timeouts, subs, and points, with care to ensure row ordering is correct
         thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
             if (!is.null(thisex$plays[[j]])) {
-                temp <- thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE) %>% dplyr::select(-"originalTime")
+                temp <- thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE)
+                if ("originalTime" %in% names(temp)) temp <- dplyr::select(temp, -"originalTime")
                 if ("travelPath" %in% names(temp)) {
                     tp <- bind_rows(lapply(temp$travelPath, function(z) {
                         if (is.null(z)) {
@@ -428,9 +429,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     idx <- !is.na(px$player_number)
     px$player_name[idx] <- get_player_name(px$team[idx], px$player_number[idx], mx)
     px$player_id[idx] <- get_player_id(px$team[idx], px$player_number[idx], mx)
-    dudidx <- (!is.na(px$player_number) & is.na(px$player_name)) | grepl("unknown player", px$player_name, ignore.case = TRUE)
-    if (any(dudidx)) {
-        msgs <- collect_messages(msgs, paste0("Player number ", px$player_number[dudidx], " could not be resolved to a player name/id"), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
+    dudidx <- which((!is.na(px$player_number) & is.na(px$player_name)) | grepl("unknown player", px$player_name, ignore.case = TRUE))
+    if (length(dudidx) > 0) {
+        msgs <- collect_messages(msgs, paste0("Player number ", px$player_number[dudidx], " could not be resolved to a player name/id"), line_nums = px_lnum(dudidx), xraw = x$raw, severity = 2)
     }
 
 
