@@ -438,49 +438,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$home_score_start_of_point <- ifelse(px$point_won_by %eq% "*", as.integer(px$home_team_score - 1L), as.integer(px$home_team_score))
     px$visiting_score_start_of_point <- ifelse(px$point_won_by %eq% "a", as.integer(px$visiting_team_score - 1L), as.integer(px$visiting_team_score))
 
-
     ## technical timeouts
-    ## ^^ TODO add video_time
-    if (is.flag(insert_technical_timeouts)) {
-        if (isTRUE(insert_technical_timeouts)) {
-            insert_technical_timeouts <- if (grepl("beach", file_type)) list(function(s1, s2) (s1 + s2) == 21, NULL) else list(c(8, 16), NULL)
-        } else {
-            insert_technical_timeouts <- list(NULL, NULL)
-        }
-    }
-    set_sets <- if (grepl("beach", file_type)) list(1:2, 3) else list(1:4, 5)
-    for (si in 1:2) {
-        if (!is.null(insert_technical_timeouts[[si]])) {
-            if (is.numeric(insert_technical_timeouts[[si]])) {
-                ## find technical timeouts at e.g. points 8 and 16 in sets 1-4
-                for (this_set in set_sets[[si]]) {
-                    for (thisp in insert_technical_timeouts[[si]]) {
-                        idx <- which((px$home_score_start_of_point == thisp | px$visiting_score_start_of_point == thisp) & px$set_number == this_set)
-                        if (length(idx) > 0) {
-                            idx <- idx[1]
-                            px <- bind_rows(px[seq_len(idx - 1L), ],
-                                            ##tibble(skill = "Technical timeout", point_id = px$point_id[idx] - 0.5, timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
-                                            px[idx, c("set_number", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq), "home_score_start_of_point", "visiting_score_start_of_point")] %>% mutate(skill = "Technical timeout", point_id = px$point_id[idx] - 0.5, timeout = TRUE, point = FALSE, end_of_set = FALSE, substitution = FALSE),
-                                            px[setdiff(seq_len(nrow(px)), seq_len(idx - 1L)), ])
-                        }
-                    }
-                }
-            } else if (is.function(insert_technical_timeouts[[si]])) {
-                ## function that is TRUE when a TTO should occur
-                ## note this only allows one such TTO per set
-                for (this_set in set_sets[[si]]) {
-                    idx <- which(insert_technical_timeouts[[si]](px$home_score_start_of_point, px$visiting_score_start_of_point) & px$set_number == this_set)
-                    if (length(idx) > 0) {
-                        idx <- idx[1]
-                        px <- bind_rows(px[seq_len(idx - 1L), ],
-                                        ##tibble(skill = "Technical timeout", point_id = px$point_id[idx] - 0.5, timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
-                                        px[idx, c("set_number", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "home_p1", "home_p2", "home_p3", "home_p", "home_p5", "home_p6", "visiting_p1", "visiting_p2", "visiting_p3", "visiting_p4", "visiting_p5", "visiting_p6", "home_score_start_of_point", "visiting_score_start_of_point")] %>% mutate(skill = "Technical timeout", point_id = px$point_id[idx] - 0.5, timeout = TRUE, point = FALSE, end_of_set = FALSE, substitution = FALSE),
-                                        px[setdiff(seq_len(nrow(px)), seq_len(idx - 1L)), ])
-                    }
-                }
-            }
-        }
-    }
+    px <- dv_insert_technical_timeouts(px, data_type = file_type)
+
     ## renumber point_id to integer values
     px$point_id <- as.integer(as.factor(px$point_id)) - 1L ## zero based for compatibility
 
