@@ -231,98 +231,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         this_vtl <- thisev$lineup$away$positions %>% mutate(point_id = this_point_ids) %>%
             dplyr::rename(visiting_p1 = "1", visiting_p2 = "2", visiting_p3 = "3", visiting_p4 = "4", visiting_p5 = "5", visiting_p6 = "6")
         thisex <- left_join(thisex, this_vtl, by = "point_id")
-
-        fix_rally <- function(rx, last_hsp, last_vsp, last_hts, last_vts, meta) {
-            ## rx is a data.frame
-            ## last_hsp, last_vsp = last known setter positions
-            ## last_hts, last_vts = last team scores
-            if (nrow(rx) < 1) return(rx)
-            ## TODO ensure no missing times
-            is_sub <- is_to <- is_sc <- is_point <- FALSE
-            if (any(rx$substitution)) {
-                stopifnot(nrow(rx) == 1)
-                is_sub <- TRUE
-            } else if (any(rx$timeout)) {
-                stopifnot(nrow(rx) == 1)
-                is_to <- TRUE
-            } else if (nrow(rx) == 1 && isTRUE(rx$point)) {
-                is_sc <- TRUE
-            } else if (any(rx$point)) {
-                is_point <- TRUE
-            }
-            ## if this was this a substitution, did the setter get substituted?
-            if (is_sub) {
-                if (rx$team %eq% "*") {
-                    setter_num <- tryCatch(rx[[paste0("home_p", rx$home_setter_position)]], error = NA_integer_)
-                } else if (rx$team %eq% "a") {
-                    setter_num <- tryCatch(rx[[paste0("visiting_p", rx$visiting_setter_position)]], error = NA_integer_)
-                } else {
-                    stop("sub for unknown team")
-                }
-                if (is.na(setter_num)) stop("unknown setter")
-                if (rx$player_out == setter_num) substr(rx$code, 2, 2) <- "P" ## make the sub code a setter sub
-            }
-            ## $point indicates that the score changed, either through a genuine rally or via a score correction
-            if (is_sc) {
-                ## score correction, add pc rows if needed, there may need to be more than one
-                ## also discard the existing point code, because it will need to be re-created in sequence here
-                last_scores <- c(last_hts, last_vts)
-                hts_delta <- rx$home_team_score - last_scores[1] ## change in home team score
-                vts_delta <- rx$visiting_team_score - last_scores[2] ## change in visiting team score
-                n_adj <- abs(hts_delta) + abs(vts_delta) ## the number of score adjustments we'll insert
-                newcodes <- newscores_h <- newscores_v <- c()
-                ## note that we don't try and keep track of setter positions through this and enter the appropriate *z/az codes. Just enter the first one (code block below)
-                if (hts_delta != 0) {
-                    for (sci in (seq_len(abs(hts_delta)) * sign(hts_delta))) {
-                        thiscodes <- dv_green_codes(paste0("*p", lead0(last_scores[1] + sci), ":", lead0(last_scores[2])), meta)
-                        newscores_h <- c(newscores_h, rep(last_scores[1] + sci, length(thiscodes)))
-                        newcodes <- c(newcodes, thiscodes)
-                    }
-                    newscores_v <- rep(last_scores[2], length(newscores_h))
-                    last_scores[1] <- rx$home_team_score
-                }
-                if (vts_delta != 0) {
-                    for (sci in (seq_len(abs(vts_delta)) * sign(vts_delta))) {
-                        thiscodes <- dv_green_codes(paste0("ap", lead0(last_scores[1]), ":", lead0(last_scores[2] + sci)), meta)
-                        newscores_v <- c(newscores_v, rep(last_scores[2] + sci, length(thiscodes)))
-                        newcodes <- c(newcodes, thiscodes)
-                        newscores_h <- c(newscores_h, rep(last_scores[1], length(thiscodes)))
-                    }
-                }
-                if (length(newcodes) != (n_adj * 3)) stop("adjustment length wrong?")
-                ## TO CHECK if a point is being subtracted, is it still given a # green code ("point win") for that team?
-                temp_point_ids <- rx$point_id
-                if (n_adj > 1) temp_point_ids <- temp_point_ids + rep(seq_len(abs(hts_delta) + abs(vts_delta)), each = 3) / (n_adj + 1L)
-                rx <- rx[rep(1L, length(newcodes)), keepcols] %>% mutate(team = substr(newcodes, 1, 1), point_id = temp_point_ids, point = substr(newcodes, 2, 2) == "p", code = newcodes, home_team_score = newscores_h, visiting_team_score = newscores_v)
-            } else if (is_point) {
-                ## add green codes - reconstruct codes first, codes to dv_green_codes need to be real ones
-                if (!all(rx$team %in% c("a", "*"))) { print(dplyr::glimpse(rx)); stop("tm") }
-                ss1 <- function(x) case_when(!is.na(x) & nzchar(x) ~ substr(x, 1, 1), TRUE ~ "~")
-                temp_codes <- paste0(ss1(rx$team), lead0(rx$player, na = "00"), ss1(rx$skill), ss1(rx$hit_type), ss1(rx$effect))
-                temp_codes[which(rx$point)] <- rx$code[which(rx$point)] ## retain the original point code
-                codes2 <- dv_green_codes(temp_codes, meta)
-                ## the last element of codes2 will be the point code pc, any other extras need to be injected
-                if (length(codes2) > nrow(rx)) {
-                    newcodes <- codes2[seq(from = nrow(rx), to = length(codes2) - 1L, by = 1L)] ## add these codes
-                    rx <- bind_rows(head(rx, -1), ## not the last row
-                                    rx[rep(nrow(rx) - 1L, length(newcodes)), keepcols] %>% mutate(team = substr(newcodes, 1, 1), point = FALSE, code = newcodes),
-                                    tail(rx, 1))
-                }
-            }
-            ## insert setter position codes, when setter has changed position (and not on first point, those come in the >LUp codes - so for the first point, make sure that the last_hsp and last_vsp are passed as their starting values)
-            spcodes <- c()
-            if (!rx$home_setter_position[1] %eq% last_hsp) {
-                spcodes <- paste0("*z", rx$home_setter_position[1])
-            }
-            if (!rx$visiting_setter_position[1] %eq% last_vsp) {
-                spcodes <- c(spcodes, paste0("az", rx$visiting_setter_position[1]))
-            }
-            if (length(spcodes) > 0) {
-                ## if this was a sub, the sub code should appear before the spcodes
-                rx <- bind_rows(if (is_sub) rx, rx[rep(1, length(spcodes)), keepcols] %>% mutate(team = substr(spcodes, 1, 1), code = spcodes), if (!is_sub) rx)
-            }
-            rx
-        }
         ## update each rally, deal with score adjustment, update setter positions, etc
         temp <- list()
         last_hts <- last_vts <- 0L
@@ -330,14 +238,16 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         last_vsp <- thisex$visiting_setter_position[1]
         for (pid in unique(thisex$point_id)) {
             this <- thisex[thisex$point_id == pid, ]
-            this <- fix_rally(this, last_hsp = last_hsp, last_vsp = last_vsp, last_hts = last_hts, last_vts = last_vts, meta = mx)
+            this <- dv_expand_rally_codes(this %>% dplyr::rename(evaluation_code = "effect", player_number = "player", skill_type_code = "hit_type"),
+                                          last_home_setter_position = last_hsp, last_visiting_setter_position = last_vsp,
+                                          last_home_team_score = last_hts, last_visiting_team_score = last_vts, keepcols = keepcols, meta = mx) %>%
+                dplyr::rename(effect = "evaluation_code", player = "player_number", hit_type = "skill_type_code")
             temp[[pid]] <- this
             last_hts <- tail(this$home_team_score, 1)
             last_vts <- tail(this$visiting_team_score, 1)
             last_hsp <- tail(this$home_setter_position, 1)
             last_vsp <- tail(this$visiting_setter_position, 1)
         }
-
         thisex <- bind_rows(temp)
         ## insert >LUp codes at start of set
         hs <- tryCatch(unlist(thisex[1, paste0("home_p", pseq)])[thisex$home_setter_position[1]], error = function(e) 0L)
