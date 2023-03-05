@@ -116,7 +116,14 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
     mx$attacks <- clear_dvmsg(ax)
 
-    mx$sets <- dv_create_meta_setter_calls(code = jx$setterCalls$code, description = jx$setterCalls$name) ## jx$setterCalls$area seems to be zone and subzone of where the middle runs
+    sx <- dv_create_meta_setter_calls(code = jx$setterCalls$code, description = jx$setterCalls$name) ## jx$setterCalls$area seems to be zone and subzone of where the middle runs
+    if (has_dvmsg(sx)) {
+        idx <- head(grep("setterCalls", x$raw), 1)
+        if (length(idx) < 1) idx <- NA_integer_
+        msgs <- collect_messages(msgs, get_dvmsg(sx)$message, line_nums = idx + 1L, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx + 1L], severity = 3)
+    }
+    mx$sets <- clear_dvmsg(sx)
+
     mx$winning_symbols <- dv_default_winning_symbols(data_type = file_type, style = skill_evaluation_decode) ## TODO can this vary from vsm file to vsm file?
     mx$match_id <- dv_create_meta_match_id(mx)
 
