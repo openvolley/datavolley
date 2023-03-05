@@ -253,7 +253,10 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
     }))
 
-    px$end_of_set[is.na(px$end_of_set)] <- FALSE
+    px <- mutate(px, substitution = case_when(is.na(.data$substitution) ~ FALSE, TRUE ~ .data$substitution),
+                 timeout = case_when(is.na(.data$timeout) ~ FALSE, TRUE ~ .data$timeout),
+                 point = case_when(is.na(.data$point) ~ FALSE, TRUE ~ .data$point),
+                 end_of_set = case_when(is.na(.data$end_of_set) ~ FALSE, TRUE ~ .data$end_of_set))
 
     ## other bits that need to be done before rebuilding the scout code
     names(px)[names(px) == "end_sub_zone"] <- "end_subzone"
@@ -524,6 +527,22 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     ## update the set durations, subs, etc in the metadata
     x <- dv_update_meta(x)
     x$messages <- dplyr::select(bind_rows(msgs), -"severity")
+
+    ## some fixes before validation
+    for (tm in c("home", "visiting")) {
+        ## find rows where the lineup changes on the line previous to a substitution
+        lup <- function(i) apply(apply(x$plays[i, paste0(tm, "_p", pseq)], 1, sort), 2, paste, collapse = "|")
+        idx <- which(x$plays$substitution & x$plays$team == x$plays[[paste0(tm, "_team")]])
+        idx <- idx[idx > 3]
+        thiscols <- paste0(tm, c("_setter_position", paste0("_p", pseq), paste0("_player_id", pseq)))
+        for (j in idx) {
+            if (lup(j - 1) == lup(j) & lup(j - 1) != lup(j - 2)) {
+                ##cat("fixing", tm, "lineup prior to sub on row", j, "\n")
+                x$plays[j - 1L, thiscols] <- x$plays[j - 2L, thiscols]
+            }
+        }
+    }
+    
     ## apply additional validation
     if (extra_validation > 0) {
         moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
