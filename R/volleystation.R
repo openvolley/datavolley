@@ -38,7 +38,7 @@ vs_reformat_players <- function(jx, which = "home") {
     } else {
         warning("expecting a 2- or 6-column data frame for ", which, " team starting positions, ignoring")
     }
-    px %>% dplyr::arrange(.data$number) %>% mutate(X3 = dplyr::row_number())
+    px %>% dplyr::arrange(.data$number) %>% mutate(X3 = dplyr::row_number() + if (which %in% "home") 0L else nrow(jx$team$home$players))
 }
 
 dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, extra_validation = 2, validation_options=list(), ...) {
