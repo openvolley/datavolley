@@ -152,15 +152,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                    }
         ## scores
         this_pts <- thisev$score %>% mutate(point_id = this_point_ids) %>% dplyr::rename(home_team_score = "home", visiting_team_score = "away") %>%
-            mutate(code = case_when(dplyr::row_number() == 1 & .data$home_team_score > 0 ~ "*",
-                                    dplyr::row_number() == 1 & .data$visiting_team_score > 0 ~ "a",
-                                    .data$home_team_score != lag(.data$home_team_score) ~ "*",
-                                    .data$visiting_team_score != lag(.data$visiting_team_score) ~ "a",
-                                    TRUE ~ "~"), ## ~ denoting no score change, so no *p/ap code to add
-                   ## note that negative score changes also count as "points", they will appear in score correction lines
-                   ## only insert p-code when scores change (e.g. not subs)
-                   code = case_when(code != "~" ~ paste0(.data$code, "p", lead0(.data$home_team_score, na = "99"), ":", lead0(.data$visiting_team_score, na = "99"))),
-                   point = !is.na(.data$code), team = substr(.data$code, 1, 1))
+            left_join(pwb %>% dplyr::rename(team = "point_won_by"), by = "point_id") %>%
+            mutate(code = case_when(!is.na(.data$team) ~ paste0(.data$team, "p", lead0(.data$home_team_score, na = "99"), ":", lead0(.data$visiting_team_score, na = "99"))),
+                   point = !is.na(.data$team))
         ## columns to preserve when adding new rows to the dataframe
         keepcols <- c("point_id", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number",
                       "home_setter_position", "visiting_setter_position", "home_p1", "home_p2", "home_p3", "home_p4", "home_p5", "home_p6",
