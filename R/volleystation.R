@@ -64,6 +64,14 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
     msgs <- list()
     file_type <- jx$gameType
+    if (length(file_type) < 1) {
+        if (is.data.frame(jx$scout$sets$startingLineup$home$positions) && ncol(jx$scout$sets$startingLineup$home$positions) == 6) {
+            file_type <- "indoor"
+        } else {
+            stop("gameType is missing and could not be inferred")
+        }
+    }
+
     if (!file_type %in% c("indoor", "beach")) stop("file type: ", file_type, " is not supported yet, please contact the package authors")
     if (file_type == "beach") warning("beach files have not been tested yet")
     pseq <- if (isTRUE(grepl("beach", file_type))) 1:2 else 1:6
@@ -73,7 +81,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     ## note that the vsm appears to include the startDate time as UTC, and so it can differ from the time in the same file exported to dvw
     mx <- list(match = dv_create_meta_match(date = lubridate::ymd_hms(jx$startDate),
-                                            regulation = if (isTRUE(jx$gameType == "indoor")) "indoor rally point" else stop("unexpected gameType: ", jx$gameType),
+                                            regulation = if (file_type == "indoor") "indoor rally point" else if (file_type == "beach") "beach rally point" else stop("unexpected game type: ", file_type),
                                             zones_or_cones = "Z"), ## cones not supported in VS
                more = dv_create_meta_more()) ## TODO surely the scout name at least is in the json
     if ("comment" %in% names(jx)) {
@@ -233,6 +241,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         last_vsp <- thisex$visiting_setter_position[1]
         for (pid in unique(thisex$point_id)) {
             this <- thisex[thisex$point_id == pid, ]
+            ## TODO convert warnings from dv_expand_rally_codes and dv_green_codes to messages to be captured here
             this <- dv_expand_rally_codes(this %>% dplyr::rename(evaluation_code = "effect", player_number = "player", skill_type_code = "hit_type"),
                                           last_home_setter_position = last_hsp, last_visiting_setter_position = last_vsp,
                                           last_home_team_score = last_hts, last_visiting_team_score = last_vts, keepcols = keepcols, meta = mx) %>%
@@ -258,6 +267,18 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                  point = case_when(is.na(.data$point) ~ FALSE, TRUE ~ .data$point),
                  end_of_set = case_when(is.na(.data$end_of_set) ~ FALSE, TRUE ~ .data$end_of_set))
 
+    ## ensure some columns are present, these are known to be missing in some files
+    req <- list(special = NA_character_, custom = NA_character_,
+                start_coordinate_x = NA_real_, mid_coordinate_x = NA_real_, end_coordinate_x = NA_real_,
+                start_coordinate_y = NA_real_, mid_coordinate_y = NA_real_, end_coordinate_y = NA_real_,
+                start_sub_zone = NA_character_)
+    for (rc in names(req)) if (!rc %in% names(px)) { px[[rc]] <- req[[rc]] }
+
+    ## check that all expected columns are present
+##    expctd <- c("point_id", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number", "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq), "code", "team", "skill", "timeout", "player_in", "player_out", "substitution", "_id", "player", "hit_type", "effect", "start_zone", "end_zone", "end_sub_zone", "combination", "target_attacker", "skill_type", "players", "point", "end_of_set")
+##    ## plus start/mid/end coordinate x,y, special, custom, start_sub_zone but we've already ensured these
+##    for (rc in setdiff(expctd, names(px))) px[[rc]] <- NA ## might run into type problems later with these
+
     ## other bits that need to be done before rebuilding the scout code
     names(px)[names(px) == "end_sub_zone"] <- "end_subzone"
     names(px)[names(px) == "start_sub_zone"] <- "start_subzone"
@@ -265,7 +286,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$end_zone <- as.integer(px$end_zone)
     px$end_subzone <- toupper(as.character(px$end_subzone))
     px$start_subzone <- toupper(as.character(px$start_subzone))
-    for (vr in c("start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y")) if (!vr %in% names(px)) { px[[vr]] <- NA_real_ }
 
     ## vsm's use start and end locations relative to the skill on that row, but dvw convention is to use e.g. reception start the same as serve start
     pairs <- ((px$skill == "R" & lag(px$skill) == "S") |
@@ -291,6 +311,16 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$start_coordinate <- dv_xy2index(px$start_coordinate_x, px$start_coordinate_y)
     px$mid_coordinate <- dv_xy2index(px$mid_coordinate_x, px$mid_coordinate_y)
     px$end_coordinate <- dv_xy2index(px$end_coordinate_x, px$end_coordinate_y)
+
+    ## other cols needed before re-creating code
+    ## attack combination codes and setter calls
+    ## TODO check known attack types?
+    px <- px %>% mutate(attack_code = case_when(.data$skill == "A" ~ .data$combination), set_code = case_when(.data$skill == "E" ~ .data$combination))
+    mxa <- mx$attacks %>% dplyr::select(attack_code = "code", attack_description = "description", target_attacker = "set_type")
+    ## target_attacker might or might not already be in the px data frame, depending on the vsm file
+    if ("target_attacker" %in% names(px)) mxa <- dplyr::select(mxa, -"target_attacker")
+    px <- left_join(px, mxa, by = "attack_code")
+    px <- left_join(px, mx$sets %>% dplyr::select(set_code = "code", set_description = "description"), by = "set_code")
 
     ## re-create the proper scout code for skill rows, otherwise if we dv_write this and dv_read it, it will not work
     px$code <- vsm_row2code(px, data_type = file_type, style = skill_evaluation_decode)
@@ -357,14 +387,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         px$evaluation <- clear_dvmsg(temp)
     }
 
-    ## attack combination codes and setter calls
-    ## TODO check known attack types
-    px <- px %>% mutate(attack_code = case_when(.data$skill == "Attack" ~ .data$combination))
-    px <- left_join(px, mx$attacks %>% dplyr::select(attack_code = "code", attack_description = "description"), by = "attack_code")
-
-    px <- px %>% mutate(set_code = case_when(.data$skill == "Set" ~ .data$combination))
-    px <- left_join(px, mx$sets %>% dplyr::select(set_code = "code", set_description = "description"), by = "set_code")
-
     px <- px %>% dplyr::rename(set_type = "target_attacker")
     idx <- which(!px$set_type %in% c("F", "B", "C", "P", "S", NA_character_))
     if (length(idx) > 0) {
@@ -410,11 +432,15 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$num_players <- clear_dvmsg(temp)
 
     ## special codes
-    temp <- dv_decode_special_code(px$skill, special_code = px$special, evaluation = px$evaluation, data_type = file_type, style = skill_evaluation_decode)
-    if (has_dvmsg(temp)) {
-        msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+    if (all(is.na(px$special))) {
+        px$special_code <- NA_character_
+    } else {
+        temp <- dv_decode_special_code(px$skill, special_code = px$special, evaluation = px$evaluation, data_type = file_type, style = skill_evaluation_decode)
+        if (has_dvmsg(temp)) {
+            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+        }
+        px$special_code <- clear_dvmsg(temp)
     }
-    px$special_code <- clear_dvmsg(temp)
 
     ## fill in player_name and player_id from player_number
     px <- dplyr::rename(px, player_number = "player") %>%
@@ -430,7 +456,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if (length(dudidx) > 0) {
         msgs <- collect_messages(msgs, paste0("Player number ", px$player_number[dudidx], " could not be resolved to a player name/id"), line_nums = px_lnum(dudidx), xraw = x$raw, severity = 2)
     }
-
 
     ## add scores at START of point
     px$home_score_start_of_point <- ifelse(px$point_won_by %eq% "*", as.integer(px$home_team_score - 1L), as.integer(px$home_team_score))
@@ -501,8 +526,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     })
     ## these interpolated file line numbers won't be exact, but close enough to be (hopefully) useful
 
-    ##x$px <- px ## temporarily
-    if (!"custom" %in% names(px)) px$custom <- NA_character_
     x$plays <- px %>% mutate(video_time = round(.data$time / 10),
                              time = as.POSIXct(NA), video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
                              end_cone = NA_integer_) %>%
@@ -526,32 +549,32 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     ## update the set durations, subs, etc in the metadata
     x <- dv_update_meta(x)
-    x$messages <- dplyr::select(bind_rows(msgs), -"severity")
+    msgs <- bind_rows(msgs)
+    x$messages <- msgs[, setdiff(names(msgs), c("severity"))]
 
     ## some fixes before validation
     for (tm in c("home", "visiting")) {
-        ## find rows where the lineup changes on the line previous to a substitution
+        ## find rows where the lineup changes on the line previous to the actual substitution code
         lup <- function(i) apply(apply(x$plays[i, paste0(tm, "_p", pseq)], 1, sort), 2, paste, collapse = "|")
         idx <- which(x$plays$substitution & x$plays$team == x$plays[[paste0(tm, "_team")]])
         idx <- idx[idx > 3]
         thiscols <- paste0(tm, c("_setter_position", paste0("_p", pseq), paste0("_player_id", pseq)))
         for (j in idx) {
             if (lup(j - 1) == lup(j) & lup(j - 1) != lup(j - 2)) {
-                ##cat("fixing", tm, "lineup prior to sub on row", j, "\n")
                 x$plays[j - 1L, thiscols] <- x$plays[j - 2L, thiscols]
             }
         }
     }
-    
+
     ## apply additional validation
     if (extra_validation > 0) {
         moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
     }
-    if (is.null(x$messages)) x$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE) ## should not happen, but just to be sure
+    if (is.null(x$messages)) x$messages <- tibble(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character()) ## should not happen, but just to be sure
     if (!is.null(x$messages) && nrow(x$messages) > 0) {
         x$messages$file_line_number <- as.integer(x$messages$file_line_number)
-        x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE),]
+        x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE), ]
         row.names(x$messages) <- NULL
     }
     x
