@@ -239,14 +239,15 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         last_hts <- last_vts <- 0L
         last_hsp <- thisex$home_setter_position[1]
         last_vsp <- thisex$visiting_setter_position[1]
-        for (pid in unique(thisex$point_id)) {
-            this <- thisex[thisex$point_id == pid, ]
+        pids <- unique(thisex$point_id)
+        for (pidi in seq_along(pids)) {
+            this <- thisex[thisex$point_id == pids[pidi], ]
             ## TODO convert warnings from dv_expand_rally_codes and dv_green_codes to messages to be captured here
             this <- dv_expand_rally_codes(this %>% dplyr::rename(evaluation_code = "effect", player_number = "player", skill_type_code = "hit_type"),
                                           last_home_setter_position = last_hsp, last_visiting_setter_position = last_vsp,
                                           last_home_team_score = last_hts, last_visiting_team_score = last_vts, keepcols = keepcols, meta = mx) %>%
                 dplyr::rename(effect = "evaluation_code", player = "player_number", hit_type = "skill_type_code")
-            temp[[pid]] <- this
+            temp[[pidi]] <- this
             last_hts <- tail(this$home_team_score, 1)
             last_vts <- tail(this$visiting_team_score, 1)
             last_hsp <- tail(this$home_setter_position, 1)
