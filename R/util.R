@@ -429,8 +429,14 @@ lead0 <- function(x, width = 2, pad = "0", na = NULL) {
     naidx <- rep(FALSE, length(x))
     if (!is.null(na)) {
         naidx <- is.na(x) | !nzchar(x)
-        out[naidx] <- na
+        out[naidx] <- as.character(na)
     }
     out[!naidx] <- stringr::str_pad(as.numeric(x[!naidx]), width = width, pad = pad)
     out
+}
+
+rotpos <- function(p, by = 1L, n = 6L) (p - 1L - by) %% n + 1L
+rot_lup <- function(z, by = 1L, n = 6L) {
+    ## z is a lineup vector
+    z[rotpos(seq_along(z), by = by, n = n)]
 }

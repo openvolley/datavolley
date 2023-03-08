@@ -74,10 +74,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     if (!file_type %in% c("indoor", "beach")) stop("file type: ", file_type, " is not supported yet, please contact the package authors")
     if (file_type == "beach") warning("beach files have not been tested yet")
-    pseq <- if (isTRUE(grepl("beach", file_type))) 1:2 else 1:6
+    pseq <- seq_len(if (file_type == "beach") 2 else 6)
     x$file_meta <- dv_create_file_meta(generator_day = as.POSIXct(NA), generator_idp = "DVW", generator_prg = "VolleyStation",
                                       generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type)
-    x$messages <- data.frame()
 
     ## note that the vsm appears to include the startDate time as UTC, and so it can differ from the time in the same file exported to dvw
     mx <- list(match = dv_create_meta_match(date = lubridate::ymd_hms(jx$startDate),
@@ -102,10 +101,12 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if (length(a1) < 1) a1 <- NA_character_
     a2 <- paste(paste(jx$team$away$staff$assistantCoach$firstName, jx$team$away$staff$assistantCoach$lastName), paste(jx$team$away$staff$assistantCoach2$firstName, jx$team$away$staff$assistantCoach2$lastName), collapse = " / ")
     if (length(a2) < 1) a2 <- NA_character_
-    mx$teams <- dv_create_meta_teams(team_ids = c(jx$team$home$code, jx$team$away$code),
+    tx <- dv_create_meta_teams(team_ids = c(jx$team$home$code, jx$team$away$code),
                                      teams = c(jx$team$home$name, jx$team$away$name),
                                      coaches = c(c1, c2),
                                      assistants = c(a1, a2))
+    if (has_dvmsg(tx)) msgs <- collect_messages(msgs, get_dvmsg(tx), xraw = x$raw)
+    mx$teams <- clear_dvmsg(tx)
 
     mx$players_h <- vs_reformat_players(jx, "home")
     mx$players_v <- vs_reformat_players(jx, "visiting")
@@ -165,8 +166,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                    point = !is.na(.data$team))
         ## columns to preserve when adding new rows to the dataframe
         keepcols <- c("point_id", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number",
-                      "home_setter_position", "visiting_setter_position", "home_p1", "home_p2", "home_p3", "home_p4", "home_p5", "home_p6",
-                      "visiting_p1", "visiting_p2", "visiting_p3", "visiting_p4", "visiting_p5", "visiting_p6")
+                      "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq))
         ## row-bind the plays, timeouts, subs, and points, with care to ensure row ordering is correct
         thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
             if (!is.null(thisex$plays[[j]])) {
@@ -536,12 +536,10 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                       "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout",
                       "end_of_set", "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position",
                       custom_code = "custom", "file_line_number",
-                      "home_p1", "home_p2", "home_p3", "home_p4", "home_p5", "home_p6",
-                      "visiting_p1", "visiting_p2", "visiting_p3", "visiting_p4", "visiting_p5", "visiting_p6",
+                      paste0("home_p", pseq), paste0("visiting_p", pseq),
                       "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase",
                       "start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y",
-                      "home_player_id1", "home_player_id2", "home_player_id3", "home_player_id4", "home_player_id5", "home_player_id6",
-                      "visiting_player_id1", "visiting_player_id2", "visiting_player_id3", "visiting_player_id4", "visiting_player_id5", "visiting_player_id6",
+                      paste0("home_player_id", pseq), paste0("visiting_player_id", pseq),
                       "set_number", "team_touch_id", "home_team", "visiting_team", "home_team_id", "visiting_team_id", "team_id", "point_won_by",
                       "winning_attack", "serving_team", "phase", "home_score_start_of_point", "visiting_score_start_of_point")
     class(x$plays) <- c("datavolleyplays", class(x$plays))
@@ -571,8 +569,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
     }
-    if (is.null(x$messages)) x$messages <- tibble(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character()) ## should not happen, but just to be sure
-    if (!is.null(x$messages) && nrow(x$messages) > 0) {
+    if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character())
+    if (nrow(x$messages) > 0) {
         x$messages$file_line_number <- as.integer(x$messages$file_line_number)
         x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE), ]
         row.names(x$messages) <- NULL
