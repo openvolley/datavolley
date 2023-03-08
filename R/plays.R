@@ -562,7 +562,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         done[thisidx] <- TRUE
     }
 
-    thisidx <- grepl("^.[Pc]", in_code) & !grepl(">LUp", in_code, ignore.case = TRUE) ## no LUp lines, i.e. don't treat setter assignments as subs
+    thisidx <- grepl("^[a\\*][Pc]", in_code) & !grepl(">LUp", in_code, ignore.case = TRUE) ## no LUp lines, i.e. don't treat setter assignments as subs
     ## substitution of setter (P) or other player (c) ## 2023-02-28 c changed to lower case, previously handled in semi-duplicate block below
     out_substitution[thisidx] <- TRUE
     done[thisidx] <- TRUE
