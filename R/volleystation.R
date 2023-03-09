@@ -72,7 +72,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         }
     }
 
-    if (!file_type %in% c("indoor", "beach")) stop("file type: ", file_type, " is not supported yet, please contact the package authors")
+    if (!file_type %in% c("indoor", "beach")) stop("file type: ", file_type, " is not supported yet, please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")
     if (file_type == "beach") warning("beach files have not been tested yet")
     pseq <- seq_len(if (file_type == "beach") 2 else 6)
     x$file_meta <- dv_create_file_meta(generator_day = as.POSIXct(NA), generator_idp = "DVW", generator_prg = "VolleyStation",

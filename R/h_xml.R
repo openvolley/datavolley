@@ -133,10 +133,12 @@ h_row2code <- function(x, data_type, style) {
     }
     ##na2t(c("dsjfldjldk", "a", "", NA_character_, 99), 5) ==> "dsjfl" "a~~~~" "~~~~~" "~~~~~" "99~~~"
     out <- x$code
+    msgs <- c()
     ## only updating skill codes
     idx <- x$skill %in% c("S", "R", "E", "A", "B", "D", "F")
     if (!all(x$team[idx] %in% c("a", "*"))) {
-        warning("at least one missing team code for a skill row")
+        ## warning("at least one missing team code for a skill row")
+        ## do this from the main function, so it can be captured in x$messages
         out[idx & !x$team %in% c("a", "*")] <- NA_character_
     }
     idx <- which(idx & x$team %in% c("a", "*"))
@@ -288,6 +290,16 @@ dv_read_hxml <- function(filename, skill_evaluation_decode = "volleymetrics", ex
             x
         }
     }
+    conds <- px %>% dplyr::filter(!is.na(.data$set_number)) %>% group_by(.data$set_number) %>%
+        dplyr::summarize(weather = paste0(na.omit(unique(.data$conditions_weather)), collapse = ", "),
+                         wind = paste0(na.omit(unique(.data$conditions_wind)), collapse = ", "),
+                         light = paste0(na.omit(unique(.data$conditions_light)), collapse = ", ")) %>%
+        group_by(.data$weather, .data$wind, .data$light) %>%
+        dplyr::summarize(conditions = paste0("Set", if (dplyr::n() > 1) "s", " ", paste0(.data$set_number, collapse = ", "), " -",
+                                             if (!is.na(.data$weather[1]) && nchar(.data$weather[1]) > 0) paste0(" Weather: ", .data$weather[1], "."),
+                                             if (!is.na(.data$wind[1]) && nchar(.data$wind[1]) > 0) paste0(" Wind: ", .data$wind[1], "."),
+                                             if (!is.na(.data$light[1]) && nchar(.data$light[1]) > 0) paste0(" Light: ", .data$light[1]))) %>%
+        ungroup
 
     mx <- list(match = dv_create_meta_match(date = lubridate::ymd(first_unique(px$yyyy_mm_dd)),
                                             regulation = if (file_type == "indoor") "indoor rally point" else if (file_type == "beach") "beach rally point" else stop("unexpected game type: ", file_type),
@@ -295,7 +307,7 @@ dv_read_hxml <- function(filename, skill_evaluation_decode = "volleymetrics", ex
                                             phase = first_unique(px$tournament_phase),
                                             zones_or_cones = "Z"),
                more = dv_create_meta_more(city = first_unique(px$tournament_location)),
-               comments = dv_create_meta_comments() ## TODO enter conditions_weather conditions_wind conditions_light into comments? (do they vary by e.g. set?)
+               comments = dv_create_meta_comments(summary = paste0(conds$conditions, collapse = " | "))
                )
     set_scores <- px %>% dplyr::filter(!is.na(.data$set_number)) %>% group_by(.data$set_number) %>% dplyr::summarize(home_team_score = max(.data$home_team_score, na.rm = TRUE), visiting_team_score = max(.data$visiting_team_score, na.rm = TRUE))
 
@@ -467,9 +479,10 @@ dv_read_hxml <- function(filename, skill_evaluation_decode = "volleymetrics", ex
         last_vsp <- thispx$visiting_setter_position[1]
         for (pidi in seq_along(pids)) {
             this <- thispx[thispx$point_id == pids[pidi], ]
-            ## TODO convert warnings from dv_expand_rally_codes and dv_green_codes to messages to be captured here
+            ## suppress warnings here, any issues should be captured by later validation checks
             this <- dv_expand_rally_codes(this, last_home_setter_position = last_hsp, last_visiting_setter_position = last_vsp,
-                                          last_home_team_score = last_hts, last_visiting_team_score = last_vts, keepcols = keepcols, meta = x$meta, rebuild_codes = FALSE)
+                                          last_home_team_score = last_hts, last_visiting_team_score = last_vts,
+                                          keepcols = keepcols, meta = x$meta, rebuild_codes = FALSE, do_warn = FALSE)
             temp2[[pidi]] <- this
             last_hts <- tail(this$home_team_score, 1)
             last_vts <- tail(this$visiting_team_score, 1)
@@ -537,6 +550,14 @@ dv_read_hxml <- function(filename, skill_evaluation_decode = "volleymetrics", ex
         px$file_line_number[idx] <- round(approx(which(!idx), px$file_line_number[!idx], which(idx))$y)
     })
     ## these interpolated file line numbers won't be exact, but close enough to be (hopefully) useful
+
+
+    ## some checks
+    idx <- x$skill %in% c("Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball", "Timeout") & is.na(x$team)
+    if (any(idx)) {
+        msgs <- bind_rows(msgs, tibble(line_number = px$file_line_number[idx], message = "Skill code has missing or invalid team identifier", severity = 1))
+    }
+
     x$plays <- px %>% mutate(video_file_number = if (nrow(x$meta$video) > 0) 1L else NA_integer_, end_cone = NA_integer_) %>%
         dplyr::select("match_id", "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id",
                       "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type",
