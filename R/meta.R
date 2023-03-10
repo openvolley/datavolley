@@ -375,10 +375,10 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
              error=function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
     out$match_id <- dv_create_meta_match_id(out)
-    if (length(msgs)>0) {
-        msgs <- ldply(msgs, as.data.frame)
+    if (length(msgs) > 0) {
+        msgs <- bind_rows(msgs)
     } else {
-        msgs <- data.frame(file_line_number=integer(),video_time=numeric(),message=character(),file_line=character())
+        msgs <- data.frame(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character())
     }
     out$video <- read_video(txt)
     list(meta=out,messages=msgs)

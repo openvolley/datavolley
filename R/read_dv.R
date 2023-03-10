@@ -209,7 +209,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         file_type <- "beach"
     }
     out$file_meta$file_type <- file_type
-    if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
+    if (!is.null(temp$messages) && nrow(temp$messages)>0) {
+        temp$messages$file_line <- as.character(temp$messages$file_line)
+        out$messages <- bind_rows(out$messages, temp$messages)
+    }
     if (metadata_only) return(out)
     this_main <- NULL
     thismsg <- NULL
@@ -254,7 +257,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         }
     })
     if (is.null(this_main)) stop("could not read dv file (unspecified error)")
-    ##if (!is.null(thismsg)) mymsgs <- rbind.fill(mymsgs,thismsg)
+    ##if (!is.null(thismsg)) mymsgs <- bind_rows(mymsgs,thismsg)
     ## don't actually issue this warning, for now at least
 
     ## count line numbers: where do codes start from?
@@ -268,7 +271,10 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     }
     temp <- parse_code(code = this_main$code, meta = out$meta, evaluation_decoder = skill_evaluation_decode, code_line_num = cln, full_lines = if (is.null(cln)) NULL else file_text[cln], file_type = file_type)
     out$plays <- temp$plays
-    if (!is.null(temp$messages) && nrow(temp$messages)>0) out$messages <- rbind.fill(out$messages, temp$messages)
+    if (!is.null(temp$messages) && nrow(temp$messages)>0) {
+        temp$messages$file_line <- as.character(temp$messages$file_line)
+        out$messages <- bind_rows(out$messages, temp$messages)
+    }
     ## post-process plays data
     ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
@@ -305,7 +311,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     ## add set number
     if (!any(out$plays$end_of_set)) {
-        out$messages <- rbind.fill(out$messages, data.frame(file_line_number = NA_integer_, video_time = NA_real_, message = "Could not find any end-of-set markers (e.g. \"**1set\") in the input file", file_line = NA_character_, stringsAsFactors = FALSE))
+        out$messages <- bind_rows(out$messages, data.frame(file_line_number = NA_integer_, video_time = NA_real_, message = "Could not find any end-of-set markers (e.g. \"**1set\") in the input file", file_line = NA_character_, stringsAsFactors = FALSE))
         out$plays$set_number <- 1L
     } else {
         temp <- c(0L, which(out$plays$end_of_set))
@@ -335,7 +341,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                         if (length(idx) > 0) {
                             idx <- idx[1]
                             ##cat(sprintf("Inserting technical timeout at row %d (set %d, score %d)\n",idx,this_set,thisp))
-                            out$plays <- rbind.fill(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
+                            out$plays <- bind_rows(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
                         }
                     }
                 }
@@ -346,7 +352,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                     idx <- which(insert_technical_timeouts[[si]](out$plays$home_team_score, out$plays$visiting_team_score) & out$plays$set_number==this_set)
                     if (length(idx) > 0) {
                         idx <- idx[1]
-                        out$plays <- rbind.fill(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
+                        out$plays <- bind_rows(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
                     }
                 }
             }
@@ -447,7 +453,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     ## keep track of who won each point
     temp <- as.data.frame(setNames(unique(out$plays[which(out$plays$point), c("point_id", "team")]), c("point_id", "point_won_by")))
-    suppressMessages(out$plays <- join(out$plays,temp))
+    out$plays <- left_join(out$plays, temp, by = "point_id")
     ## catch any that we missed
     ##dud_point_id <- unique(out$plays$point_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
     ##for (dpi in dud_point_id) {
@@ -465,8 +471,8 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## note the block error is not actually needed there, since such attacks are recorded as winning ones anyway
     out$plays$winning_attack[is.na(out$plays$winning_attack)] <- FALSE
     ## fill in scores, so that all lines have a score
-    scores <- unique(na.omit(out$plays[,c("point_id","home_team_score","visiting_team_score")]))
-    scores <- suppressMessages(join(out$plays[,"point_id",drop=FALSE],scores))
+    scores <- unique(na.omit(out$plays[, c("point_id", "home_team_score", "visiting_team_score")]))
+    scores <- left_join(out$plays[, "point_id", drop = FALSE], scores, by = "point_id")
     ## double-check
     if (any(na.omit(out$plays$home_team_score-scores$home_team_score) != 0) | any(na.omit(out$plays$visiting_team_score-scores$visiting_team_score) != 0)) stop("error in scores")
 
@@ -505,7 +511,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     who_served <- unique(out$plays[out$plays$skill %eq% "Serve", c("match_id", "point_id", "team")])
     who_served <- setNames(as.data.frame(who_served[!duplicated(who_served$point_id), ]), c("match_id", "point_id", "serving_team"))
 
-    out$plays <- plyr::join(out$plays, who_served, by = c("match_id", "point_id"), match = "first")
+    out$plays <- left_join(out$plays, dplyr::distinct(who_served, .data$match_id, .data$point_id, .keep_all = TRUE), by = c("match_id", "point_id"))
     out$plays$serving_team <- as.character(out$plays$serving_team) ## to be sure is not factor
 
     class(out) <- c("datavolley",class(out))
@@ -522,15 +528,23 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     if (!missing(custom_code_parser) && !is.null(custom_code_parser)) {
         cx <- custom_code_parser(out)
         out$plays <- cx$plays
-        if (!is.null(cx$messages) && nrow(cx$messages)>0) out$messages <- rbind.fill(out$messages,cx$messages)
+        if (!is.null(cx$messages) && nrow(cx$messages)>0) {
+            cx$messages$file_line <- as.character(cx$messages$file_line)
+            out$messages <- bind_rows(out$messages,cx$messages)
+        }
     }
+
+    ## ensure column ordering
+    cls <- c("match_id", "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id", "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type", "start_zone", "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout", "end_of_set", "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "custom_code", "file_line_number", paste0("home_p", 1:6), paste0("visiting_p", 1:6), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase", "start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y", paste0("home_player_id", 1:6), paste0("visiting_player_id", 1:6), "set_number", "team_touch_id", "home_team", "visiting_team", "home_team_id", "visiting_team_id", "team_id", "point_won_by", "winning_attack", "serving_team", "phase", "home_score_start_of_point", "visiting_score_start_of_point")
+    out$plays <- out$plays[, c(intersect(cls, names(out$plays)), setdiff(names(out$plays), cls))]
 
     out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
     if (extra_validation > 0) {
         moreval <- validate_dv(out, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) {
-            out$messages <- rbind.fill(out$messages, moreval)
+            moreval$file_line <- as.character(moreval$file_line)
+            out$messages <- bind_rows(out$messages, moreval)
         }
     }
     if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE) ## should not happen, but just to be sure
@@ -632,28 +646,29 @@ print.summary.datavolley <- function(x,...) {
 #' @export
 dvlist_summary <- function(z) {
     out <- list(number_of_matches = length(z), number_of_sets = sum(vapply(z, function(z) as.integer(sum(z$meta$teams$sets_won)), FUN.VALUE = 1L, USE.NAMES = FALSE)))
-    out$date_range <- range(ldply(z, function(q) as.Date(q$meta$match$date))$V1)
-    temp <- as.character(sapply(z, function(q) q$meta$teams$team))
-    teams <- as.data.frame(table(temp))
-    names(teams) <- c("team", "played")
-    temp <- ldply(z, function(q) q$meta$teams[, c("team", "won_match")])
-    teams <- suppressMessages(join(teams, ddply(temp, c("team"), function(q) data.frame(won=sum(q$won_match)))))
-    teams$win_rate <- teams$won/teams$played
+    out$date_range <- range(as.Date(bind_rows(lapply(z, function(q) q$meta$match))$date))
+    teams <- bind_rows(lapply(z, function(q) q$meta$teams[, c("team", "won_match")])) %>%
+        group_by(.data$team) %>% dplyr::summarize(played = dplyr::n(), won = sum(.data$won_match), win_rate = .data$won / .data$played)
 
-    temp <- ddply(ldply(z, function(q) {
+    temp <- bind_rows(lapply(z, function(q) {
         temp <- q$meta$teams[, c("team", "sets_won")]
-        temp$sets_played <- sum(q$meta$teams$sets_won); temp
-    }), c("team"), function(z) data.frame(sets_played = sum(z$sets_played), sets_won = sum(z$sets_won)))
-    temp$set_win_rate <- temp$sets_won/temp$sets_played
-    teams <- suppressMessages(join(teams, temp))
-    temp <- ldply(z, function(q) {
+        temp$sets_played <- sum(q$meta$teams$sets_won)
+        temp
+    })) %>% group_by(.data$team) %>%
+        dplyr::summarize(sets_played = sum(.data$sets_played), sets_won = sum(.data$sets_won), set_win_rate = .data$sets_won / .data$sets_played)
+    teams <- left_join(teams, temp, by = "team")
+
+    temp <- bind_rows(lapply(z, function(q) {
         s <- summary(q)
         s$sc <- colSums(s$set_scores)
         data.frame(team = s$teams$team, points_for = s$sc, points_against = s$sc[2:1])
-    })
-    teams <- suppressMessages(join(teams, ddply(temp, c("team"), function(q) data.frame(points_for = as.integer(sum(q$points_for)), points_against = as.integer(sum(q$points_against))))))
-    teams$points_ratio <- teams$points_for/teams$points_against
-    teams <- teams[order(teams$team), ]
+    }))
+    teams <- left_join(teams,
+                       temp %>% group_by(.data$team) %>% dplyr::summarize(points_for = as.integer(sum(.data$points_for)), points_against = as.integer(sum(.data$points_against))),
+                       by = "team") %>%
+        mutate(points_ratio = .data$points_for / .data$points_against) %>%
+        dplyr::arrange(.data$team)
+
     out$ladder <- teams
     class(out) <- "summary.datavolleylist"
     out

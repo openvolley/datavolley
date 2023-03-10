@@ -1020,8 +1020,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     #    msgs <- msgs$text[idx]
     #}
     if (length(msgs)>0) {
-        msgs <- ldply(msgs,as.data.frame)
-        ##msgs <- arrange(msgs,file_line_number)
+        msgs <- bind_rows(msgs)
     } else {
         msgs <- data.frame(file_line_number=integer(),video_time=numeric(),message=character(),file_line=character())
     }

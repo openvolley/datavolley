@@ -134,9 +134,7 @@ check_player_names <- function(x, distance_threshold = 4) {
     names_ok <- do.call(rbind, lapply(x, function(z) 
         rbind(data.frame(team = home_team(z), team_id = home_team_id(z), player_name = z$meta$players_h$name, player_id = z$meta$players_h$player_id, stringsAsFactors = FALSE),
               data.frame(team = visiting_team(z), team_id = visiting_team_id(z), player_name = z$meta$players_v$name, player_id = z$meta$players_v$player_id, stringsAsFactors = FALSE))))
-    blah <- plyr::ddply(names_ok, c("team", "team_id", "player_name", "player_id"), function(z) table(z$player_name))
-    names(blah)[5] <- "count"
-    blah$count <- as.integer(blah$count)
+    blah <- names_ok %>% dplyr::count(.data$team, .data$team_id, .data$player_name, .data$player_id, name = "count")
     ## similarity of adjacent names
     ndist <- adist(tolower(blah$player_name))
     mask <- lower.tri(ndist)
@@ -251,7 +249,8 @@ find_player_name_remapping=function(x,distance_threshold=3,verbose=TRUE) {
         stop("x must be a datavolley object or list of such objects")
     if (inherits(x,"datavolley")) x <- list(x)
 
-    all_names <- ldply(x,function(z)rbind(data.frame(team=z$meta$teams$team[z$meta$teams$home_away_team=="*"],player_name=z$meta$players_h$name,stringsAsFactors=FALSE),data.frame(team=z$meta$teams$team[z$meta$teams$home_away_team=="a"],player_name=z$meta$players_v$name,stringsAsFactors=FALSE)))
+    all_names <- bind_rows(lapply(x, function(z) bind_rows(tibble(team = z$meta$teams$team[z$meta$teams$home_away_team=="*"], player_name = z$meta$players_h$name),
+                                                           tibble(team = z$meta$teams$team[z$meta$teams$home_away_team=="a"], player_name = z$meta$players_v$name))))
     all_teams <- unique(unlist(lapply(x,function(z)z$meta$teams$team)))
 
     names_to_change <- data.frame()

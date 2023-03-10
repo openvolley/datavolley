@@ -151,50 +151,23 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                 out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
             }
         }
-        ## laglead adapted from dplyr lag and lead
-        laglead <- function (x, n = -1L, default = NA) {
-            if (length(n) != 1 || !is.numeric(n)) stop("n must be an integer scalar")
-            if (abs(n) < 1) return(x)
-            xlen <- length(x)
-            lag <- n < 0 ## lag if n < 0, else lead
-            n <- pmin(abs(n), xlen)
-            if (lag) {
-                ## lag
-                out <- c(rep(default, n), x[seq_len(xlen - n)])
-            } else {
-                ## lead
-                out <- c(x[-seq_len(n)], rep(default, n))
-            }
-            attributes(out) <- attributes(x)
-            out
-        }
-        lag <- function(x, n = 1L, default = NA) laglead(x, -abs(n), default = default)
-        lead <- function(x, n = 1L, default = NA) laglead(x, abs(n), default = default)
 
         ## at most one serve and one reception per rally
-        pid <- ddply(plays, "point_id", function(rx) sum(rx$skill %eq% "Serve") > 1)
-        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        pid <- plays %>% dplyr::filter(.data$skill == "Serve") %>% dplyr::count(.data$point_id) %>% dplyr::filter(.data$n > 1) %>% pull(.data$point_id)
         chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
         if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Multiple serves in a single rally", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
 
-        pid <- ddply(plays, "point_id", function(rx) sum(rx$skill %eq% "Reception") > 1)
-        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        pid <- plays %>% dplyr::filter(.data$skill == "Reception") %>% dplyr::count(.data$point_id) %>% dplyr::filter(.data$n > 1) %>% pull(.data$point_id)
         chk <- plays$skill %eq% "Reception" & plays$point_id %in% pid
         if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Multiple receptions in a single rally", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
 
         ## no reception coded, but there was a serve and it wasn't an error, and there wasn't a rotation error
-        pid <- ddply(plays, "point_id", function(rx) {
-            !any(rx$skill %eq% "Reception") && any(rx$skill %eq% "Serve") && !any(rx$skill %eq% "Serve" & rx$evaluation %eq% "Error") && !any(rx$skill %eq% "Rotation error")
-        })
-        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        pid <- plays %>% group_by(.data$point_id) %>% dplyr::summarize(not_ok = !any(.data$skill %eq% "Reception") && any(.data$skill %eq% "Serve") && !any(.data$skill %eq% "Serve" & .data$evaluation %eq% "Error") && !any(.data$skill %eq% "Rotation error")) %>% dplyr::filter(.data$not_ok) %>% pull(.data$point_id)
         chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
         if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Serve (that was not an error) did not have an accompanying reception", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
 
         ## rally had actions but not a serve
-        pid <- ddply(plays, "point_id", function(rx) {
-            any(rx$skill %in% c("Reception", "Set", "Attack", "Block", "Dig", "Freeball")) && !any(rx$skill %eq% "Serve")
-        })
-        pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+        pid <- plays %>% group_by(.data$point_id) %>% dplyr::summarize(not_ok = any(.data$skill %in% c("Reception", "Set", "Attack", "Block", "Dig", "Freeball")) && !any(.data$skill %eq% "Serve")) %>% dplyr::filter(.data$not_ok) %>% pull(.data$point_id)
         if (length(pid)) {
             chk <- sapply(pid, function(thispid) head(which(plays$point_id == thispid & !is.na(plays$skill)), 1))
             if (length(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Rally had ball contacts but no serve", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
@@ -276,10 +249,10 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                 ## quick attacks by non-middles
                 idx <- attacks$team %eq% attacks$home_team
                 attacks$player_role <- NA_character_
-                temp_roles <- plyr::join(attacks[idx, ], x$meta$players_h[, c("player_id", "role")], by = "player_id", match = "first")$role
+                temp_roles <- left_join(attacks[idx, ], dplyr::distinct(x$meta$players_h[, c("player_id", "role")], .data$player_id, .keep_all = TRUE), by = "player_id")$role
                 attacks$player_role[idx] <- temp_roles
                 idx <- attacks$team %eq% attacks$visiting_team
-                temp_roles <- plyr::join(attacks[idx, ], x$meta$players_v[, c("player_id", "role")], by = "player_id", match = "first")$role
+                temp_roles <- left_join(attacks[idx, ], dplyr::distinct(x$meta$players_v[, c("player_id", "role")], .data$player_id, .keep_all = TRUE), by = "player_id")$role
                 attacks$player_role[idx] <- temp_roles
                 ## first-tempo attack by non-middle
                 chk <- attacks[!attacks$player_role %in% c(NA_character_, "middle") & grepl("^Quick", attacks$skill_type), ]
@@ -303,24 +276,24 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
             ## for the next two, not sure if we should assume rotation errors should be aces or not
             ##  so the default rotation_error_is_ace for each is set to not warn when rotation errors are present
             ## serves that should be coded as aces, but were not
-            find_should_be_aces <- function(rally,rotation_error_is_ace=FALSE) {
-                sv <- which(rally$skill=="Serve")
-                if (length(sv)==1) {
+            find_should_be_aces <- function(rally, rotation_error_is_ace = FALSE) {
+                sv <- which(rally$skill == "Serve")
+                if (length(sv) == 1) {
                     was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) && (!"Reception" %in% rally$skill || (sum(rally$skill %eq% "Reception") == 1 && rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error")) && (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
                     if (!rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- FALSE ## to avoid warnings
                     ## also skip this check if the next skill not reception (or rotation error), since that's likely to affect this
                     if (!is.na(rally$skill[sv + 1]) && (!rally$skill[sv + 1] %in% c("Rotation error","Reception"))) was_ace <- FALSE
                     if (was_ace & !identical(rally$evaluation[sv], "Ace")) {
-                        TRUE
+                        list(point_id = rally$point_id[1], should_be_ace = TRUE)
                     } else {
-                        FALSE
+                        list(point_id = rally$point_id[1], should_be_ace = FALSE)
                     }
                 } else {
-                    NA
+                    list(point_id = rally$point_id[1], should_be_ace = NA)
                 }
             }
-            pid <- ddply(plays,"point_id",find_should_be_aces)
-            pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+            pid <- bind_rows(lapply(split(plays, plays$point_id), find_should_be_aces)) %>% na.omit %>% dplyr::filter(.data$should_be_ace) %>% pull(.data$point_id) %>% sort
+
             chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
             if (any(chk))
                 out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Winning serve not coded as an ace",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
@@ -333,16 +306,15 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                     was_ace <- (rally$team[sv] %eq% rally$point_won_by[sv]) && (!"Reception" %in% rally$skill || (sum(rally$skill %eq% "Reception") == 1 && rally$evaluation[rally$skill %eq% "Reception"] %eq% "Error")) && (rotation_error_is_ace | !rally$skill[sv + 1] %eq% "Rotation error")
                     if (rotation_error_is_ace && (rally$skill[sv + 1] %eq% "Rotation error")) was_ace <- TRUE ## to avoid warnings
                     if (!was_ace & identical(rally$evaluation[sv],"Ace")) {
-                        TRUE
+                        list(point_id = rally$point_id[1], should_not_be_ace = TRUE)
                     } else {
-                        FALSE
+                        list(point_id = rally$point_id[1], should_not_be_ace = FALSE)
                     }
                 } else {
-                    NA
+                    list(point_id = rally$point_id[1], should_not_be_ace = NA)
                 }
             }
-            pid <- ddply(plays, "point_id", find_should_not_be_aces)
-            pid <- pid$point_id[!is.na(pid$V1) & pid$V1]
+            pid <- bind_rows(lapply(split(plays, plays$point_id), find_should_not_be_aces)) %>% na.omit %>% dplyr::filter(.data$should_not_be_ace) %>% pull(.data$point_id) %>% sort
             chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
             if (any(chk))
                 out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Non-winning serve was coded as an ace",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
