@@ -463,7 +463,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$visiting_score_start_of_point <- ifelse(px$point_won_by %eq% "a", as.integer(px$visiting_team_score - 1L), as.integer(px$visiting_team_score))
 
     ## technical timeouts
-    px <- dv_insert_technical_timeouts(px, data_type = file_type)
+    if (isTRUE(insert_technical_timeouts)) px <- dv_insert_technical_timeouts(px, data_type = file_type)
 
     ## renumber point_id to integer values
     px$point_id <- as.integer(as.factor(px$point_id)) - 1L ## zero based for compatibility
