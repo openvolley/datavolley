@@ -43,22 +43,24 @@ h_skill_type_code <- function(x) {
 ## attack combos
 h_attack_code <- function(x, style = "default") {
     style <- match.arg(style, c("default", "volleymetrics", "usa"))
-    on2 <- if (style == "usa") "L" else "Z"
-    ## adjust for second-ball attacks that might not have been coded as such
+    on2 <- if (style == "usa") "C" else "Z"
+    ## adjust for second-ball attacks, differentiating attack after block from attack after rec/dig/freeball
     x %>% mutate(attack_type = case_when(.data$skill == "Attack" & lag(.data$skill) %in% c("Reception", "Dig", "Freeball") & .data$team == lag(.data$team) ~ "Second Touch",
+                                         .data$skill == "Attack" & lag(.data$skill) == "Block"  ~ "After Block",
                                          TRUE ~ .data$attack_type),
-                 attack_code = case_when(x$skill == "Attack" & lag(.data$skill) == "Freeball" & .data$team != lag(.data$team) ~ "XX", ## attack on opponent freeball
-                                         x$skill == "Attack" & (is.na(x$attack_location) | is.na(x$attack_type)) ~ "~~",
-                                         x$skill == "Attack" ~ paste0(case_when(x$attack_type == "In System" ~ "X",
-                                                                                x$attack_type == "Out of System" ~ "V",
-                                                                                x$attack_type == "Second Touch" ~ on2,
-                                                                                x$attack_type == "Quick" ~ "P",
-                                                                                TRUE ~ "~"),
-                                                                      case_when(grepl("^Net Point [12345]", x$attack_location) ~ sub("Net Point ", "", x$attack_location),
-                                                                                TRUE ~ "~")
-                                                                      ),
+                 attack_code = case_when(.data$skill == "Attack" & lag(.data$skill) == "Freeball" & .data$team != lag(.data$team) ~ "XX", ## attack on opponent freeball
+                                         .data$skill == "Attack" & (is.na(.data$attack_location) | is.na(.data$attack_type)) ~ "~~",
+                                         .data$skill == "Attack" ~ paste0(case_when(.data$attack_type == "In System" ~ "X",
+                                                                                    .data$attack_type == "Out of System" ~ "V",
+                                                                                    .data$attack_type == "Second Touch" ~ on2,
+                                                                                    .data$attack_type == "After Block" ~ "L",
+                                                                                    .data$attack_type == "Quick" ~ "P",
+                                                                                    TRUE ~ "~"),
+                                                                          case_when(grepl("^Net Point [12345]", .data$attack_location) ~ sub("Net Point ", "", .data$attack_location),
+                                                                                    TRUE ~ "~")
+                                                                          ),
                                          TRUE ~ "~~")) %>%
-    dplyr::pull(.data$attack_code)
+        dplyr::pull(.data$attack_code)
 }
 
 h_skill_subtype_code <- function(x, style = "default") {
