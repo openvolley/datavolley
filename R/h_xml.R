@@ -418,6 +418,13 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     ## patch in the remaining skill types
     idx <- is.na(px$skill_type_code) | px$skill_type_code == "~"
     if (any(idx)) px$skill_type_code[idx] <- h_skill_type_code(px[idx, ])
+    ## enforce skill_type (tempo) code of a set, block, or dig to match that of the corresponding attack
+    px <- mutate(px, skill_type_code = case_when(.data$skill == "Set" & lead(.data$skill) == "Attack" & .data$team == lead(.data$team) ~ lead(.data$skill_type_code),
+                                                 .data$skill == "Block" & lag(.data$skill) == "Attack" & .data$team != lag(.data$team) ~ lag(.data$skill_type_code),
+                                                 .data$skill == "Dig" & lag(.data$skill) == "Attack" & .data$team != lag(.data$team) ~ lag(.data$skill_type_code),
+                                                 .data$skill == "Dig" & lag(.data$skill) == "Block" & lag(.data$skill, 2) == "Attack" & .data$team != lag(.data$team, 2) ~ lag(.data$skill_type_code, 2),
+                                                 TRUE ~ .data$skill_type_code))
+
     px$skill_type <- dv_decode_skill_type(px$skill, px$skill_type_code, data_type = file_type, style = skill_evaluation_decode)
 
     px$evaluation_code <- h_evaluation_code(px)
