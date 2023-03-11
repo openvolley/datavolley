@@ -516,8 +516,25 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     px$code <- h_row2code(px %>% dplyr::select(-"skill", skill = "skill_code"), data_type = file_type, style = skill_evaluation_decode)
 
     ## time and video_time
-    px$video_time <- round(as.numeric(px$start)) ## TO CHECK, and replace start with end if start missing TODO
-    px$time <- as.POSIXct(NA)
+    ## times in the xml are presumably clip start and end times around the skill in question
+    ## take start as initial time for serve and reception, and (start + end) / 2 for other skills, then tweak
+    px <- mutate(px, start = as.numeric(.data$start), end = as.numeric(.data$end),
+                 start = case_when(.data$skill == "Serve" & is.na(.data$start) & lead(.data$skill) == "Reception" ~ lead(.data$start),
+                                   TRUE ~ .data$start),
+                 video_time = case_when(.data$skill %in% c("Serve", "Reception") ~ round(.data$start),
+                                        TRUE ~ round((.data$start + .data$end) / 2)),
+                 ## noe adjust
+                 video_time = case_when(.data$skill == "Reception" & lag(.data$skill) == "Serve" ~ lag(.data$video_time),
+                                        .data$skill == "Block" & lag(.data$skill) == "Attack" ~ lag(.data$video_time),
+                                        .data$skill == "Dig" & lag(.data$skill) == "Attack" & .data$video_time <= lag(.data$video_time) ~ lag(.data$video_time) + 1L,
+                                        .data$skill == "Dig" & lag(.data$skill, 2) == "Attack" & .data$video_time <= lag(.data$video_time, 2) ~ lag(.data$video_time, 2) + 1L,
+                                        .data$skill == "Set" & lead(.data$skill) == "Attack" & .data$video_time <= lead(.data$video_time) ~ lead(.data$video_time) - 1L,
+                                        TRUE ~ .data$video_time),
+                 time = as.POSIXct(NA))
+    ## then just enforce non-decreasing video times on whatever we ended up with
+    vt <- px$video_time
+    for (i in seq_along(vt)[-1]) if (vt[i] < vt[i - 1]) vt[i] <- vt[i - 1]
+    px$video_time <- vt
 
     ## columns to preserve when adding new rows to the dataframe
     keepcols <- c("point_id", "time", "video_time", "home_team_score", "visiting_team_score", "point_won_by", "set_number",
