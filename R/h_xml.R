@@ -170,12 +170,7 @@ h_row2code <- function(x, data_type, style) {
 }
 
 dv_read_hxml <- function(filename, skill_evaluation_decode = "volleymetrics", extra_validation = 2, validation_options=list(), ...) {
-    ## insert_technical_timeouts = TRUE do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
-
-    ## check file type - move this to dv_read
-    chk <- readLines(filename, n = 200L)
-    if (!any(grepl("<ALL_INSTANCES>", chk, fixed = TRUE))) stop("unrecognized xml file type")
-
+    ##  insert_technical_timeouts = TRUE, do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
     xml <- read_xml(filename)
     ## find the instances of interest to us
     alli <- xml_find_all(xml, "ALL_INSTANCES/instance[.//code/text()[contains(.,'Serve') or contains(.,'Receive') or contains(.,'Set') or contains(.,'Attack') or contains(.,'Block') or contains(.,'Dig') or contains(.,'Ballover') or contains(.,'Cover') or contains(.,'Save') or contains(.,'Rally')]]")

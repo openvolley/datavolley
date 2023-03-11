@@ -55,25 +55,37 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     assert_that(is.numeric(extra_validation),extra_validation %in% 0:3)
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
-    ## generic read of the first lines, to check formats
-    is_vsm <- grepl("\\.vsm$", filename, ignore.case = TRUE)
-    if (!is_vsm) dvlines <- stringi::stri_trans_general(readLines(filename, warn = FALSE, n = 100L), "latin-ascii")
+
+
+    ft <- dv_file_type(filename) ## dvw, vsm, psvb, hxml
+    if (ft == "psvb") {
+        stop("for perana/vbstats files use `pv_read` from the peranavolley package")
+    } else if (!ft %in% c("dvw", "hxml", "vsm")) {
+        stop("unknown or unsupported file type")
+    }
+    if (ft == "dvw") dvlines <- stringi::stri_trans_general(readLines(filename, warn = FALSE, n = 100L), "latin-ascii")
     ## figure out the scouting conventions to follow
     if (is.string(skill_evaluation_decode)) {
         skill_evaluation_decode <- match.arg(tolower(skill_evaluation_decode), c("default", "volleymetrics", "guess", "german"))
         if (skill_evaluation_decode == "guess") {
-            if (is_vsm) {
+            if (ft == "vsm") {
                 skill_evaluation_decode <- "default"
+            } else if (ft == "hxml") {
+                skill_evaluation_decode <- "volleymetrics"
             } else {
                 is_vm <- tryCatch(any(grepl("volleymetric", dvlines, ignore.case = TRUE)), error = function(e) FALSE)
                 skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
             }
-            if (!is_vsm && skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
+            if (ft == "dvw" && skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
         }
-        if (!is_vsm) skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
+        if (ft == "dvw") skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }
-    ## volleystation
-    if (is_vsm) return(dv_read_vsm(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, extra_validation = extra_validation, validation_options = validation_options))
+    ## pass non-dvw readers off to their dedicated read functions
+    if (ft == "vsm") {
+        return(dv_read_vsm(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, extra_validation = extra_validation, validation_options = validation_options))
+    } else if (ft == "hxml") {
+        return(dv_read_hxml(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, extra_validation = extra_validation, validation_options = validation_options))
+    }
     assert_that(is.function(skill_evaluation_decode))
     if (is.null(date_format_suggested)) {
         ## check if the decoder function is the volleymetrics one
