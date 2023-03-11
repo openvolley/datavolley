@@ -26,7 +26,7 @@ h_skill_code <- function(x) {
                                 .data$skill == "Block" ~ "B",
                                 .data$skill == "Down Ball" ~ "A", ## attack
                                 .data$skill == "Cover" ~ "D", ## dig
-                                .data$skill == "Ballover" ~ "F")) ## freeball
+                                .data$skill == "Ballover" ~ "F")) %>% ## freeball
     pull(.data$sc)
 }
 
@@ -347,7 +347,12 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     px <- px %>% dplyr::select(-"player_name") %>% left_join(temp, by = c("team", "player_number"))
     ## TODO check that starting positions are updated by dv_update_meta
 
-    x$meta <- dv_create_meta(match = mx$match, more = mx$more, comments = mx$comments, result = mx$result, teams = mx$teams, players_h = mx$players_h, players_v = mx$players_v, video = dv_create_meta_video(), attacks = dv_default_attack_combos(data_type = file_type, style = skill_evaluation_decode), winning_symbols = dv_default_winning_symbols(style = skill_evaluation_decode))
+    x$meta <- dv_create_meta(match = mx$match, more = mx$more, comments = mx$comments, result = mx$result, teams = mx$teams, players_h = mx$players_h, players_v = mx$players_v,
+                             video = dv_create_meta_video(),
+                             ##attacks = dv_default_attack_combos(data_type = file_type, style = skill_evaluation_decode),
+                             ##setter_calls = dv_default_setter_calls(data_type = file_type, style = skill_evaluation_decode),
+                             ##winning_symbols = dv_default_winning_symbols(style = skill_evaluation_decode),
+                             data_type = file_type, style = skill_evaluation_decode)
 
     px$skill_code <- h_skill_code(px)
     px <- mutate(px, skill_original = .data$skill, skill = case_when(.data$skill_code == "S" ~ "Serve",
