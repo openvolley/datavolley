@@ -26,8 +26,7 @@ h_skill_code <- function(x) {
                                 .data$skill == "Block" ~ "B",
                                 .data$skill == "Down Ball" ~ "A", ## attack
                                 .data$skill == "Cover" ~ "D", ## dig
-                                .data$skill == "Ballover" ~ "F", ## freeball
-                                TRUE ~ "~")) %>%
+                                .data$skill == "Ballover" ~ "F")) ## freeball
     pull(.data$sc)
 }
 
@@ -53,8 +52,7 @@ h_skill_type_code <- function(x) {
               x$skill == "Save" ~ "O", ## TODO check new logic
               x$skill == "Down Ball" ~ "O", ## attack
               x$skill == "Cover" ~ "O", ## dig
-              x$skill == "Ballover" ~ "O", ## freeball
-              TRUE ~ "~")
+              x$skill == "Ballover" ~ "O") ## freeball
 }
 
 ## attack combos
@@ -75,9 +73,9 @@ h_attack_code <- function(x, style = "default") {
                                                                                     TRUE ~ "~"),
                                                                           case_when(grepl("^Net Point [12345]", .data$attack_location) ~ sub("Net Point ", "", .data$attack_location),
                                                                                     TRUE ~ "~")
-                                                                          ),
-                                         TRUE ~ "~~")) %>%
-        dplyr::pull(.data$attack_code)
+                                                                          )),
+                 attack_code = if_else(grepl("~", .data$attack_code), NA_character_, .data$attack_code)) %>%
+        pull(.data$attack_code)
 }
 
 h_skill_subtype_code <- function(x, style = "default") {
@@ -87,22 +85,21 @@ h_skill_subtype_code <- function(x, style = "default") {
     } else {
         hand_set <- "2"; bump_set <- "3"
     }
-    case_when(x$skill == "Serve" ~ "~",
+    case_when(x$skill == "Serve" ~ NA_character_,
               ## reception posture
               x$skill == "Reception" & x$receive_side == "Middle" ~ "M",
               x$skill == "Reception" & x$receive_side == "Overhead" ~ "O",
               x$skill == "Reception" & x$receive_side == "Left" ~ "L",
               x$skill == "Reception" & x$receive_side == "Right" ~ "R",
               x$skill == "Reception" & x$receive_side == "Low" ~ "W",
-              x$skill == "Set" & x$set_type == "Hand" ~ hand_set,
-              x$skill == "Set" & x$set_type == "Bump" ~ bump_set,
-              x$skill == "Set" ~ "~",
+              x$skill == "Set" & x$set_subtype == "Hand" ~ hand_set,
+              x$skill == "Set" & x$set_subtype == "Bump" ~ bump_set,
+              x$skill == "Set" ~ NA_character_,
               ## attack type
               x$skill == "Attack" & x$attack_style == "Shot" ~ "P",
               x$skill == "Attack" & x$attack_style == "Pokey" ~ "T",
               x$skill == "Attack" ##& x$attack_style == "Hard"
-                                  ~ "H", ## default to this (?)
-              TRUE ~ "~")
+                                  ~ "H") ## default to this (?)
 }
 
 h_num_players <- function(x, style = "default") {
@@ -120,8 +117,7 @@ h_evaluation_code <- function(x) {
               x$grade == "Poor" ~ "-",
               x$grade == "Average" ~ "!",
               x$grade == "Positive" ~ "+",
-              x$grade == "Perfect" ~ "#",
-              TRUE ~ "~")
+              x$grade == "Perfect" ~ "#")
 }
 
 ## convert the 16 x 16 grid of zones to our x, y coordinates
