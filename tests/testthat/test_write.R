@@ -48,7 +48,7 @@ test_that("dv_write behaves", {
         x0$meta$match$day_number <- 11L
         x0$meta$match$match_number <- 22L
         ## write it
-        outfile <- tempfile()
+        outfile <- tempfile(fileext = ".dvw")
         dv_write(x0, file = outfile)
         ## read the one we just wrote
         x1 <- dv_read(outfile)
