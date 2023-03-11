@@ -169,8 +169,8 @@ h_row2code <- function(x, data_type, style) {
     out
 }
 
-dv_read_hxml <- function(filename, skill_evaluation_decode = "volleymetrics", extra_validation = 2, validation_options=list(), ...) {
-    ##  insert_technical_timeouts = TRUE, do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
+dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evaluation_decode = "volleymetrics", extra_validation = 2, validation_options=list(), ...) {
+    ##  do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta
     xml <- read_xml(filename)
     ## find the instances of interest to us
     alli <- xml_find_all(xml, "ALL_INSTANCES/instance[.//code/text()[contains(.,'Serve') or contains(.,'Receive') or contains(.,'Set') or contains(.,'Attack') or contains(.,'Block') or contains(.,'Dig') or contains(.,'Ballover') or contains(.,'Cover') or contains(.,'Save') or contains(.,'Rally')]]")
@@ -500,6 +500,9 @@ dv_read_hxml <- function(filename, skill_evaluation_decode = "volleymetrics", ex
                                      timeout = case_when(is.na(.data$timeout) ~ FALSE, TRUE ~ .data$timeout),
                                      substitution = case_when(is.na(.data$substitution) ~ FALSE, TRUE ~ .data$substitution),
                                      match_id = x$meta$match_id)
+
+    ## technical timeouts
+    if (isTRUE(insert_technical_timeouts)) px <- dv_insert_technical_timeouts(px, data_type = file_type)
 
     ## add team_touch_id - an identifier of consecutive touches by same team in same point - e.g. a dig-set-attack sequence by one team is a "team touch"
     tid <- 0L
