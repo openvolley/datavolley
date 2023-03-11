@@ -126,7 +126,7 @@ h_zone2dvxy <- function(z) (z - 1) / 5 + 19/32
 h_uv2zone <- function(u, v, as_for_serve = FALSE) {
     out <- rep(NA_integer_, length(u))
     idx <- !is.na(u)
-    out[idx] <- datavolley::dv_xy2zone(h_zone2dvxy(u[idx]), h_zone2dvxy(v[idx]), as_for_serve = as_for_serve)
+    out[idx] <- dv_xy2zone(h_zone2dvxy(u[idx]), h_zone2dvxy(v[idx]), as_for_serve = as_for_serve)
     out
 }
 
@@ -134,7 +134,7 @@ h_uv2zone <- function(u, v, as_for_serve = FALSE) {
 h_uv2subzone <- function(u, v) {
     out <- tibble(end_zone = rep(NA_integer_, length(u)), end_subzone = rep(NA_character_, length(u)))
     idx <- !is.na(u)
-    out[idx, ] <- datavolley::dv_xy2subzone(h_zone2dvxy(u[idx]), h_zone2dvxy(v[idx]))
+    out[idx, ] <- dv_xy2subzone(h_zone2dvxy(u[idx]), h_zone2dvxy(v[idx]))
     out
 }
 
@@ -373,10 +373,6 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     ## set and block need start subzone
     idx <- px$skill %in% c("Block", "Set")
     if (any(idx)) px$start_subzone[idx] <- h_uv2subzone(px$zone_x[idx], px$zone_y[idx])$end_subzone
-
-    ## TODO store original zones as coordinates
-    ## h_zone2dvxy
-    ## BUT need to get end of court correct
 
     ## fix zones
     pairs <- ((px$skill == "Reception" & lag(px$skill) == "Serve") |
