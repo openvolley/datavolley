@@ -362,8 +362,44 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     px <- mutate(px, zone_y = case_when(.data$skill == "Serve" & is.na(.data$zone_y) ~ 0L, TRUE ~ .data$zone_y),
                  ## TODO check this one to_zone_y = case_when(.data$skill == "Serve" & is.na(.data$to_zone_y) ~ 0L, TRUE ~ .data$to_zone_y))
                  start_zone = case_when(.data$skill %in% c("Serve", "Reception") ~ h_uv2zone(.data$zone_x, .data$zone_y, as_for_serve = TRUE),
-                                        TRUE ~ h_uv2zone(.data$zone_x, .data$zone_y, as_for_serve = FALSE)))
+                                        TRUE ~ h_uv2zone(.data$zone_x, .data$zone_y, as_for_serve = FALSE)),
+                 start_subzone = NA_character_)
     px <- bind_cols(px, h_uv2subzone(px$to_zone_x, px$to_zone_y))
+    ## set and block need start subzone
+    idx <- px$skill %in% c("Block", "Set")
+    if (any(idx)) px$start_subzone[idx] <- h_uv2subzone(px$zone_x[idx], px$zone_y[idx])$end_subzone
+
+    ## TODO store original zones as coordinates
+    ## h_zone2dvxy
+    ## BUT need to get end of court correct
+
+    ## fix zones
+    pairs <- ((px$skill == "Reception" & lag(px$skill) == "Serve") |
+              (px$skill == "Dig" & lag(px$skill) == "Attack")) & (lag(px$team) != px$team)
+    px <- mutate(px, start_zone = case_when(pairs ~ lag(.data$start_zone), TRUE ~ .data$start_zone),
+                 start_zone = case_when(pairs ~ lag(.data$start_zone), TRUE ~ .data$start_zone),
+                 end_zone = case_when(pairs ~ lag(.data$end_zone), TRUE ~ .data$end_zone),
+                 end_subzone = case_when(pairs ~ lag(.data$end_subzone), TRUE ~ .data$end_subzone)##,
+                 ##start_coordinate_x = case_when(pairs ~ lag(.data$start_coordinate_x), TRUE ~ .data$start_coordinate_x),
+                 ##start_coordinate_y = case_when(pairs ~ lag(.data$start_coordinate_y), TRUE ~ .data$start_coordinate_y),
+                 ##mid_coordinate_x = case_when(pairs ~ lag(.data$mid_coordinate_x), TRUE ~ .data$mid_coordinate_x),
+                 ##mid_coordinate_y = case_when(pairs ~ lag(.data$mid_coordinate_y), TRUE ~ .data$mid_coordinate_y),
+                 ##end_coordinate_x = case_when(pairs ~ lag(.data$end_coordinate_x), TRUE ~ .data$end_coordinate_x),
+                 ##end_coordinate_y = case_when(pairs ~ lag(.data$end_coordinate_y), TRUE ~ .data$end_coordinate_y)
+                 )
+
+    ## start zone/subzone have been used for the set and block location, but dvw convention is to put these into end zone/subzone
+    px <- mutate(px, end_zone = case_when(.data$skill %in% c("Block", "Set") ~ .data$start_zone, TRUE ~ .data$end_zone),
+                 end_subzone = case_when(.data$skill %in% c("Block", "Set") ~ .data$start_subzone, TRUE ~ .data$end_subzone),
+                 start_zone = case_when(.data$skill %in% c("Block", "Set") ~ NA_integer_, TRUE ~ .data$start_zone),
+                 start_subzone = case_when(.data$skill %in% c("Block", "Set") ~ NA_character_, TRUE ~ .data$start_subzone))
+
+    ## convert x,y coords back to single-index coords
+    ##px$start_coordinate <- dv_xy2index(px$start_coordinate_x, px$start_coordinate_y)
+    ##px$mid_coordinate <- dv_xy2index(px$mid_coordinate_x, px$mid_coordinate_y)
+    ##px$end_coordinate <- dv_xy2index(px$end_coordinate_x, px$end_coordinate_y)
+
+    px$set_subtype <- if ("set_type" %in% names(px)) px$set_type else NA_character_
 
     ## combo codes
     px$attack_code <- h_attack_code(px, style = skill_evaluation_decode)
