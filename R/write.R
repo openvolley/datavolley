@@ -263,6 +263,9 @@ dvw_scout <- function(x, text_encoding = text_encoding) {
              paste("visiting_p", 1:6, sep = ""), ## 21-26, same for visiting team
              "na_col" ## always a trailing ;
              )
+    ## if beach, xp won't have home_p3 etc
+    to_add <- setdiff(nms, names(xp))
+    if (length(to_add) > 0) xp[, to_add] <- NA
     c("[3SCOUT]", df2txt(xp[, nms]))
 }
 
