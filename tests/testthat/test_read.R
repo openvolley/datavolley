@@ -35,7 +35,7 @@ test_that("supplying a preferred date format works", {
     ## first generate a modified example file
     x <- dv_read(dv_example_file(1))
     x$raw <- sub("01/25/2015;;2014/2015", "08/12/2015;;2014/2015", x$raw, fixed = TRUE)
-    tf <- tempfile()
+    tf <- tempfile(fileext = ".dvw")
     writeLines(x$raw, tf)
     chk <- dv_read(tf)
     ## the last-generated date in this file is unambiguously mdy, so that will be used unless a date format has been specified
@@ -51,7 +51,7 @@ test_that("supplying a preferred date format works", {
 
     ## now with ambiguous last-generated date
     x$raw <- sub("01/25/2015 15.44", "01/10/2015 15.44", x$raw, fixed = TRUE)
-    tf <- tempfile()
+    tf <- tempfile(fileext = ".dvw")
     writeLines(x$raw, tf)
     chk <- dv_read(tf)
     expect_equal(chk$meta$match$date, lubridate::ymd("2015-12-08")) ## by default
