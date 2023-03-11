@@ -248,13 +248,23 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     if (nchar(tms[1]) == 3) tms[1] <- paste(tms[1], paste0(substr(players$lastname[players$team == "*"], 1, 3), collapse = "/"))
     if (nchar(tms[2]) == 3) tms[2] <- paste(tms[2], paste0(substr(players$lastname[players$team == "a"], 1, 3), collapse = "/"))
 
-    temp <- px %>% group_by(.data$point_id) %>% slice(1L) %>% ungroup %>%
-        mutate(point_won_by = case_when((.data$team == "*" & .data$rally_won == "Won") | (.data$team == "a" & .data$rally_won == "Lost") ~ "*",
-                                        (.data$team == "a" & .data$rally_won == "Won") | (.data$team == "*" & .data$rally_won == "Lost") ~ "a"),
-               home_team_score = case_when(.data$point_won_by == "*" ~ .data$home_score_start_of_point + 1L,
-                                           TRUE ~ .data$home_score_start_of_point),
-               visiting_team_score = case_when(.data$point_won_by == "a" ~ .data$visiting_score_start_of_point + 1L,
-                                               TRUE ~ .data$visiting_score_start_of_point))
+    if (!"rally_won" %in% names(px)) {
+        temp <- px %>% group_by(.data$point_id) %>% slice(1L) %>% group_by(.data$set_number) %>%
+            mutate(point_won_by = case_when(lead(.data$point_id) == (.data$point_id + 1L) & lead(.data$home_score_start_of_point) > .data$home_score_start_of_point ~ "*",
+                                            is.na(lead(.data$point_id)) & .data$home_score_start_of_point > .data$visiting_score_start_of_point ~ "*", ## end of set
+                                            lead(.data$point_id) == (.data$point_id + 1L) & lead(.data$visiting_score_start_of_point) > .data$visiting_score_start_of_point ~ "a",
+                                            is.na(lead(.data$point_id)) & .data$visiting_score_start_of_point > .data$home_score_start_of_point ~ "a")) %>% ## end of set
+            ungroup
+        if (any(is.na(temp$point_won_by))) stop("'Rally Won' is missing from the source file")
+    } else {
+        temp <- px %>% group_by(.data$point_id) %>% slice(1L) %>% ungroup %>%
+            mutate(point_won_by = case_when((.data$team == "*" & .data$rally_won == "Won") | (.data$team == "a" & .data$rally_won == "Lost") ~ "*",
+            (.data$team == "a" & .data$rally_won == "Won") | (.data$team == "*" & .data$rally_won == "Lost") ~ "a"))
+    }
+    temp <- temp %>% mutate(home_team_score = case_when(.data$point_won_by == "*" ~ .data$home_score_start_of_point + 1L,
+                                                        TRUE ~ .data$home_score_start_of_point),
+                            visiting_team_score = case_when(.data$point_won_by == "a" ~ .data$visiting_score_start_of_point + 1L,
+                                                            TRUE ~ .data$visiting_score_start_of_point))
     px <- left_join(px, temp %>% dplyr::select("point_id", "point_won_by", "home_team_score", "visiting_team_score"), by = "point_id")
     ## TODO check any missing scores
 
