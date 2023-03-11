@@ -1,17 +1,34 @@
 ## functions to convert from (original) long text back to short codes
 h_skill_code <- function(x) {
-    case_when(x$skill == "Serve" ~ "S",
-              x$skill == "Receive" ~ "R",
-              x$skill == "Set" ~ "E",
-              x$skill == "Attack" ~ "A",
-              x$skill == "Freeball" ~ "F",
-              x$skill == "Dig" ~ "D",
-              x$skill == "Block" ~ "B",
-              x$skill == "Save" ~ "E", ## TODO check new logic
-              x$skill == "Down Ball" ~ "A", ## attack
-              x$skill == "Cover" ~ "D", ## dig
-              x$skill == "Ballover" ~ "F", ## freeball
-              TRUE ~ "~")
+    ## remap "Save" skills first, which are somewhat ambiguous
+    x %>% mutate(skill = case_when(.data$skill == "Save" ~ case_when(
+                                                      ## save after oppo team touch is either a dig or a freeball dig
+                                                      lag(.data$team) != .data$team & lag(.data$skill) %in% c("Ballover", "Freeball") ~ "Freeball", ## freeball dig
+                                                      lag(.data$team) != .data$team ~ "Dig",
+
+                                                      ## save after our team touch, and followed by our team touch = Set
+                                                      lag(.data$team) == .data$team & lead(.data$team) == .data$team ~ "Set",
+
+                                                      ## save after our team touch, and followed by other team touch = Freeball over
+                                                      lag(.data$team) == .data$team & lead(.data$team) != .data$team ~ "Freeball",
+
+                                                      ## save after our team touch, with no following touch (end of rally)
+                                                      lag(.data$team, 2) == .data$team & lag(.data$team) == .data$team ~ "Freeball", ## our third touch, treat as freeball over
+                                                      lag(.data$team) == .data$team ~ "Set", ## our second touch, treat as Set
+                                                      TRUE ~ "Dig"),
+                                TRUE ~ .data$skill),
+                 sc = case_when(.data$skill == "Serve" ~ "S",
+                                .data$skill == "Receive" ~ "R",
+                                .data$skill == "Set" ~ "E",
+                                .data$skill == "Attack" ~ "A",
+                                .data$skill == "Freeball" ~ "F",
+                                .data$skill == "Dig" ~ "D",
+                                .data$skill == "Block" ~ "B",
+                                .data$skill == "Down Ball" ~ "A", ## attack
+                                .data$skill == "Cover" ~ "D", ## dig
+                                .data$skill == "Ballover" ~ "F", ## freeball
+                                TRUE ~ "~")) %>%
+    pull(.data$sc)
 }
 
 ## skill here is our translated skill types, so Reception not Receive
