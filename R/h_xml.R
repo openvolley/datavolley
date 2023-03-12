@@ -37,13 +37,13 @@ h_skill_type_code <- function(x) {
               x$skill == "Serve" & x$serve_type == "Hybrid" ~ "N",
               x$skill == "Serve" & x$serve_type == "Float Near" ~ "T",
               x$skill == "Serve" & x$serve_type == "Float Far" ~ "H",
-              x$skill == "Serve" & x$serve_type == "Underhand" ~ "O",
+              x$skill == "Serve" & x$serve_type == "Underhand" ~ "U",
               x$skill == "Reception" & x$serve_type == "Jump Spin" ~ "Q",
               x$skill == "Reception" & x$serve_type == "Jump Float" ~ "M",
               x$skill == "Reception" & x$serve_type == "Hybrid" ~ "N",
               x$skill == "Reception" & x$serve_type == "Float Near" ~ "T",
               x$skill == "Reception" & x$serve_type == "Float Far" ~ "H",
-              x$skill == "Reception" & x$serve_type == "Underhand" ~ "O",
+              x$skill == "Reception" & x$serve_type == "Underhand" ~ "U",
               x$skill == "Set" ~ "H",
               x$skill == "Attack" ~ "H",
               x$skill == "Freeball" ~ "H",
@@ -218,13 +218,38 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
             thisid##)
             %in% rally_ids) c(id = thisid) else c(id = thisid, setNames(i3$val[idx], i2$val[idx])) ## the id then all the other label text elements, each named by their corresponding label group
     }))
+    msgs <- list()
     px <- dplyr::left_join(i1, i23, by = "id")
     px <- mutate(px, point_id = cumsum(!is.na(.data$code) & .data$code == "Rally"),
                  ## but each Rally code should be the end of the rally, not the start of the next one
                  point_id = case_when(.data$code == "Rally" ~ lag(.data$point_id), TRUE ~ .data$point_id),
                  Set = case_when(.data$code == "Rally" ~ lag(.data$Set), TRUE ~ .data$Set))
 
-    ## TODO check required columns
+    ## check some columns
+    if (!"YYYY-MM-DD" %in% names(px)) {
+        ## file is missing match date, can we get it from the file name?
+        temp <- tryCatch(suppressWarnings(lubridate::ymd(sub("^&", "", basename(filename)))), error = function(e) NA)
+        if (!is.na(temp) && temp > as.Date("1970-01-01") && temp < (Sys.Date() + 10L)) {
+            ## use date from filename but warn
+            msgs <- bind_rows(msgs, tibble(line_number = NA_integer_, message = paste0("File is missing match date column, using date '", format(temp, "%Y-%m-%d"), "' from file name"), severity = 3))
+            px$`YYYY-MM-DD` <- temp
+        } else {
+            msgs <- bind_rows(msgs, tibble(line_number = NA_integer_, message = "File is missing match date column", severity = 2))
+            px$`YYYY-MM-DD` <- NA_character_
+        }
+    }
+    chk <- setdiff(c("Team Name", "Player Name", "Player Jersey", "Skill", "Grade", "Set"), names(px))
+    if (length(chk) > 0) stop("missing column", if (length(chk) > 1) "s", ": ", paste(chk, collapse = ", "))
+    ## "Rally Won" is dealt with below
+    ## expect two score columns plus "Score Status", "Score Phase", "Score Difference"
+    chk <- setdiff(names(px)[grepl("^Score[[:space:]]", names(px))], c("Score Status", "Score Phase", "Score Difference"))
+    if (length(chk) < 2) stop("missing one or both team score columns")
+    ## expected but not critical
+    req <- c("Serve Type", "Zone X", "Zone Y", ##"From Zone X", "From Zone Y"
+             "To Zone X", "To Zone Y", "Tournament - Location", "Tournament - Event", "Tournament - Phase",
+             "Conditions - Weather", "Conditions - Wind", "Conditions - Light",
+             "Attack Location", "Attack Style", "Receive Side", "Attack Block Type", "Attack Type", "Set Type")
+    for (cl in req) if (!cl %in% names(px)) px[[cl]] <- NA_character_
 
     ## teams
     tms <- unique(na.omit(px$`Team Name`))
@@ -240,7 +265,8 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
 
     px$team <- case_when(px$team_name == tms[1] ~ "*", px$team_name == tms[2] ~ "a")
     px <- dplyr::rename(px, set_number = "set", player_number = "player_jersey", h_code = "code") %>%
-        mutate(across(all_of(c("home_score_start_of_point", "visiting_score_start_of_point", "set_number", "player_number", "zone_x", "zone_y", "from_zone_x", "from_zone_y", "to_zone_x", "to_zone_y")), as.integer))
+        mutate(across(all_of(c("home_score_start_of_point", "visiting_score_start_of_point", "set_number", "player_number", "zone_x", "zone_y", ##"from_zone_x", "from_zone_y",
+                               "to_zone_x", "to_zone_y")), as.integer))
 
     ## change team names that only have 3 characters
     players <- px %>% dplyr::filter(!is.na(.data$team)) %>% dplyr::select("team", "player_name", number = "player_number") %>% distinct %>% mutate(lastname = sub(",.*", "", .data$player_name), firstname = case_when(grepl(",", .data$player_name) ~ sub(".*,[[:space:]]*", "", .data$player_name), TRUE ~ ""), number = as.integer(.data$number)) %>%
@@ -284,7 +310,6 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
         unlist(out)
     }
 
-    msgs <- list()
     temp <- px %>% dplyr::filter(!is.na(.data$team_name), !is.na(.data$player_name)) %>% group_by(.data$team_name) %>% dplyr::summarize(n_players = dplyr::n_distinct(.data$player_name))
     file_type <- NA
     if (nrow(temp) == 2) {
@@ -298,13 +323,13 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     pseq <- seq_len(if (file_type == "beach") 2 else 6)
     x$file_meta <- dv_create_file_meta(generator_day = as.POSIXct(NA), generator_idp = "DVW", generator_prg = "Hudl",
                                        generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type)
-    first_unique <- function(x, what) {
+    first_unique <- function(x, what, warn = TRUE) {
         x <- unique(na.omit(x))
         if (length(x) > 1) {
-            warning("multiple ", what, "s detected, using first")
+            msgs <<- bind_rows(msgs, tibble(line_number = NA_integer_, message = paste0("Multiple '", what, "' values detected, using the first one ('", x[1], "')"), severity = 2))
             x[1]
         } else if (length(x) < 1) {
-            warning("no ", what, " detected")
+            msgs <<- bind_rows(msgs, tibble(line_number = NA_integer_, message = paste0("No '", what, "' values found"), severity = 2))
             NA_character_
         } else {
             x
@@ -321,12 +346,12 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
                                              if (!is.na(.data$light[1]) && nchar(.data$light[1]) > 0) paste0(" Light: ", .data$light[1]))) %>%
         ungroup
 
-    mx <- list(match = dv_create_meta_match(date = lubridate::ymd(first_unique(px$yyyy_mm_dd)),
+    mx <- list(match = dv_create_meta_match(date = lubridate::ymd(first_unique(px$yyyy_mm_dd, "match date", warn = FALSE)),
                                             regulation = if (file_type == "indoor") "indoor rally point" else if (file_type == "beach") "beach rally point" else stop("unexpected game type: ", file_type),
-                                            league = first_unique(px$tournament_event),
-                                            phase = first_unique(px$tournament_phase),
+                                            league = first_unique(px$tournament_event, "Tournament - Event"),
+                                            phase = first_unique(px$tournament_phase, "Tournament - Phase"),
                                             zones_or_cones = "Z"),
-               more = dv_create_meta_more(city = first_unique(px$tournament_location)),
+               more = dv_create_meta_more(city = first_unique(px$tournament_location, "Tournament - Location")),
                comments = dv_create_meta_comments(summary = paste0(conds$conditions, collapse = " | "))
                )
     set_scores <- px %>% dplyr::filter(!is.na(.data$set_number)) %>% group_by(.data$set_number) %>% dplyr::summarize(home_team_score = max(.data$home_team_score, na.rm = TRUE), visiting_team_score = max(.data$visiting_team_score, na.rm = TRUE))
