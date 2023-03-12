@@ -231,10 +231,10 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
         temp <- tryCatch(suppressWarnings(lubridate::ymd(sub("^&", "", basename(filename)))), error = function(e) NA)
         if (!is.na(temp) && temp > as.Date("1970-01-01") && temp < (Sys.Date() + 10L)) {
             ## use date from filename but warn
-            msgs <- bind_rows(msgs, tibble(line_number = NA_integer_, message = paste0("File is missing match date column, using date '", format(temp, "%Y-%m-%d"), "' from file name"), severity = 3))
+            msgs <- bind_rows(msgs, tibble(file_line_number = NA_integer_, message = paste0("File is missing match date column, using date '", format(temp, "%Y-%m-%d"), "' from file name"), severity = 3))
             px$`YYYY-MM-DD` <- temp
         } else {
-            msgs <- bind_rows(msgs, tibble(line_number = NA_integer_, message = "File is missing match date column", severity = 2))
+            msgs <- bind_rows(msgs, tibble(file_line_number = NA_integer_, message = "File is missing match date column", severity = 2))
             px$`YYYY-MM-DD` <- NA_character_
         }
     }
@@ -326,10 +326,10 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     first_unique <- function(x, what, warn = TRUE) {
         x <- unique(na.omit(x))
         if (length(x) > 1) {
-            msgs <<- bind_rows(msgs, tibble(line_number = NA_integer_, message = paste0("Multiple '", what, "' values detected, using the first one ('", x[1], "')"), severity = 2))
+            msgs <<- bind_rows(msgs, tibble(file_line_number = NA_integer_, message = paste0("Multiple '", what, "' values detected, using the first one ('", x[1], "')"), severity = 2))
             x[1]
         } else if (length(x) < 1) {
-            msgs <<- bind_rows(msgs, tibble(line_number = NA_integer_, message = paste0("No '", what, "' values found"), severity = 2))
+            msgs <<- bind_rows(msgs, tibble(file_line_number = NA_integer_, message = paste0("No '", what, "' values found"), severity = 2))
             NA_character_
         } else {
             x
@@ -664,7 +664,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     ## some checks
     idx <- x$skill %in% c("Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball", "Timeout") & is.na(x$team)
     if (any(idx)) {
-        msgs <- bind_rows(msgs, tibble(line_number = px$file_line_number[idx], message = "Skill code has missing or invalid team identifier", severity = 1))
+        msgs <- bind_rows(msgs, tibble(file_line_number = px$file_line_number[idx], message = "Skill code has missing or invalid team identifier", severity = 1))
     }
 
     x$plays <- px %>% mutate(video_file_number = if (nrow(x$meta$video) > 0) 1L else NA_integer_, end_cone = NA_integer_) %>%
@@ -698,9 +698,6 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
         x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE), ]
         row.names(x$messages) <- NULL
     }
-
-
-
     x
 }
 
