@@ -567,7 +567,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     ## then just enforce non-decreasing video times on whatever we ended up with
     vt <- px$video_time
     for (i in seq_along(vt)[-1]) if (vt[i] < vt[i - 1]) vt[i] <- vt[i - 1]
-    px$video_time <- vt
+    px$video_time <- as.integer(vt)
 
     ## columns to preserve when adding new rows to the dataframe
     keepcols <- c("point_id", "time", "video_time", "home_team_score", "visiting_team_score", "point_won_by", "set_number",
@@ -695,6 +695,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character())
     if (nrow(x$messages) > 0) {
         x$messages$file_line_number <- as.integer(x$messages$file_line_number)
+        x$messages$video_time <- as.integer(x$messages$video_time)
         x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE), ]
         row.names(x$messages) <- NULL
     }

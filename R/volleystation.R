@@ -527,7 +527,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     })
     ## these interpolated file line numbers won't be exact, but close enough to be (hopefully) useful
 
-    x$plays <- px %>% mutate(video_time = round(.data$time / 10),
+    x$plays <- px %>% mutate(video_time = round(round(.data$time / 10)), ## must be integer
                              time = as.POSIXct(NA), video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
                              end_cone = NA_integer_) %>%
         dplyr::select("match_id", ##"_id",
@@ -570,9 +570,10 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
     }
-    if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character())
+    if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = integer(), message = character(), file_line = character())
     if (nrow(x$messages) > 0) {
         x$messages$file_line_number <- as.integer(x$messages$file_line_number)
+        x$messages$video_time <- as.integer(x$messages$video_time)
         x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE), ]
         row.names(x$messages) <- NULL
     }
