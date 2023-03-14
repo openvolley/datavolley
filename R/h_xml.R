@@ -184,6 +184,11 @@ h_row2code <- function(x, data_type, style) {
 
 dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evaluation_decode = "volleymetrics", extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
     ##  do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, edited_meta
+
+    ## check for beach vs indoor
+    chk <- readLines(filename, n = 200L, warn = FALSE)
+    if (any(grepl("Rotation", chk, fixed = TRUE))) stop("this appears to be an indoor file - not yet supported")
+
     xml <- read_xml(filename)
     ## find the instances of interest to us
     alli <- xml_find_all(xml, "ALL_INSTANCES/instance[.//code/text()[contains(.,'Serve') or contains(.,'Receive') or contains(.,'Set') or contains(.,'Attack') or contains(.,'Block') or contains(.,'Dig') or contains(.,'Ballover') or contains(.,'Cover') or contains(.,'Save') or contains(.,'Rally')]]")
@@ -203,6 +208,10 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     i2 <- tibble(nm = xml_name(i2), val = xml_text(i2))
     i3 <- xml_find_all(alli, "(id|label/text)") ## all id and label text elements
     i3 <- tibble(nm = xml_name(i3), val = xml_text(i3))
+
+    ## check for indoor
+    idx <- grep("player name$", i2$val, ignore.case = TRUE)
+    if (length(unique(i3$val[idx])) > 4) stop("this appears to be an indoor file - not yet supported")
 
     ## find the "id"'s in i2 and i3, each of these is the start of a row group corresponding to a single touch
     i2i <- c(which(i2$nm == "id"), nrow(i2) + 1)
