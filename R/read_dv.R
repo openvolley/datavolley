@@ -14,7 +14,7 @@
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed
 #' @param date_format string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If \code{date_format} is something other than "guess", that date format will be preferred where dates are ambiguous
 #' @param surname_case string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings
-#' @param skill_evaluation_decode function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}
+#' @param skill_evaluation_decode function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}
 #' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}
 #' @param metadata_only logical: don't process the plays component of the file, just the match and player metadata
 #' @param verbose logical: if TRUE, show progress
@@ -77,6 +77,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                 skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
             }
             if (ft == "dvw" && skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
+        } else if (skill_evaluation_decode == "default") {
+            ## as of March 2023, treat "default" as the default for the file type, so for hxml that's vm
+            if (ft == "hxml") skill_evaluation_decode <- "volleymetrics"
         }
         if (ft == "dvw") skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }
