@@ -566,5 +566,6 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
         if (length(rot_errors)>0) out <- rbind(out,do.call(rbind,rot_errors))
     } ## checking plays data
     out <- out[(4 - out$severity) <= validation_level, ]
+    if (nrow(out) > 0) out <- dplyr::arrange(out, .data$file_line_number)
     out[, setdiff(names(out), "severity")]
 }
