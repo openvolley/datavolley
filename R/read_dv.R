@@ -85,9 +85,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     }
     ## pass non-dvw readers off to their dedicated read functions
     if (ft == "vsm") {
-        return(dv_read_vsm(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, extra_validation = extra_validation, validation_options = validation_options, verbose = verbose))
+        return(dv_read_vsm(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, do_transliterate = do_transliterate, extra_validation = extra_validation, validation_options = validation_options, verbose = verbose))
     } else if (ft == "hxml") {
-        return(dv_read_hxml(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, extra_validation = extra_validation, validation_options = validation_options, verbose = verbose))
+        return(dv_read_hxml(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, do_transliterate = do_transliterate, extra_validation = extra_validation, validation_options = validation_options, verbose = verbose))
     }
     assert_that(is.function(skill_evaluation_decode))
     if (is.null(date_format_suggested)) {

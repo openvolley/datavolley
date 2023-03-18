@@ -182,8 +182,8 @@ h_row2code <- function(x, data_type, style) {
     out
 }
 
-dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evaluation_decode = "volleymetrics", extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
-    ##  do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, edited_meta
+dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_transliterate = FALSE, skill_evaluation_decode = "volleymetrics", extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
+    ##  do_warn=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, edited_meta
 
     ## check for beach vs indoor
     chk <- readLines(filename, n = 200L, warn = FALSE)
@@ -208,6 +208,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
     i2 <- tibble(nm = xml_name(i2), val = xml_text(i2))
     i3 <- xml_find_all(alli, "(id|label/text)") ## all id and label text elements
     i3 <- tibble(nm = xml_name(i3), val = xml_text(i3))
+    if (isTRUE(do_transliterate)) i3$val <- stri_trans_general(i3$val, "latin-ascii")
 
     ## check for indoor
     idx <- grep("player name$", i2$val, ignore.case = TRUE)

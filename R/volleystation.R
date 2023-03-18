@@ -41,12 +41,12 @@ vs_reformat_players <- function(jx, which = "home") {
     px %>% dplyr::arrange(.data$number) %>% mutate(X3 = dplyr::row_number() + if (which %in% "home") 0L else nrow(jx$team$home$players))
 }
 
-dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
+dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, do_transliterate = FALSE, extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
     ## do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, edited_meta
     if (is.function(skill_evaluation_decode)) stop("providing a function to skill_evaluation_decode is not supported for vsm files")
     skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "volleymetrics")) ## used as the 'style' parm to dv_decode_* and dv_default_*
     x <- list(raw = readLines(filename, warn = FALSE))
-    jx <- jsonlite::fromJSON(x$raw)
+    jx <- jsonlite::fromJSON(if (isTRUE(do_transliterate)) stri_trans_general(x$raw, "latin-ascii") else x$raw)
     x$raw <- str_split(str_replace_all(x$raw, fixed("{\"_id"), "\n{\"_id"), fixed("\n"))[[1]]
     raw_id <- str_match(x$raw, "\"_id\":\"([^\"]+)\"")[, 2]
     idlnum <- setNames(as.list(seq_along(raw_id)), raw_id) ## line numbers, named by their corresponding _id
