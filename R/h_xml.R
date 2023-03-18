@@ -454,10 +454,14 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, skill_evalu
                                                  .data$skill == "Dig" & lag(.data$skill) == "Attack" & .data$team != lag(.data$team) ~ lag(.data$skill_type_code),
                                                  .data$skill == "Dig" & lag(.data$skill) == "Block" & lag(.data$skill, 2) == "Attack" & .data$team != lag(.data$team, 2) ~ lag(.data$skill_type_code, 2),
                                                  TRUE ~ .data$skill_type_code))
-
     px$skill_type <- dv_decode_skill_type(px$skill, px$skill_type_code, data_type = file_type, style = skill_evaluation_decode)
 
     px$evaluation_code <- h_evaluation_code(px)
+    ## other adjustments
+    if (skill_evaluation_decode %eq% "volleymetrics") {
+        px <- mutate(px, evaluation_code = case_when(.data$skill == "Attack" & lead(.data$skill) == "Block" & lead(.data$evaluation_code) == "/" ~ "!",
+                                                     TRUE ~ .data$evaluation_code))
+    }
     px$evaluation <- dv_decode_evaluation(px$skill, px$evaluation_code, data_type = file_type, style = skill_evaluation_decode)
 
     px$skill_subtype_code <- h_skill_subtype_code(px, style = skill_evaluation_decode)
