@@ -14,7 +14,8 @@ coverage](https://codecov.io/gh/openvolley/datavolley/branch/master/graph/badge.
 
 An R package for reading volleyball scouting files in DataVolley format
 (`*.dvw`), collected for example with the commercial DataVolley, Click
-and Scout, or VolleyStation software.
+and Scout, or VolleyStation software. VolleyStation files in `*.vsm`
+format are also supported.
 
 See also:
 
@@ -67,5 +68,7 @@ summary(x)
 If you see unexpected behaviour, try
 `dv_read(..., do_warn = TRUE, verbose = TRUE)` to obtain more diagnostic
 information during the process of reading and parsing the DataVolley
-file. Also check the text encoding specified to `dv_read` (did you
-specify one??)
+file. If your player or team names are garbled (strange characters)
+check the text encoding that `dv_read(..., verbose = TRUE)` tells you
+that it is using - you may need to override this with the correct one
+via the `encoding` parameter.

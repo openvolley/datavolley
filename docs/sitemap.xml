@@ -52,6 +52,9 @@
     <loc>/reference/dv_attack_code_map.html</loc>
   </url>
   <url>
+    <loc>/reference/dv_attack_phase.html</loc>
+  </url>
+  <url>
     <loc>/reference/dv_cone2xy.html</loc>
   </url>
   <url>
@@ -91,7 +94,13 @@
     <loc>/reference/dv_plot_new.html</loc>
   </url>
   <url>
+    <loc>/reference/dv_point_phase.html</loc>
+  </url>
+  <url>
     <loc>/reference/dv_read_sq.html</loc>
+  </url>
+  <url>
+    <loc>/reference/dv_repair.html</loc>
   </url>
   <url>
     <loc>/reference/dv_write.html</loc>

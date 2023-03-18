@@ -14,10 +14,10 @@
 <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="apple-touch-icon-76x76.png">
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="apple-touch-icon-60x60.png">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.1.3/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.1.3/bootstrap.bundle.min.js"></script><link href="deps/Raleway-0.4.2/font.css" rel="stylesheet">
-<link href="deps/Source_Code_Pro-0.4.2/font.css" rel="stylesheet">
-<link href="deps/Patua_One-0.4.2/font.css" rel="stylesheet">
+<link href="deps/bootstrap-5.2.2/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.2.2/bootstrap.bundle.min.js"></script><link href="deps/Raleway-0.4.5/font.css" rel="stylesheet">
+<link href="deps/Source_Code_Pro-0.4.5/font.css" rel="stylesheet">
+<link href="deps/Patua_One-0.4.5/font.css" rel="stylesheet">
 <!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Reading and Analyzing DataVolley Scout Files">
@@ -36,7 +36,7 @@
     
     <a class="navbar-brand me-2" href="index.html">datavolley</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.4.9.9900</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,7 +80,7 @@
 </div>
 <!-- badges: start -->
 
-<p>An R package for reading volleyball scouting files in DataVolley format (<code>*.dvw</code>), collected for example with the commercial DataVolley, Click and Scout, or VolleyStation software.</p>
+<p>An R package for reading volleyball scouting files in DataVolley format (<code>*.dvw</code>), collected for example with the commercial DataVolley, Click and Scout, or VolleyStation software. VolleyStation files in <code>*.vsm</code> format are also supported.</p>
 <p>See also:</p>
 <ul>
 <li>the <a href="https://openvolley.github.io/datavolley" class="external-link">package vignette</a> for more examples and information</li>
@@ -120,7 +120,7 @@
 <div class="section level2">
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
 </h2>
-<p>If you see unexpected behaviour, try <code>dv_read(..., do_warn = TRUE, verbose = TRUE)</code> to obtain more diagnostic information during the process of reading and parsing the DataVolley file. Also check the text encoding specified to <code>dv_read</code> (did you specify one??)</p>
+<p>If you see unexpected behaviour, try <code>dv_read(..., do_warn = TRUE, verbose = TRUE)</code> to obtain more diagnostic information during the process of reading and parsing the DataVolley file. If your player or team names are garbled (strange characters) check the text encoding that <code>dv_read(..., verbose = TRUE)</code> tells you that it is using - you may need to override this with the correct one via the <code>encoding</code> parameter.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -152,6 +152,8 @@
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Ben Raymond <br><small class="roles"> Author, maintainer </small>  </li>
+<li>Adrien Ickowicz <br><small class="roles"> Author </small>  </li>
+<li>Tyler Widdison <br><small class="roles"> Author </small>  </li>
 <li><a href="authors.html">More about authors...</a></li>
 </ul>
 </div>
@@ -159,7 +161,7 @@
 <div class="dev-status">
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/openvolley/datavolley/actions" class="external-link"><img src="https://github.com/openvolley/datavolley/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://github.com/openvolley/datavolley/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/openvolley/datavolley/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 <li><a href="https://www.tidyverse.org/lifecycle/#stable" class="external-link"><img src="https://img.shields.io/badge/lifecycle-stable-brightgreen.svg" alt="lifecycle"></a></li>
 <li><a href="https://codecov.io/gh/openvolley/datavolley?branch=master" class="external-link"><img src="https://codecov.io/gh/openvolley/datavolley/branch/master/graph/badge.svg" alt="Codecov test coverage"></a></li>
 </ul>
@@ -171,7 +173,7 @@
 
     <footer><div class="pkgdown-footer-left">
   <p></p>
-<p>Developed by Ben Raymond.</p>
+<p>Developed by Ben Raymond, Adrien Ickowicz, Tyler Widdison.</p>
 </div>
 
 <div class="pkgdown-footer-right">
