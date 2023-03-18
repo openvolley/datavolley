@@ -24,7 +24,7 @@ Imports:
     readr,
     stringi,
     stringr,
-    vscoututils (>= 0.0.12),
+    vscoututils (>= 0.1.0),
     xml2
 Suggests:
     testthat,
