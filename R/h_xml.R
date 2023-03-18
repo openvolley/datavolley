@@ -187,7 +187,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
 
     ## check for beach vs indoor
     chk <- readLines(filename, n = 200L, warn = FALSE)
-    if (any(grepl("Rotation", chk, fixed = TRUE))) stop("this appears to be an indoor file - not yet supported")
+    if (any(grepl("Rotation", chk, fixed = TRUE))) stop("this appears to be an indoor file - not yet supported. Please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")
 
     xml <- read_xml(filename)
     ## find the instances of interest to us
@@ -209,10 +209,10 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     i3 <- xml_find_all(alli, "(id|label/text)") ## all id and label text elements
     i3 <- tibble(nm = xml_name(i3), val = xml_text(i3))
     if (isTRUE(do_transliterate)) i3$val <- stri_trans_general(i3$val, "latin-ascii")
-
+    i3$val <- str_trim(i3$val)
     ## check for indoor
     idx <- grep("player name$", i2$val, ignore.case = TRUE)
-    if (length(unique(i3$val[idx])) > 4) stop("this appears to be an indoor file - not yet supported")
+    if (length(unique(i3$val[idx])) > 4) stop("this appears to be an indoor file - not yet supported. Please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")
 
     ## find the "id"'s in i2 and i3, each of these is the start of a row group corresponding to a single touch
     i2i <- c(which(i2$nm == "id"), nrow(i2) + 1)

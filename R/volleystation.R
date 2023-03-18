@@ -86,20 +86,20 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if ("comment" %in% names(jx)) {
         ## e.g. "---- summary ----\nno comments\n\n---- match description ----\n\n\n---- coach home ----\n\n\n---- coach away ----\n"
         cx <- strsplit(jx$comment, "\n\\-\\-\\-\\-[[:space:]]*")[[1]]
-        cx <- sub("\n+$", "", sub(".*\\-\\-\\-\\-\n", "", cx))
+        cx <- str_trim(sub(".*\\-\\-\\-\\-\n", "", cx))
         cx <- c(cx, rep(NA_character_, 4 - length(cx)))
         mx$comments = dv_create_meta_comments(summary = cx[1], match_description = cx[2], home_coach_comments = cx[3], visiting_coach_comments = cx[4])
     } else {
         mx$comments = dv_create_meta_comments()
     }
     mx$result <- dv_create_meta_result(home_team_scores = jx$scout$sets$score$home, visiting_team_scores = jx$scout$sets$score$away) ## will be further populated by dv_update_meta below
-    c1 <- paste(jx$team$home$staff$coach$firstName, jx$team$home$staff$coach$lastName)
+    c1 <- paste(str_trim(jx$team$home$staff$coach$firstName), str_trim(jx$team$home$staff$coach$lastName))
     if (length(c1) < 1) c1 <- NA_character_
-    c2 <- paste(jx$team$away$staff$coach$firstName, jx$team$away$staff$coach$lastName)
+    c2 <- paste(str_trim(jx$team$away$staff$coach$firstName), str_trim(jx$team$away$staff$coach$lastName))
     if (length(c2) < 1) c2 <- NA_character_
-    a1 <- paste(paste(jx$team$home$staff$assistantCoach$firstName, jx$team$home$staff$assistantCoach$lastName), paste(jx$team$home$staff$assistantCoach2$firstName, jx$team$home$staff$assistantCoach2$lastName), collapse = " / ")
+    a1 <- paste(paste(str_trim(jx$team$home$staff$assistantCoach$firstName), str_trim(jx$team$home$staff$assistantCoach$lastName)), paste(str_trim(jx$team$home$staff$assistantCoach2$firstName), str_trim(jx$team$home$staff$assistantCoach2$lastName)), collapse = " / ")
     if (length(a1) < 1) a1 <- NA_character_
-    a2 <- paste(paste(jx$team$away$staff$assistantCoach$firstName, jx$team$away$staff$assistantCoach$lastName), paste(jx$team$away$staff$assistantCoach2$firstName, jx$team$away$staff$assistantCoach2$lastName), collapse = " / ")
+    a2 <- paste(paste(str_trim(jx$team$away$staff$assistantCoach$firstName), str_trim(jx$team$away$staff$assistantCoach$lastName)), paste(str_trim(jx$team$away$staff$assistantCoach2$firstName), str_trim(jx$team$away$staff$assistantCoach2$lastName)), collapse = " / ")
     if (length(a2) < 1) a2 <- NA_character_
     tx <- dv_create_meta_teams(team_ids = c(jx$team$home$code, jx$team$away$code),
                                      teams = c(jx$team$home$name, jx$team$away$name),
