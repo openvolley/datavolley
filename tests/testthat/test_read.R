@@ -115,3 +115,7 @@ test_that("internal reader utils work", {
     expect_identical(ws, datavolley:::winning_symbols_df(datavolley:::winning_symbols_df2txt(ws)))
     expect_error(datavolley:::winning_symbols_df("blah"))
 })
+
+test_that("vsm reader works", {
+    x <- dv_read(dv_example_file(3), insert_technical_timeouts = FALSE)
+})

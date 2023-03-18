@@ -4,6 +4,7 @@ Version: 1.4.9.9900
 Authors@R: c(person("Ben", "Raymond", email = "ben@untan.gl", role = c("aut", "cre")),
              person("Adrien", "Ickowicz", role = "aut"),
              person("Tyler", "Widdison", role = "aut"),
+             person("Christophe", "Elek", role = "ctb"),
              person("openvolley.org", role = "org"))
 Description: Provides functions for parsing and working with volleyball match files in DataVolley format.
 Depends:

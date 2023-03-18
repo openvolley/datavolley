@@ -5,6 +5,7 @@
 #' \itemize{
 #'   \item{1 - the January 2015 Slovenian junior women's final between Braslovče and Nova KBM Branik}
 #'   \item{2 - the December 2012 men's Slovenian national championship semifinal between ACH Volley and Maribor}
+#'   \item{3 - Nicaragua vs Cuba women from the Pan American Cup, August 2022 (vsm format, courtesy Christophe Elek)}
 #' }
 #' @return path to the file
 #'
@@ -21,6 +22,7 @@ dv_example_file <- function(choice=1) {
     switch(as.character(choice),
            "1" = system.file("extdata/example_data.dvw", package = "datavolley"),
            "2" = system.file("extdata/PM06.dvw", package = "datavolley"),
+           "3" = system.file("extdata/2022-08-23_NCA-CUB.vsm", package = "datavolley"),
            stop("unrecognized 'choice' value (", choice, ")")
            )
 }
@@ -29,7 +31,7 @@ dv_example_file <- function(choice=1) {
 #' Fake coordinate data
 #'
 #' Generates fake coordinate data. The DataVolley software has the capability to accurately record court locations associated with each action. However, not all files contain this information (it can be time consuming to enter). This function generates fake coordinate data that can be used for demonstration purposes.
-#' 
+#'
 #' @param skill string: the skill type to generate positions for (only "serve" is implemented so far)
 #' @param evaluation character: vector of evaluations (as returned in the \code{evalution} column of a datavolleyplays object)
 #'

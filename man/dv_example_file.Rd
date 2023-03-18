@@ -11,6 +11,7 @@ dv_example_file(choice = 1)
 \itemize{
   \item{1 - the January 2015 Slovenian junior women's final between Braslovče and Nova KBM Branik}
   \item{2 - the December 2012 men's Slovenian national championship semifinal between ACH Volley and Maribor}
+  \item{3 - Nicaragua vs Cuba women from the Pan American Cup, August 2022 (vsm format, courtesy Christophe Elek)}
 }}
 }
 \value{
