@@ -60,6 +60,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ft <- dv_file_type(filename) ## dvw, vsm, psvb, hxml
     if (ft == "psvb") {
         stop("for perana/vbstats files use `pv_read` from the peranavolley package")
+    } else if (ft == "unknown") {
+        ## treat as dvw
+        ft <- "dvw"
     } else if (!ft %in% c("dvw", "hxml", "vsm")) {
         stop("unknown or unsupported file type")
     }
