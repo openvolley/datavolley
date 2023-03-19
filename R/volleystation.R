@@ -183,10 +183,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                             tibble(start_coordinate_x = NA_integer_, start_coordinate_y = NA_integer_,
                                    end_coordinate_x = NA_integer_, end_coordinate_y = NA_integer_)
                         } else {
-                            if (nrow(z) < 2 || nrow(z) > 3) {
-                                cat(str(z))
-                                stop("travelPath not 2 or 3 rows")
-                            }
+                            if (nrow(z) < 2 || nrow(z) > 3) stop("travelPath not 2 or 3 rows")
                             ## convert to dv grid conventions
                             z$x <- z$x / 293.3333 + 0.447159
                             z$y <- z$y / 297 + 0.469697
