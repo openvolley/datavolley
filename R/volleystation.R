@@ -178,12 +178,18 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                             tibble(start_coordinate_x = NA_integer_, start_coordinate_y = NA_integer_,
                                    end_coordinate_x = NA_integer_, end_coordinate_y = NA_integer_)
                         } else {
-                            if (nrow(z) != 2) stop("travelPath not 2 rows")
+                            if (nrow(z) < 2 || nrow(z) > 3) {
+                                cat(str(z))
+                                stop("travelPath not 2 or 3 rows")
+                            }
                             ## convert to dv grid conventions
                             z$x <- z$x / 293.3333 + 0.447159
                             z$y <- z$y / 297 + 0.469697
-                            tibble(start_coordinate_x = z$x[1], start_coordinate_y = z$y[1],
-                                   end_coordinate_x = z$x[2], end_coordinate_y = z$y[2])
+                            if (nrow(z) == 2) {
+                                tibble(start_coordinate_x = z$x[1], start_coordinate_y = z$y[1], end_coordinate_x = z$x[2], end_coordinate_y = z$y[2])
+                            } else {
+                                tibble(start_coordinate_x = z$x[1], start_coordinate_y = z$y[1], mid_coordinate_x = z$x[2], mid_coordinate_y = z$y[2], end_coordinate_x = z$x[3], end_coordinate_y = z$y[3])
+                            }
                         }
                     }))
                     cbind(temp %>% dplyr::select(-"travelPath"), tp)
