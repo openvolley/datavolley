@@ -1,3 +1,7 @@
+datavolley 1.5.0
+================
+- support for .vsm files
+
 datavolley 1.3.5
 ================
 Minor updates:
