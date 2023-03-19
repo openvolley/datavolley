@@ -44,8 +44,13 @@ vs_reformat_players <- function(jx, which = "home") {
 dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, do_transliterate = FALSE, extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
     ## do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, edited_meta
     if (is.function(skill_evaluation_decode)) stop("providing a function to skill_evaluation_decode is not supported for vsm files")
-    skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "volleymetrics")) ## used as the 'style' parm to dv_decode_* and dv_default_*
+    skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "guess", "volleymetrics")) ## used as the 'style' parm to dv_decode_* and dv_default_*
+
     x <- list(raw = readLines(filename, warn = FALSE))
+    ## detect vm files imported into VS and saved as vsm the same way we do with dvw
+    if (skill_evaluation_decode == "guess") {
+        skill_evaluation_decode <- if (tryCatch(any(grepl("volleymetric", x$raw, ignore.case = TRUE)), error = function(e) FALSE)) "volleymetrics" else "default"
+    }
     jx <- jsonlite::fromJSON(if (isTRUE(do_transliterate)) stri_trans_general(x$raw, "latin-ascii") else x$raw)
     x$raw <- str_split(str_replace_all(x$raw, fixed("{\"_id"), "\n{\"_id"), fixed("\n"))[[1]]
     raw_id <- str_match(x$raw, "\"_id\":\"([^\"]+)\"")[, 2]
@@ -133,7 +138,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
     mx$sets <- clear_dvmsg(sx)
 
-    mx$winning_symbols <- dv_default_winning_symbols(data_type = file_type, style = skill_evaluation_decode) ## TODO can this vary from vsm file to vsm file?
+    mx$winning_symbols <- dv_default_winning_symbols(data_type = file_type, style = skill_evaluation_decode) ## this can vary from vsm file to vsm file, but it's not saved anywhere
     mx$match_id <- dv_create_meta_match_id(mx)
 
     vf <- if (length(jx$scout$video) < 1 || length(jx$scout$video$path) < 1) character() else if (length(jx$scout$video$path) > 1) { warning("multiple video files not yet supported, using only the first"); jx$scout$video$path[1] } else jx$scout$video$path[1]
@@ -366,6 +371,15 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     out_evaluation <- rep(NA_character_, nrow(px))
     px <- px %>% dplyr::rename(evaluation_code = "effect")
+    if (skill_evaluation_decode %eq% "volleymetrics") {
+        idx <- which(px$skill == "Attack" & lead(px$skill) == "Block" & lead(px$evaluation_code) == "/")
+        if (length(idx) > 0) {
+            px$evaluation_code[idx] <- "!"
+            temp <- px$code[idx]
+            substr(temp, 6, 6) <- "!"
+            px$code[idx] <- temp
+        }
+    }
     if (FALSE) {
         idx <- which(!is.na(px$evaluation_code)) ## evaluation code
         for (ii in idx) {

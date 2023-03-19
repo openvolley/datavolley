@@ -184,7 +184,12 @@ h_row2code <- function(x, data_type, style) {
 
 dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_transliterate = FALSE, skill_evaluation_decode = "volleymetrics", extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
     ##  do_warn=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, edited_meta
-
+    if (is.function(skill_evaluation_decode)) stop("providing a function to skill_evaluation_decode is not supported for xml files")
+    skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "guess", "volleymetrics"))
+    if (skill_evaluation_decode %in% c("default", "guess")) {
+        ## as of March 2023, treat "default" as the default for the file type, so for hxml that's vm
+        skill_evaluation_decode <- "volleymetrics"
+    }
     ## check for beach vs indoor
     chk <- readLines(filename, n = 200L, warn = FALSE)
     if (any(grepl("Rotation", chk, fixed = TRUE))) stop("this appears to be an indoor file - not yet supported. Please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")

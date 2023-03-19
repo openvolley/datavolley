@@ -68,18 +68,15 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     if (is.string(skill_evaluation_decode)) {
         skill_evaluation_decode <- match.arg(tolower(skill_evaluation_decode), c("default", "volleymetrics", "guess", "german"))
         if (skill_evaluation_decode == "guess") {
-            if (ft == "vsm") {
-                skill_evaluation_decode <- "default"
-            } else if (ft == "hxml") {
-                skill_evaluation_decode <- "volleymetrics"
-            } else {
+            ## if file type is vsm or hxml, pass the guessing responsibility to the specific handler
+            if (ft == "dvw") {
+                ## otherwise for dvw, guess here
                 is_vm <- tryCatch(any(grepl("volleymetric", dvlines, ignore.case = TRUE)), error = function(e) FALSE)
                 skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
+            } else if (ft == "psvb") {
+                skill_evaluation_decode <- "default"
             }
             if (ft == "dvw" && skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
-        } else if (skill_evaluation_decode == "default") {
-            ## as of March 2023, treat "default" as the default for the file type, so for hxml that's vm
-            if (ft == "hxml") skill_evaluation_decode <- "volleymetrics"
         }
         if (ft == "dvw") skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }
