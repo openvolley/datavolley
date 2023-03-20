@@ -172,7 +172,7 @@ h_row2code <- function(x, data_type, style) {
                                       pnum, ## zero-padded player number
                                       temp$skill,
                                       temp$skill_type_code, ## skill_type (tempo)
-                                      temp$evaluation_code,
+                                      na2t(temp$evaluation_code),
                                       na2t(case_when(temp$skill == "A" ~ temp$attack_code, temp$skill == "E" ~ temp$set_code, TRUE ~ "~~"), 2), ## attack combo code or setter call
                                       na2t(temp$set_type), ## target attacker
                                       na2t(temp$start_zone), na2t(temp$end_zone), na2t(temp$end_subzone), ## start, end, end subzone
