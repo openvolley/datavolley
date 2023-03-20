@@ -619,7 +619,7 @@ vsm_row2code <- function(x, data_type, style) {
     pnum <- lead0(case_when(is.na(temp$player) | temp$player %in% c("Unknown", "Unknown player") ~ "00", TRUE ~ temp$player))
     pnum[nchar(pnum) > 2 | grepl("^\\-", pnum)] <- "00" ## illegal numbers, treat as unknown
     ## defaults
-    if (is.null(default_scouting_table)) {
+    if (!is.null(default_scouting_table)) {
         for (ski in seq_len(nrow(default_scouting_table))) {
             temp$hit_type[temp$skill == default_scouting_table$skill[ski] & (is.na(temp$hit_type) | temp$hit_type == "~")] <- default_scouting_table$skill_type[ski]
             temp$effect[temp$skill == default_scouting_table$skill[ski] & (is.na(temp$effect) | temp$effect == "~")] <- default_scouting_table$evaluation_code[ski]
@@ -629,7 +629,7 @@ vsm_row2code <- function(x, data_type, style) {
                                       pnum, ## zero-padded player number
                                       temp$skill, ## skill
                                       temp$hit_type, ## skill_type (tempo)
-                                      temp$effect, ## evaluation_code
+                                      na2t(temp$effect), ## evaluation_code
                                       na2t(temp$combination, 2), ## attack combo code or setter call
                                       na2t(temp$target_attacker), ## target attacker
                                       na2t(temp$start_zone), na2t(temp$end_zone), na2t(temp$end_subzone), ## start, end, end subzone

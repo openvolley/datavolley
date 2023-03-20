@@ -162,7 +162,7 @@ h_row2code <- function(x, data_type, style) {
     pnum <- lead0(temp$player_number, na = "00")
     pnum[nchar(pnum) > 2 | grepl("^\\-", pnum)] <- "00" ## illegal numbers, treat as unknown
     ## defaults
-    if (is.null(default_scouting_table)) {
+    if (!is.null(default_scouting_table)) {
         for (ski in seq_len(nrow(default_scouting_table))) {
             temp$skill_type_code[temp$skill == default_scouting_table$skill[ski] & (is.na(temp$skill_type_code) | temp$skill_type_code == "~")] <- default_scouting_table$skill_type[ski]
             temp$evaluation_code[temp$skill == default_scouting_table$skill[ski] & (is.na(temp$evaluation_code) | temp$evaluation_code == "~")] <- default_scouting_table$evaluation_code[ski]
