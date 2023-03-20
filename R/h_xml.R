@@ -174,7 +174,7 @@ h_row2code <- function(x, data_type, style) {
                                       temp$skill_type_code, ## skill_type (tempo)
                                       temp$evaluation_code,
                                       na2t(case_when(temp$skill == "A" ~ temp$attack_code, temp$skill == "E" ~ temp$set_code, TRUE ~ "~~"), 2), ## attack combo code or setter call
-                                      na2t(temp$target_attacker), ## target attacker
+                                      na2t(temp$set_type), ## target attacker
                                       na2t(temp$start_zone), na2t(temp$end_zone), na2t(temp$end_subzone), ## start, end, end subzone
                                       na2t(case_when((is.na(temp$skill_subtype_code) | temp$skill_subtype_code == "~") & temp$skill == "A" ~ "H", TRUE ~ temp$skill_subtype_code)),
                                       na2t(temp$num_players_numeric),
@@ -440,11 +440,13 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     ##px$mid_coordinate <- dv_xy2index(px$mid_coordinate_x, px$mid_coordinate_y)
     ##px$end_coordinate <- dv_xy2index(px$end_coordinate_x, px$end_coordinate_y)
 
-    px$set_subtype <- if ("set_type" %in% names(px)) px$set_type else NA_character_
+    if ("set_type" %in% names(px)) px <- dplyr::rename(px, set_subtype = "set_type")
 
     ## combo codes
     px$attack_code <- h_attack_code(px, style = skill_evaluation_decode)
-    px <- left_join(px, x$meta$attacks %>% dplyr::select(attack_code = "code", target_attacker = "set_type", skill_type_code = "type", attack_description = "description"), by = "attack_code")
+    px <- left_join(px, x$meta$attacks %>% dplyr::select(attack_code = "code", "set_type", skill_type_code = "type", attack_description = "description"), by = "attack_code")
+    px$set_type[px$set_type %in% "-"] <- NA_character_
+
     ## no setter calls for beach
     if (file_type == "beach") {
         px$set_code <- px$set_type <- px$set_description <- NA_character_
