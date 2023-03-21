@@ -50,9 +50,9 @@ raw_vt_dv <- function(z) {
         if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
             as.numeric(strsplit(z, ";")[[1]][13])
         } else {
-            NA_real_
+            NA_integer_
         }},
-        error = function(e) NA_real_)
+        error = function(e) NA_integer_)
 }
 
 ## video time from raw line, for peranavolley format
@@ -69,9 +69,9 @@ raw_vt_pv <- function(z) {
         if (!is.null(z) && is.character(z) && nzchar(z) && !is.na(z)) {
             as.numeric(pv_pparse(z)$videoDuration)
         } else {
-            NA_real_
+            NA_integer_
         }
-    }, error = function(e) NA_real_)
+    }, error = function(e) NA_integer_)
 }
 
 ## video time from raw line, vsm format
@@ -79,13 +79,20 @@ raw_vt_pv <- function(z) {
 raw_vt_vsm <- function(z) {
     tryCatch({
         temp <- str_match_all(z, "\"time\"[[:space:]]*:[[:space:]]*([^,\\}\\]]+)")[[1]][, 2]
-        if (length(temp) == 1) as.numeric(temp) / 10 else NA_real_
-    }, error = function(e) NA_real_)
+        if (length(temp) == 1) round(as.numeric(temp) / 10) else NA_integer_
+    }, error = function(e) NA_integer_)
+}
+
+raw_vt_xml <- function(z) {
+    tryCatch({
+        temp <- str_match_all(z, "<start>([[:digit:]\\.]+)</start>")[[1]][, 2]
+        if (length(temp) == 1) round(as.numeric(temp)) else NA_integer_
+    }, error = function(e) NA_integer_)
 }
 
 video_time_from_raw <- function(raw_lines) {
     out <- tryCatch(vapply(raw_lines, function(z) {
-        if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else if (grepl("\"_id\":", z, fixed = TRUE)) raw_vt_vsm(z) else raw_vt_dv(z)
+        if (grepl("~{", z, fixed = TRUE)) raw_vt_pv(z) else if (grepl("\"_id\":", z, fixed = TRUE)) raw_vt_vsm(z) else if (grepl("<start>[[:digit:]\\.]+</start>", z)) raw_vt_xml(z) else raw_vt_dv(z)
     }, FUN.VALUE = 1.0, USE.NAMES = FALSE), error = function(e) rep(NA_real_, length(raw_lines)))
     if (length(out) < 1) out <- NA_real_
     out
