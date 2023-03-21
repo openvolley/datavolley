@@ -1,6 +1,6 @@
 Package: datavolley
 Title: Reading and Analyzing DataVolley Scout Files
-Version: 1.5.1
+Version: 1.5.2
 Authors@R: c(person("Ben", "Raymond", email = "ben@untan.gl", role = c("aut", "cre")),
              person("Adrien", "Ickowicz", role = "aut"),
              person("Tyler", "Widdison", role = "aut"),
@@ -24,7 +24,7 @@ Imports:
     readr,
     stringi,
     stringr,
-    vscoututils (>= 0.1.0),
+    vscoututils (>= 0.1.1),
     xml2
 Suggests:
     testthat,
