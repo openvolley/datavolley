@@ -661,7 +661,7 @@ print.summary.datavolley <- function(x,...) {
 #' @export
 dvlist_summary <- function(z) {
     out <- list(number_of_matches = length(z), number_of_sets = sum(vapply(z, function(z) as.integer(sum(z$meta$teams$sets_won)), FUN.VALUE = 1L, USE.NAMES = FALSE)))
-    out$date_range <- range(as.Date(bind_rows(lapply(z, function(q) q$meta$match))$date))
+    out$date_range <- range(as.Date(bind_rows(lapply(z, function(q) q$meta$match[, "date"]))$date))
     teams <- bind_rows(lapply(z, function(q) q$meta$teams[, c("team", "won_match")])) %>%
         group_by(.data$team) %>% dplyr::summarize(played = dplyr::n(), won = sum(.data$won_match), win_rate = .data$won / .data$played)
 
