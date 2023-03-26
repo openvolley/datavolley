@@ -684,6 +684,34 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
 
 
     ## some checks
+    ## fix any wildly mismatched net zones (against zone x)
+    idx <- grep("^[CZXVLP][12345]", px$attack_code)
+    if (length(idx) > 0) {
+        temp <- px[idx, c("file_line_number", "attack_code", "zone_x", "zone_y")] %>%
+            ## we have 16 x-zones, but 5 net zones, so it's not a 1:1 correspondence. Expect e.g. net zone 1 to be x-zone 1:3, but allow one extra x-zone
+            mutate(netz = substr(.data$attack_code, 2, 2), netz_ok = case_when(.data$netz == "1" ~ .data$zone_x < 5,
+                                                                               .data$netz == "2" ~ .data$zone_x %in% 3:7,
+                                                                               .data$netz == "3" ~ .data$zone_x %in% 7:10,
+                                                                               .data$netz == "4" ~ .data$zone_x %in% 10:14,
+                                                                               .data$netz == "5" ~ .data$zone_x > 12,
+                                                                               TRUE ~ TRUE))
+        if (!all(temp$netz_ok)) {
+            temp <- mutate(temp, netz2 = case_when(.data$netz_ok ~ .data$netz,
+                                                   .data$zone_x < 4 ~ "1",
+                                                   .data$zone_x %in% 4:6 ~ "2",
+                                                   .data$zone_x %in% 7:10 ~ "3",
+                                                   .data$zone_x %in% 11:13 ~ "4",
+                                                   .data$zone_x > 13 ~ "5",
+                                                   TRUE ~ .data$netz))
+            substr(temp$attack_code, 2, 2) <- temp$netz2
+            px$attack_code[idx] <- temp$attack_code
+            ##print(temp %>% dplyr::filter(.data$netz2 != .data$netz))
+            ##stop(sum(!temp$netz_ok))
+            temp <- temp %>% dplyr::filter(.data$netz2 != .data$netz)
+            msgs <- collect_messages(msgs, msg_text = paste0("The scouted attack net zone (", temp$netz, ") does not match the start zone (", temp$zone_x, "), replacing with net zone ", temp$netz2), line_nums = temp$file_line_number, severity = 2, xraw = x$raw)
+        }
+    }
+
     idx <- x$skill %in% c("Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball", "Timeout") & is.na(x$team)
     if (any(idx)) {
         msgs <- collect_messages(msgs, msg_text = "Skill code has missing or invalid team identifier", line_nums = px$file_line_number[idx], severity = 1, xraw = x$raw)
