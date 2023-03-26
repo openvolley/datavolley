@@ -393,6 +393,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
                              ##setter_calls = dv_default_setter_calls(data_type = file_type, style = skill_evaluation_decode),
                              ##winning_symbols = dv_default_winning_symbols(style = skill_evaluation_decode),
                              data_type = file_type, style = skill_evaluation_decode)
+    x$meta$filename <- filename
 
     px$skill_code <- h_skill_code(px)
     px <- mutate(px, skill_original = .data$skill, skill = case_when(.data$skill_code == "S" ~ "Serve",
