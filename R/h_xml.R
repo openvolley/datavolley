@@ -121,11 +121,11 @@ h_evaluation_code <- function(x) {
 }
 
 ## convert the 16 x 16 grid of zones to our x, y coordinates
-h_zone2dvxy <- function(z) (z - 1) / 5 + 19/32
+h_zone2dvxy <- function(z) (z - 1) * 3 / 16 + 19/32
 ## 16 x 16 grid of zones to standard zones
 h_uv2zone <- function(u, v, as_for_serve = FALSE) {
     out <- rep(NA_integer_, length(u))
-    idx <- !is.na(u)
+    idx <- !is.na(u) & !is.na(v)
     out[idx] <- dv_xy2zone(h_zone2dvxy(u[idx]), h_zone2dvxy(v[idx]), as_for_serve = as_for_serve)
     out
 }
