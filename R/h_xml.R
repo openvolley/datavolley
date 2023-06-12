@@ -282,6 +282,12 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     px <- dplyr::rename(px, set_number = "set", player_number = "player_jersey", h_code = "code") %>%
         mutate(across(all_of(c("home_score_start_of_point", "visiting_score_start_of_point", "set_number", "player_number", "zone_x", "zone_y", ##"from_zone_x", "from_zone_y",
                                "to_zone_x", "to_zone_y")), as.integer))
+    ## fill in gaps in score
+    px <- mutate(px,
+                 home_score_start_of_point = if_else(.data$set_number == lag(.data$set_number) & is.na(.data$home_score_start_of_point),
+                                                     lag(.data$home_score_start_of_point), .data$home_score_start_of_point),
+                 visiting_score_start_of_point = if_else(.data$set_number == lag(.data$set_number) & is.na(.data$visiting_score_start_of_point),
+                                                         lag(.data$visiting_score_start_of_point), .data$visiting_score_start_of_point))
 
     ## change team names that only have 3 characters
     players <- px %>% dplyr::filter(!is.na(.data$team)) %>% dplyr::select("team", "player_name", number = "player_number") %>% distinct %>% mutate(lastname = sub(",.*", "", .data$player_name), firstname = case_when(grepl(",", .data$player_name) ~ sub(".*,[[:space:]]*", "", .data$player_name), TRUE ~ ""), number = as.integer(.data$number)) %>%
