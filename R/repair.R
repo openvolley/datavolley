@@ -97,9 +97,13 @@ dv_repair <- function(x) {
         }
     }
     ## now re-check for duplicates and if they were not able to be fixed, throw an error
-    pnums <- find_duplicate_player_numbers(x)
+    tryCatch(pnums <- find_duplicate_player_numbers(x), error = function(e) {
+        stop("players with duplicate jersey numbers were not able to be fixed")
+    })
     if (nrow(pnums) > 0) stop("players with duplicate jersey numbers were not able to be fixed")
-    dpids <- find_duplicate_player_ids(x)
+    tryCatch(dpids <- find_duplicate_player_ids(x), error = function(e) {
+        stop("players with duplicate player IDs were not able to be fixed")
+    })
     if (length(dpids) > 0) stop("players with duplicate player IDs were not able to be fixed")
     if (length(msgs) > 0) {
         ## append to x$messages
