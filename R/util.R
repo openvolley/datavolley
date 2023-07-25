@@ -470,3 +470,8 @@ mapvalues <- function (x, from, to, warn_missing = TRUE) {
     x[!mapidxNA] <- to[mapidx[!mapidxNA]]
     x
 }
+
+single_unique_value_or_na_int <- function(x) {
+    u <- unique(na.omit(x))
+    if (length(u) == 1) u else NA_integer_
+}

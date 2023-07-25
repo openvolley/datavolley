@@ -251,10 +251,14 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         for (pidi in seq_along(pids)) {
             this <- thisex[thisex$point_id == pids[pidi], ]
             ## TODO convert warnings from dv_expand_rally_codes and dv_green_codes to messages to be captured here
-            this <- dv_expand_rally_codes(this %>% dplyr::rename(evaluation_code = "effect", player_number = "player", skill_type_code = "hit_type"),
-                                          last_home_setter_position = last_hsp, last_visiting_setter_position = last_vsp,
-                                          last_home_team_score = last_hts, last_visiting_team_score = last_vts, keepcols = keepcols, meta = mx) %>%
-                dplyr::rename(effect = "evaluation_code", player = "player_number", hit_type = "skill_type_code")
+            if ("effect" %in% names(this)) this <- this %>% dplyr::rename(evaluation_code = "effect")
+            if ("player" %in% names(this)) this <- this %>% dplyr::rename(player_number = "player")
+            if ("hit_type" %in% names(this)) this <- this %>% dplyr::rename(skill_type_code = "hit_type")
+            this <- dv_expand_rally_codes(this, last_home_setter_position = last_hsp, last_visiting_setter_position = last_vsp,
+                                          last_home_team_score = last_hts, last_visiting_team_score = last_vts, keepcols = keepcols, meta = mx)
+            if ("evaluation_code" %in% names(this)) this <- this %>% dplyr::rename(effect = "evaluation_code")
+            if ("player_number" %in% names(this)) this <- this %>% dplyr::rename(player = "player_number")
+            if ("skill_type_code" %in% names(this)) this <- this %>% dplyr::rename(hit_type = "skill_type_code")
             temp[[pidi]] <- this
             last_hts <- tail(this$home_team_score, 1)
             last_vts <- tail(this$visiting_team_score, 1)
