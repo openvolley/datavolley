@@ -282,6 +282,10 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     px <- dplyr::rename(px, set_number = "set", player_number = "player_jersey", h_code = "code") %>%
         mutate(across(all_of(c("home_score_start_of_point", "visiting_score_start_of_point", "set_number", "player_number", "zone_x", "zone_y", ##"from_zone_x", "from_zone_y",
                                "to_zone_x", "to_zone_y")), as.integer))
+    ## score per rally
+    temp <- px %>% group_by(.data$point_id) %>% dplyr::summarize(home_score_start_of_point = single_unique_value_or_na_int(.data$home_score_start_of_point),
+                                                                 visiting_score_start_of_point = single_unique_value_or_na_int(.data$visiting_score_start_of_point)) %>% ungroup
+    px <- px %>% dplyr::select(-"home_score_start_of_point", -"visiting_score_start_of_point") %>% left_join(temp, by = "point_id")
     ## fill in gaps in score
     px <- mutate(px,
                  home_score_start_of_point = if_else(.data$set_number == lag(.data$set_number) & is.na(.data$home_score_start_of_point),
