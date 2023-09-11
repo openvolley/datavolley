@@ -254,16 +254,12 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
                 idx <- attacks$team %eq% attacks$visiting_team
                 temp_roles <- left_join(attacks[idx, ], dplyr::distinct(x$meta$players_v[, c("player_id", "role")], .data$player_id, .keep_all = TRUE), by = "player_id")$role
                 attacks$player_role[idx] <- temp_roles
-                ## first-tempo attack by non-middle
+                ## first-tempo attack by non-middle (but allow slides, because e.g. the opposite might run a slide, albeit unusual)
                 chk <- attacks[!attacks$player_role %in% c(NA_character_, "middle") & grepl("^Quick", attacks$skill_type), ]
-                if (nrow(chk) > 0) {
-                    out <- rbind(out, chk_df(chk, "Quick attack by non-middle player", severity = 2))
-                }
-                ## middle attack not a quick ball
-                chk <- attacks[attacks$player_role %eq% "middle" & !grepl("^(Quick|Other)", attacks$skill_type), ]
-                if (nrow(chk) > 0) {
-                    out <- rbind(out, chk_df(chk, "Middle player made a non-quick attack", severity = 2))
-                }
+                if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Quick attack by non-middle player", severity = 2))
+                ## middle attack not a quick, slide, or other (e.g. overpass PR) ball
+                chk <- attacks[attacks$player_role %eq% "middle" & !grepl("^(Quick|Other|Slide)", attacks$skill_type), ]
+                if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Middle player made a non-quick attack", severity = 2))
             }
             ## back row player blocking
             chk <- (plays$skill %eq% "Block") &
