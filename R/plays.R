@@ -487,7 +487,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     out_home_setter_position <- rep(NA, N)
     out_visiting_setter_position <- rep(NA, N)
     ## vectorised end-of-set handling
-    done <- grepl("\\*\\*\\dset",in_code) ## end-of-set markers
+    done <- grepl("^\\*\\*\\dset", in_code, ignore.case = TRUE) ## end-of-set markers
     out_end_of_set[done] <- TRUE
 
     ## scouted codes where the player was unknown are indicated by $$ for the player number, e.g. *$$B
