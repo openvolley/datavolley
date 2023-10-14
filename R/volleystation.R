@@ -8,6 +8,7 @@ vs_int2role <- function(x) {
 
 vs_reformat_players <- function(jx, which = "home") {
     jt <- if (which == "home") jx$team$home else jx$team$away
+    if (!"position" %in% names(jt$players)) jt$players$position <- NA_integer_
     px <- tibble(X1 = if (which == "home") 0L else 1L,
                  number = as.integer(jt$players$shirtNumber),
                  X3 = seq_len(nrow(jt$players)) + if (which %in% "home") 0L else nrow(jx$team$home$players),
