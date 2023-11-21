@@ -614,18 +614,23 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
         temp2 <- vector("list", length(pids))
         last_hts <- last_vts <- 0L
         last_hsp <- thispx$home_setter_position[1]
+        last_hs <- thispx[[paste0("home_p", last_hsp)]][1]
         last_vsp <- thispx$visiting_setter_position[1]
+        last_vs <- thispx[[paste0("visiting_p", last_vsp)]][1]
         for (pidi in seq_along(pids)) {
             this <- thispx[thispx$point_id == pids[pidi], ]
             ## suppress warnings here, any issues should be captured by later validation checks
-            this <- dv_expand_rally_codes(this, last_home_setter_position = last_hsp, last_visiting_setter_position = last_vsp,
+            this <- dv_expand_rally_codes(this, last_home_setter_position = last_hsp, last_home_setter = last_hs,
+                                          last_visiting_setter_position = last_vsp, last_visiting_setter = last_vs,
                                           last_home_team_score = last_hts, last_visiting_team_score = last_vts,
                                           keepcols = keepcols, meta = x$meta, rebuild_codes = FALSE, do_warn = FALSE)
             temp2[[pidi]] <- this
             last_hts <- tail(this$home_team_score, 1)
             last_vts <- tail(this$visiting_team_score, 1)
             last_hsp <- tail(this$home_setter_position, 1)
+            last_hs <- tail(this[[paste0("home_p", last_hsp)]], 1)
             last_vsp <- tail(this$visiting_setter_position, 1)
+            last_vs <- tail(this[[paste0("visiting_p", last_vsp)]], 1)
         }
         thispx <- bind_rows(temp2)
         ## insert >LUp codes at start of set

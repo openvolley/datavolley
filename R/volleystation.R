@@ -247,7 +247,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         temp <- list()
         last_hts <- last_vts <- 0L
         last_hsp <- thisex$home_setter_position[1]
+        last_hs <- thisex[[paste0("home_p", last_hsp)]][1]
         last_vsp <- thisex$visiting_setter_position[1]
+        last_vs <- thisex[[paste0("visiting_p", last_vsp)]][1]
         pids <- unique(thisex$point_id)
         for (pidi in seq_along(pids)) {
             this <- thisex[thisex$point_id == pids[pidi], ]
@@ -255,7 +257,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             if ("effect" %in% names(this)) this <- this %>% dplyr::rename(evaluation_code = "effect")
             if ("player" %in% names(this)) this <- this %>% dplyr::rename(player_number = "player")
             if ("hit_type" %in% names(this)) this <- this %>% dplyr::rename(skill_type_code = "hit_type")
-            this <- dv_expand_rally_codes(this, last_home_setter_position = last_hsp, last_visiting_setter_position = last_vsp,
+            this <- dv_expand_rally_codes(this, last_home_setter_position = last_hsp, last_home_setter = last_hs,
+                                          last_visiting_setter_position = last_vsp, last_visiting_setter = last_vs,
                                           last_home_team_score = last_hts, last_visiting_team_score = last_vts, keepcols = keepcols, meta = mx)
             if ("evaluation_code" %in% names(this)) this <- this %>% dplyr::rename(effect = "evaluation_code")
             if ("player_number" %in% names(this)) this <- this %>% dplyr::rename(player = "player_number")
@@ -264,7 +267,9 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             last_hts <- tail(this$home_team_score, 1)
             last_vts <- tail(this$visiting_team_score, 1)
             last_hsp <- tail(this$home_setter_position, 1)
+            last_hs <- tail(this[[paste0("home_p", last_hsp)]], 1)
             last_vsp <- tail(this$visiting_setter_position, 1)
+            last_vs <- tail(this[[paste0("visiting_p", last_vsp)]], 1)
         }
         thisex <- bind_rows(temp)
         ## insert >LUp codes at start of set
