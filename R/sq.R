@@ -40,7 +40,8 @@ dv_read_sq <- function(filename, do_transliterate = FALSE, encoding = "guess", d
                     ## if that fails, we'll drop through to our previous guessing code
                 }
             }
-            encoding <- stri_enc_detect2(file_text)[[1]]$Encoding
+            encoding <- stri_enc_detect(file_text)[[1]]
+            encoding <- encoding$Encoding[encoding$Confidence > 0.8]
             ## add common ones
             encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS", "CP932")) ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
             encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
@@ -48,7 +49,7 @@ dv_read_sq <- function(filename, do_transliterate = FALSE, encoding = "guess", d
         encoding <- get_best_encodings(encoding, filename = filename, read_from = 1, read_to = length(file_text), expect_tildes = FALSE)
         if (length(encoding$encodings) < 1) stop("error in guessing text encoding")
         if (encoding$error_score > 0) {
-            ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect2
+            ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect
             ## now just brute force it over all possible encodings (will be slow)
             encoding_brute <- get_best_encodings(iconvlist(), filename = filename, read_from = 1, read_to = length(file_text))
             if (length(encoding_brute$encodings) > 0 && encoding_brute$error_score < encoding$error_score) encoding <- encoding_brute

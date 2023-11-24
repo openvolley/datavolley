@@ -122,10 +122,11 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                 idx <- suppressWarnings(grep("[3MATCH]", file_text, fixed=TRUE))
                 setdiff(as.character(read.table(text=file_text[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)$V9), "1") ## 1 seems to be used to indicate the default locale encoding, which doesn't help us
             }), error=function(e) NULL)
-            encoding <- stri_enc_detect2(tst)[[1]]$Encoding
+            encoding <- stri_enc_detect(tst)[[1]]
+            encoding <- encoding$Encoding[encoding$Confidence > 0.8]
             if (!is.null(textenc)) {
                 enclist <- intersect(paste0(c("windows-", "cp"), tolower(textenc)), tolower(iconvlist()))
-                enclist <- intersect(enclist, tolower(encoding)) ## don't use the embedded encoding if it isn't the suggested list from stri_enc_detect2
+                enclist <- intersect(enclist, tolower(encoding)) ## don't use the embedded encoding if it isn't the suggested list from stri_enc_detect
                 if (length(enclist)>0) {
                     try({
                         out <- read_dv(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], date_format = date_format, extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose, edited_meta=edited_meta)
@@ -151,7 +152,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         encoding <- get_best_encodings(encoding, filename = filename, read_from = idx1, read_to = idx2, expect_tildes = expect_tildes)
         if (length(encoding$encodings) < 1) stop("error in guessing text encoding")
         if (encoding$error_score > 0) {
-            ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect2
+            ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect
             ## now just brute force it over all possible encodings (will be slow)
             encoding_brute <- get_best_encodings(iconvlist(), filename = filename, read_from = idx1, read_to = idx2)
             if (length(encoding_brute$encodings) > 0 && encoding_brute$error_score < encoding$error_score) encoding <- encoding_brute
