@@ -760,13 +760,7 @@ dv_find_to_flip_coordinates <- function(x, target_start_end = "lower") {
 #' @export
 dv_cone_polygons <- function(zone, end = "upper", extended = FALSE) {
     if (is.numeric(zone)) {
-        if (zone %in% c(2, 9, 1)) {
-            zone <- "L"
-        } else if (zone %in% c(3, 8, 6)) {
-            zone <- "M"
-        } else if (zone %in% c(4, 7, 5)) {
-            zone <- "L"
-        }
+        zone <- if (zone %in% c(2, 9, 1)) "R" else if (zone %in% c(3, 8, 6)) "M" else if (zone %in% c(4, 7, 5)) "L"
     }
     zone <- match.arg(toupper(zone), c("L", "M", "C", "R"))
     end <- match.arg(tolower(end), c("lower", "upper"))
