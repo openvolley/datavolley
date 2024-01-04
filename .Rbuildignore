@@ -9,3 +9,4 @@
 docs/
 ^\.github$
 ^pkgdown$
+^datavolley\.Rproj$

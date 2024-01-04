@@ -186,36 +186,81 @@ remap_player_names=function(x,remap) {
         x <- list(x)
         was_list <- FALSE
     }
+    
+    # split player_name/to into first and last name 
+    
+    if ("team" %in% names(remap)) {
+      colnames(remap)[colnames(remap) == "from"] <- "name"
+      full_name <- str_split(remap$to, "\\s", n = 2)
+      remap$firstname <- sapply(full_name, function(name) name[1])
+      remap$lastname <- sapply(full_name, function(name) name[2])
+    } else {
+      colnames(remap)[colnames(remap) == "player_name"] <- "name"
+      full_name <- str_split(remap$name, "\\s", n = 2)
+      remap$firstname <- sapply(full_name, function(name) name[1])
+      remap$lastname <- sapply(full_name, function(name) name[2])
+    }
+    
+    
     for (k in 1:length(x)) {
         ## apply to team lists
         ##t <- "*"
         if ("team" %in% names(remap)) {
             this_team <- home_team(x[[k]])##x[[k]]$meta$teams$team[x[[k]]$meta$teams$home_away_team==t]
             this_to_change <- remap[remap$team==this_team,]
-            x[[k]]$meta$players_h$name <- mapvalues(x[[k]]$meta$players_h$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
+            
+            #x[[k]]$meta$players_h$name <- mapvalues(x[[k]]$meta$players_h$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
+            x[[k]]$meta$players_h <- rows_update(x[[k]]$meta$players_h, 
+                                                 remap[, c("name",  "firstname", "lastname")], 
+                                                 by = "name",
+                                                 unmatched = "ignore")
+            x[[k]]$meta$players_h$name <- str_trim(paste(x[[k]]$meta$players_h$firstname,
+                                                         x[[k]]$meta$players_h$lastname, sep = " "))
+            
         } else {
             ## name by id
-            idx <- x[[k]]$meta$players_h$player_id %in% remap$player_id
-            x[[k]]$meta$players_h$name[idx] <- mapvalues(x[[k]]$meta$players_h$player_id[idx],from=remap$player_id,to=remap$player_name,warn_missing=FALSE)
+            #idx <- x[[k]]$meta$players_h$player_id %in% remap$player_id
+            #x[[k]]$meta$players_h$name[idx] <- mapvalues(x[[k]]$meta$players_h$player_id[idx],from=remap$player_id,to=remap$player_name,warn_missing=FALSE)
+          
+          x[[k]]$meta$players_h <- rows_update(x[[k]]$meta$players_h, 
+                                               remap, 
+                                               by = "player_id",
+                                               unmatched = "ignore")
         }
+      
+          
         ##t <- "a"
         if ("team" %in% names(remap)) {
             this_team <- visiting_team(x[[k]])##x[[k]]$meta$teams$team[x[[k]]$meta$teams$home_away_team==t]
             this_to_change <- remap[remap$team==this_team,]
-            x[[k]]$meta$players_v$name <- mapvalues(x[[k]]$meta$players_v$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
+            #x[[k]]$meta$players_v$name <- mapvalues(x[[k]]$meta$players_v$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
+            
+            x[[k]]$meta$players_v <- rows_update(x[[k]]$meta$players_v, 
+                                                 remap[, c("name",  "firstname", "lastname")], 
+                                                 by = "name",
+                                                 unmatched = "ignore")
+            x[[k]]$meta$players_v$name <- str_trim(paste(x[[k]]$meta$players_v$firstname,
+                                                         x[[k]]$meta$players_v$lastname, sep = " "))
         } else {
-            idx <- x[[k]]$meta$players_v$player_id %in% remap$player_id
-            x[[k]]$meta$players_v$name[idx] <- mapvalues(x[[k]]$meta$players_v$player_id[idx],from=remap$player_id,to=remap$player_name,warn_missing=FALSE)
+            #idx <- x[[k]]$meta$players_v$player_id %in% remap$player_id
+            #x[[k]]$meta$players_v$name[idx] <- mapvalues(x[[k]]$meta$players_v$player_id[idx],from=remap$player_id,to=remap$player_name,warn_missing=FALSE)
+          x[[k]]$meta$players_v <- rows_update(x[[k]]$meta$players_v, 
+                                               remap, 
+                                               by = "player_id",
+                                               unmatched = "ignore")
         }            
+        
+        
         ## and to plays dataframe
         if ("team" %in% names(remap)) {
             for (ti in 1:nrow(remap)) {
-                x[[k]]$plays$player_name[x[[k]]$plays$team==remap$team[ti] & x[[k]]$plays$player_name==remap$from[ti]] <- remap$to[ti]
+                x[[k]]$plays$player_name[x[[k]]$plays$team==remap$team[ti] & x[[k]]$plays$player_name==remap$name[ti]] <- remap$to[ti]
             } 
         } else {
             idx <- x[[k]]$plays$player_id %in% remap$player_id
-            x[[k]]$plays$player_name[idx] <- mapvalues(x[[k]]$plays$player_id[idx],from=remap$player_id,to=remap$player_name,warn_missing=FALSE)
+            x[[k]]$plays$player_name[idx] <- mapvalues(x[[k]]$plays$player_id[idx],from=remap$player_id,to=remap$name,warn_missing=FALSE)
         }
+      
     }
     if (!was_list) {
         x[[1]]
@@ -224,7 +269,97 @@ remap_player_names=function(x,remap) {
     }
 }
 
-
+#' Change Player Information
+#' 
+#' An experimental function to replace \code{remap_player_names} as a more comprehensive remapping of player attributes
+#'
+#' @param x datavolley: a datavolley object as returned by \code{dv_read}, or list of such objects
+#' @param remap data.frame: data.frame of strings with columns team, name_from, and any of player_id, firstname, and lastname
+#'
+#' @return datavolley object or list with corresponding player names changed
+#'
+#' @examples
+#' \dontrun{
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
+  # x <- remap_player_info(x,data.frame(team=c("Nova KBM Branik","Braslovče"),
+  #     name_from=c("ELA PINTAR","KATJA MIHALINEC"),
+  #     firstname=c("Ela","Katja"), stringsAsFactors=FALSE))
+#'
+#' }
+#' 
+#' @export
+remap_player_info = function(x,remap) {
+  mandatory_columns <- c("team", "name_from")
+  if (!(inherits(x,"datavolley") | (is.list(x) && all(sapply(x,function(z)inherits(z,"datavolley"))))))
+    stop("x must be a datavolley object or list of such objects")
+  assert_that(is.data.frame(remap))
+  if (!(all(mandatory_columns %in% names(remap)) && all(setdiff(
+    names(remap), mandatory_columns) %in%  c("player_id", "firstname", "lastname")) && ncol(remap) > 2 )) {
+    stop("remap data.frame must have column names \"team\" and \"name_from\", AND at least one of \"player_id\", \"firstname\", and \"lastname\"")
+  }
+  ##remap <- colwise(as.character)(remap) ## enforce all cols to be character
+  for (k in seq_len(ncol(remap))) remap[,k] <- as.character(remap[,k]) ## enforce all cols to be character
+  # not sure if this is still necessary
+  was_list <- TRUE
+  if (inherits(x,"datavolley")) {
+    x <- list(x)
+    was_list <- FALSE
+  }
+  
+  colnames(remap)[colnames(remap) == "name_from"] <- "name"
+  for (k in 1:length(x)) {
+    ## apply to team lists
+    ##t <- "*"
+    
+    ## modify players_h and players_v
+    
+    # Home Team
+    x[[k]]$meta$players_h$team <- home_team(x[[k]])
+    x[[k]]$meta$players_h <- rows_update(x[[k]]$meta$players_h, remap,
+                                         by = c("team", "name"), unmatched = "ignore")
+    x[[k]]$meta$players_h$name <- str_trim(paste(x[[k]]$meta$players_h$firstname,
+                                                 x[[k]]$meta$players_h$lastname, sep = " "))
+   
+    
+    # Visiting team
+    x[[k]]$meta$players_v$team <- visiting_team(x[[k]])
+    x[[k]]$meta$players_v <- rows_update(x[[k]]$meta$players_v, remap,
+                                         by = c("team", "name"), unmatched = "ignore")
+    x[[k]]$meta$players_v$name <- str_trim(paste(x[[k]]$meta$players_v$firstname,
+                                                 x[[k]]$meta$players_v$lastname, sep = " "))
+    
+    ## modify plays dataframe
+    
+    dummy_df <- data.frame(
+      team = c(x[[k]]$meta$players_h$team, x[[k]]$meta$players_v$team),
+      player_number = c(x[[k]]$meta$players_h$number, x[[k]]$meta$players_v$number),
+      player_name = c(x[[k]]$meta$players_h$name, x[[k]]$meta$players_v$name),
+      player_id = c(x[[k]]$meta$players_h$player_id, x[[k]]$meta$players_v$player_id)
+    )
+    
+    x[[k]]$plays <- rows_update(x[[k]]$plays, dummy_df , by = c("team", "player_number"), unmatched = "ignore")
+    
+    ## update player_id values 
+    if("player_id" %in% names(remap) ) {
+      
+    team_player_num = ifelse(x[[k]]$file_type == "indoor", 1:6, 1:2)
+      # gotta get team names
+    for (thisp in team_player_num)
+      x[[k]]$plays[,paste0("home_player_id",thisp)] <- get_player_id(rep("*",nrow(x[[k]]$plays)),x[[k]]$plays[,paste0("home_p",thisp)],x[[k]]$meta)
+    for (thisp in team_player_num)
+      x[[k]]$plays[,paste0("visiting_player_id",thisp)] <- get_player_id(rep("a",nrow(x[[k]]$plays)),x[[k]]$plays[,paste0("visiting_p",thisp)],x[[k]]$meta)
+    }
+    
+    # remove the added columns
+    x[[k]]$meta$players_h$team <- NULL
+    x[[k]]$meta$players_v$team <- NULL
+  }
+  if (!was_list) {
+    x[[1]]
+  } else {
+    x
+  }
+}
 
 #' Attempt to build a player name remapping table
 #'
