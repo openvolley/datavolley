@@ -211,7 +211,7 @@ remap_player_names=function(x,remap) {
             
             #x[[k]]$meta$players_h$name <- mapvalues(x[[k]]$meta$players_h$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
             x[[k]]$meta$players_h <- rows_update(x[[k]]$meta$players_h, 
-                                                 remap[, c("name",  "firstname", "lastname")], 
+                                                 this_to_change[, c("name",  "firstname", "lastname")], 
                                                  by = "name",
                                                  unmatched = "ignore")
             x[[k]]$meta$players_h$name <- str_trim(paste(x[[k]]$meta$players_h$firstname,
@@ -236,7 +236,7 @@ remap_player_names=function(x,remap) {
             #x[[k]]$meta$players_v$name <- mapvalues(x[[k]]$meta$players_v$name,this_to_change$from,this_to_change$to,warn_missing=FALSE)
             
             x[[k]]$meta$players_v <- rows_update(x[[k]]$meta$players_v, 
-                                                 remap[, c("name",  "firstname", "lastname")], 
+                                                 this_to_change[, c("name",  "firstname", "lastname")], 
                                                  by = "name",
                                                  unmatched = "ignore")
             x[[k]]$meta$players_v$name <- str_trim(paste(x[[k]]$meta$players_v$firstname,
