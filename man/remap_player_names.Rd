@@ -12,7 +12,7 @@ remap_player_names(x, remap)
 \item{remap}{data.frame: data.frame of strings with columns team, from, and to}
 }
 \value{
-datavolley object or list with corresponding player names changed
+A datavolley object or list with corresponding player names changed
 }
 \description{
 A player name can sometimes be spelled incorrectly, particularly if there are character encoding issues. This can be a particular problem when combining data from multiple files. A player matching the \code{team} and \code{from} name entries in a row in \code{remap} is renamed to the corresponding \code{to} value. Alternatively, \code{remap} can be provided with the columns \code{player_id} and \code{player_name}: all player name entries associated with a given \code{player_id} will be changed to the associated \code{player_name}.

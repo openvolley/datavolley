@@ -2,7 +2,7 @@
 % Please edit documentation in R/cleaning_names.R
 \name{remap_player_info}
 \alias{remap_player_info}
-\title{Change Player Information}
+\title{Change player information}
 \usage{
 remap_player_info(x, remap)
 }
@@ -12,15 +12,17 @@ remap_player_info(x, remap)
 \item{remap}{data.frame: data.frame of strings with columns team, name_from, and any of player_id, firstname, and lastname}
 }
 \value{
-datavolley object or list with corresponding player names changed
+A datavolley object or list with corresponding player names changed
 }
 \description{
-An experimental function to replace \code{remap_player_names} as a more comprehensive remapping of player attributes
+An experimental function to replace \code{remap_player_names} as a more comprehensive remapping of player attributes.
 }
 \examples{
 \dontrun{
   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
-
+  x <- remap_player_info(x, data.frame(team = c("Nova KBM Branik", "Braslovče"),
+                                       name_from=c("ELA PINTAR", "KATJA MIHALINEC"),
+                                       firstname = c("Ela", "Katja"), stringsAsFactors = FALSE))
 }
 
 }
