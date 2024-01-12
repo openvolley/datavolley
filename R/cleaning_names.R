@@ -182,7 +182,7 @@ remap_player_names <- function(x,remap) {
     if (!(setequal(names(remap), c("from", "team", "to")) || setequal(names(remap), c("player_id"," player_name")))) {
         stop("remap data.frame must either have column names \"team\", \"from\", \"to\" OR \"player_id\", \"player_name\"")
     }
-    for (k in seq_len(ncol(remap))) remap[, k] <- as.character(remap[, k]) ## enforce all cols to be character
+    for (k in seq_len(ncol(remap))) remap[[k]] <- as.character(remap[[k]]) ## enforce all cols to be character
     was_list <- TRUE
     if (inherits(x,"datavolley")) {
         x <- list(x)
@@ -267,7 +267,7 @@ remap_player_info = function(x, remap) {
           all(setdiff(names(remap), mandatory_columns) %in%  c("player_id", "firstname", "lastname")) && ncol(remap) > 2 )) {
         stop("remap data.frame must have column names \"team\" and \"name_from\", AND at least one of \"player_id\", \"firstname\", and \"lastname\"")
     }
-    for (k in seq_len(ncol(remap))) remap[, k] <- as.character(remap[, k]) ## enforce all cols to be character
+    for (k in seq_len(ncol(remap))) remap[[k]] <- as.character(remap[[k]]) ## enforce all cols to be character
 
     was_list <- TRUE
     if (inherits(x,"datavolley")) {
