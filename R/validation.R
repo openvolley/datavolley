@@ -88,7 +88,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
     pv <- x$meta$players_v
     pv$team <- visiting_team(x)
     pv$hv <- "visiting"
-    plyrs <- rbind(ph, pv)
+    plyrs <- bind_rows(ph, pv)
     dpids <- plyrs$player_id[duplicated(plyrs$player_id)]
     for (dpid in unique(dpids)) {
         idx <- plyrs$player_id %eq% dpid
