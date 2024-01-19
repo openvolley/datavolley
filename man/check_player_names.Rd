@@ -19,8 +19,8 @@ Player names can sometimes be spelled incorrectly, particularly if there are cha
 }
 \examples{
 \dontrun{
-  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
- check_player_names(x)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
+  check_player_names(x)
 }
 
 }

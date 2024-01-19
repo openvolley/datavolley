@@ -19,9 +19,9 @@ An experimental function to replace \code{remap_player_names} as a more comprehe
 }
 \examples{
 \dontrun{
-  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
   x <- remap_player_info(x, data.frame(team = c("Nova KBM Branik", "Braslovče"),
-                                       name_from=c("ELA PINTAR", "KATJA MIHALINEC"),
+                                       name_from = c("ELA PINTAR", "KATJA MIHALINEC"),
                                        firstname = c("Ela", "Katja"), stringsAsFactors = FALSE))
 }
 

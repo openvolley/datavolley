@@ -19,13 +19,15 @@ A player name can sometimes be spelled incorrectly, particularly if there are ch
 }
 \examples{
 \dontrun{
-  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
-  x <- remap_player_names(x,data.frame(team=c("Nova KBM Branik","Braslovče"),
-      from=c("ELA PINTAR","KATJA MIHALINEC"),
-      to=c("Ela PINTAR","Katja MIHALINEC"),stringsAsFactors=FALSE))
+  x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
+  x <- remap_player_names(x, data.frame(team = c("Nova KBM Branik", "Braslovče"),
+                                        from = c("ELA PINTAR", "KATJA MIHALINEC"),
+                                        to = c("Ela PINTAR", "Katja MIHALINEC"),
+                                        stringsAsFactors = FALSE))
 
-  x <- remap_player_names(x,data.frame(player_id=c("id1","id2"),
-      player_name=c("name to use 1","name to use 2"),stringsAsFactors=FALSE))
+  x <- remap_player_names(x, data.frame(player_id = c("id1", "id2"),
+                                        player_name = c("name to use 1", "name to use 2"),
+                                        stringsAsFactors = FALSE))
 }
 }
 \seealso{

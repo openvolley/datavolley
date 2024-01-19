@@ -21,7 +21,7 @@ A team name can sometimes be spelled incorrectly, particularly if there are char
 }
 \examples{
 \dontrun{
-  x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
+  x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
   summary(x)
 
   ## rename a team based just on team name

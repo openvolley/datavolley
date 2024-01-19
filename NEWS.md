@@ -1,3 +1,9 @@
+datavolley 1.6.0
+================
+- propagate player name changes (made via `remap_player_names()`) into first and last names in metadata (thanks @awosoga)
+- added `remap_player_info()` function (thanks @awosoga)
+- other small bugfixes
+
 datavolley 1.5.0
 ================
 - support for .vsm files
