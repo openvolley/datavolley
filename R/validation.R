@@ -88,7 +88,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type = "
     pv <- x$meta$players_v
     pv$team <- visiting_team(x)
     pv$hv <- "visiting"
-    plyrs <- bind_rows(ph, pv)
+    plyrs <- tryCatch(rbind(ph, pv), error = function(e) bind_rows(ph, pv)) ## rbind fails when ph, pv have different columns (can happen with pv files); bind_rows fails when cols have different types
     dpids <- plyrs$player_id[duplicated(plyrs$player_id)]
     for (dpid in unique(dpids)) {
         idx <- plyrs$player_id %eq% dpid
