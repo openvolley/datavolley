@@ -179,7 +179,7 @@ remap_player_names <- function(x,remap) {
         stop("x must be a datavolley object or list of such objects")
     }
     assert_that(is.data.frame(remap))
-    if (!(setequal(names(remap), c("from", "team", "to")) || setequal(names(remap), c("player_id"," player_name")))) {
+    if (!(setequal(names(remap), c("from", "team", "to")) || setequal(names(remap), c("player_id", "player_name")))) {
         stop("remap data.frame must either have column names \"team\", \"from\", \"to\" OR \"player_id\", \"player_name\"")
     }
     for (k in seq_len(ncol(remap))) remap[[k]] <- as.character(remap[[k]]) ## enforce all cols to be character
