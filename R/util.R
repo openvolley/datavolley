@@ -332,6 +332,15 @@ action_extra <- function(x) {
            "")
 }
 
+## replacement for enc::read_lines_enc now that enc has been archived Feb 2024
+read_lines_enc <- function(path, file_encoding = "UTF-8") {
+    con <- file(path, encoding = file_encoding)
+    on.exit(close(con), add = TRUE)
+    lines <- readLines(con, warn = FALSE, n = -1L, ok = TRUE, skipNul = FALSE, encoding = "UTF-8")
+    Encoding(lines) <- "UTF-8"
+    stringi::stri_enc_toutf8(lines)
+}
+
 get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read_to = 90, expect_tildes = TRUE) {
     if (read_to < read_from) stop("read_to cannot be less than read_from")
     ## badchars/badwords indicate characters/words that we don't expect to see, so the presence of any of these indicates that we've got the wrong file encoding
@@ -367,7 +376,7 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     ## get the \uxx numbers from sprintf("%x",utf8ToInt(tolower(dodgy_string_or_char))) or paste0("\\u", sprintf("%x", utf8ToInt(tolower("dodgy"))), collapse = "")
     read_with_enc <- function(filename, enc_to_test) {
         ## read with specified encoding and convert to UTF8
-        tryCatch(enc::read_lines_enc(filename, file_encoding = enc_to_test), warning = function(w) NA_character_, error = function(e) NA_character_)
+        tryCatch(read_lines_enc(filename, file_encoding = enc_to_test), warning = function(w) NA_character_, error = function(e) NA_character_)
     }
     testtxt <- lapply(encodings_to_test, read_with_enc, filename = filename)
     suppressWarnings({

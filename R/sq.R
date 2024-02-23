@@ -74,10 +74,8 @@ dv_read_sq <- function(filename, do_transliterate = FALSE, encoding = "guess", d
                 message(sprintf(" (Other possible options: %s)", paste(other_enc, collapse = ", ")))
         }
     }
-    file_text <- enc::read_lines_enc(filename, file_encoding = encoding)
-    if (do_transliterate) {
-        file_text <- stri_trans_general(file_text, "latin-ascii")
-    }
+    file_text <- read_lines_enc(filename, file_encoding = encoding)
+    if (do_transliterate) file_text <- stri_trans_general(file_text, "latin-ascii")
 
     ## player info
     x <- data.table::fread(text = file_text[seq_along(file_text)[-1:-2]], data.table = FALSE, header = FALSE)

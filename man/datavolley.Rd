@@ -2,6 +2,7 @@
 % Please edit documentation in R/datavolley.R
 \docType{package}
 \name{datavolley}
+\alias{datavolley-package}
 \alias{datavolley}
 \title{\pkg{datavolley}}
 \description{
@@ -9,6 +10,15 @@ Provides basic functions for parsing Datavolley scout files. Datavolley is a sof
 }
 \details{
 The example data files provided with the datavolley package came from \url{http://www.odbojka.si/}.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://datavolley.openvolley.org}
+  \item \url{https://github.com/openvolley/datavolley}
+  \item Report bugs at \url{https://github.com/openvolley/datavolley/issues}
+}
+
 }
 \author{
 Ben Raymond \email{ben@untan.gl}

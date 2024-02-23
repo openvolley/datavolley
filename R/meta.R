@@ -365,14 +365,10 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
         out$teams$won_match <- c(FALSE, TRUE)
     }
 
-    tryCatch(out$players_h <- read_players(txt,"home",surname_case),
-             error=function(e) stop("could not read the [3PLAYERS-H] section of the input file")) ## fatal
-    tryCatch(out$players_v <- read_players(txt,"visiting",surname_case),
-             error=function(e) stop("could not read the [3PLAYERS-V] section of the input file")) ## fatal
-    tryCatch(out$attacks <- read_attacks(txt),
-             error=function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
-    tryCatch(out$sets <- read_setter_calls(txt),
-             error=function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
+    tryCatch(out$players_h <- read_players(txt, "home",surname_case), error = function(e) stop("could not read the [3PLAYERS-H] section of the input file")) ## fatal
+    tryCatch(out$players_v <- read_players(txt, "visiting",surname_case), error = function(e) stop("could not read the [3PLAYERS-V] section of the input file")) ## fatal
+    tryCatch(out$attacks <- read_attacks(txt), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
+    tryCatch(out$sets <- read_setter_calls(txt), error = function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
     out$match_id <- dv_create_meta_match_id(out)
     if (length(msgs) > 0) {
