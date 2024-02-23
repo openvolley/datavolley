@@ -62,6 +62,20 @@ dv_repair <- function(x) {
         }
     }
 
+    ## kludgey fix for beach files where players have not been given distinct player IDs
+    if (isTRUE(grepl("beach", x$file_meta$file_type))) {
+        if (isTRUE(nrow(x$meta$players_h) == 2 && x$meta$players_h$player_id[1] == x$meta$players_h$player_id[2])) {
+            x$meta$players_h$player_id[1] <- paste0(x$meta$players_h$player_id[1], "-", substr(x$meta$players_h$firstname[1], 1, 1), substr(x$meta$players_h$lastname[1], 1, 1))
+            x$meta$players_h$player_id[2] <- paste0(x$meta$players_h$player_id[2], "-", substr(x$meta$players_h$firstname[2], 1, 1), substr(x$meta$players_h$lastname[2], 1, 1))
+            msgs <- c(msgs, "Identical home team player IDs (beach) have been resolved")
+        }
+        if (isTRUE(nrow(x$meta$players_v) == 2 && x$meta$players_v$player_id[1] == x$meta$players_v$player_id[2])) {
+            x$meta$players_v$player_id[1] <- paste0(x$meta$players_v$player_id[1], "-", substr(x$meta$players_v$firstname[1], 1, 1), substr(x$meta$players_v$lastname[1], 1, 1))
+            x$meta$players_v$player_id[2] <- paste0(x$meta$players_v$player_id[2], "-", substr(x$meta$players_v$firstname[2], 1, 1), substr(x$meta$players_v$lastname[2], 1, 1))
+            msgs <- c(msgs, "Identical visiting team player IDs (beach) have been resolved")
+        }
+    }
+
     ## duplicate player IDs (either team)
     dpids <- find_duplicate_player_ids(x)
     if (length(dpids) > 0) {

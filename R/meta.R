@@ -378,17 +378,6 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
         msgs <- data.frame(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character())
     }
     out$video <- read_video(txt)
-    ## kludgey fix for beach files where players have not been given distinct player IDs
-    if (isTRUE(grepl("beach", out$match$regulation))) {
-        if (isTRUE(nrow(out$players_h) ==2 && out$players_h$player_id[1] == out$players_h$player_id[2])) {
-            out$players_h$player_id[1] <- paste0(out$players_h$player_id[1], "-", substr(out$players_h$firstname[1], 1, 1), substr(out$players_h$lastname[1], 1, 1))
-            out$players_h$player_id[2] <- paste0(out$players_h$player_id[2], "-", substr(out$players_h$firstname[2], 1, 1), substr(out$players_h$lastname[2], 1, 1))
-        }
-        if (isTRUE(nrow(out$players_v) ==2 && out$players_v$player_id[1] == out$players_v$player_id[2])) {
-            out$players_v$player_id[1] <- paste0(out$players_v$player_id[1], "-", substr(out$players_v$firstname[1], 1, 1), substr(out$players_v$lastname[1], 1, 1))
-            out$players_v$player_id[2] <- paste0(out$players_v$player_id[2], "-", substr(out$players_v$firstname[2], 1, 1), substr(out$players_v$lastname[2], 1, 1))
-        }
-    }
     list(meta = out, messages = msgs)
 }
 
