@@ -366,8 +366,8 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
         out$teams$won_match <- c(FALSE, TRUE)
     }
 
-    tryCatch(out$players_h <- read_players(txt, "home",surname_case), error = function(e) stop("could not read the [3PLAYERS-H] section of the input file")) ## fatal
-    tryCatch(out$players_v <- read_players(txt, "visiting",surname_case), error = function(e) stop("could not read the [3PLAYERS-V] section of the input file")) ## fatal
+    tryCatch(out$players_h <- read_players(txt, "home", surname_case), error = function(e) stop("could not read the [3PLAYERS-H] section of the input file")) ## fatal
+    tryCatch(out$players_v <- read_players(txt, "visiting", surname_case), error = function(e) stop("could not read the [3PLAYERS-V] section of the input file")) ## fatal
     tryCatch(out$attacks <- read_attacks(txt), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
     tryCatch(out$sets <- read_setter_calls(txt), error = function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
@@ -378,7 +378,18 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
         msgs <- data.frame(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character())
     }
     out$video <- read_video(txt)
-    list(meta=out,messages=msgs)
+    ## kludgey fix for beach files where players have not been given distinct player IDs
+    if (isTRUE(grepl("beach", out$match$regulation))) {
+        if (isTRUE(nrow(out$players_h) ==2 && out$players_h$player_id[1] == out$players_h$player_id[2])) {
+            out$players_h$player_id[1] <- paste0(out$players_h$player_id[1], "-", substr(out$players_h$firstname[1], 1, 1), substr(out$players_h$lastname[1], 1, 1))
+            out$players_h$player_id[2] <- paste0(out$players_h$player_id[2], "-", substr(out$players_h$firstname[2], 1, 1), substr(out$players_h$lastname[2], 1, 1))
+        }
+        if (isTRUE(nrow(out$players_v) ==2 && out$players_v$player_id[1] == out$players_v$player_id[2])) {
+            out$players_v$player_id[1] <- paste0(out$players_v$player_id[1], "-", substr(out$players_v$firstname[1], 1, 1), substr(out$players_v$lastname[1], 1, 1))
+            out$players_v$player_id[2] <- paste0(out$players_v$player_id[2], "-", substr(out$players_v$firstname[2], 1, 1), substr(out$players_v$lastname[2], 1, 1))
+        }
+    }
+    list(meta = out, messages = msgs)
 }
 
 get_player_name <- function(team,number,meta) {
