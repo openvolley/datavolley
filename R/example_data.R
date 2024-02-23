@@ -1,10 +1,9 @@
 #' Example DataVolley files provided as part of the datavolley package
 #'
-#' @references The example data files came from \url{http://www.odbojka.si/}
 #' @param choice numeric: which data file to return?
 #' \itemize{
-#'   \item{1 - the January 2015 Slovenian junior women's final between Braslovče and Nova KBM Branik}
-#'   \item{2 - the December 2012 men's Slovenian national championship semifinal between ACH Volley and Maribor}
+#'   \item{1 - the January 2015 Slovenian junior women's final between Braslovče and Nova KBM Branik (obtained from \url{http://www.odbojka.si/}}
+#'   \item{2 - the December 2012 men's Slovenian national championship semifinal between ACH Volley and Maribor (obtained from \url{http://www.odbojka.si/}}
 #'   \item{3 - Nicaragua vs Cuba women from the Pan American Cup, August 2022 (vsm format, courtesy Christophe Elek)}
 #' }
 #' @return path to the file
