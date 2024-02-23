@@ -1,3 +1,9 @@
+datavolley 1.6.3
+================
+- remove dependence on `enc` package, which has been archived from CRAN
+- enforce the `start_coordinate` column in meta$attacks table to be integer
+- other small improvements
+
 datavolley 1.6.0
 ================
 - propagate player name changes (made via `remap_player_names()`) into first and last names in metadata (thanks @awosoga)
