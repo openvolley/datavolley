@@ -4,7 +4,7 @@
 \alias{validate_dv}
 \title{Additional validation checks on a DataVolley file}
 \usage{
-validate_dv(x, validation_level = 2, options = list(), file_type = "indoor")
+validate_dv(x, validation_level = 2, options = list(), file_type)
 }
 \arguments{
 \item{x}{datavolley: datavolley object as returned by \code{dv_read}}
@@ -16,7 +16,7 @@ validate_dv(x, validation_level = 2, options = list(), file_type = "indoor")
   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP","XY"))}
 }}
 
-\item{file_type}{string: "indoor" or "beach"}
+\item{file_type}{string: "indoor" or "beach". If not provided, will be taken from the \code{x$file_meta$file_format} entry}
 }
 \value{
 data.frame with columns message (the validation message), file_line_number (the corresponding line number in the DataVolley file), video_time, and file_line (the actual line from the DataVolley file).
