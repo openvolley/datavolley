@@ -1,7 +1,7 @@
-pandoc: '2.18'
-pkgdown: 2.0.3
+pandoc: 3.1.12
+pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
   datavolley: datavolley.html
-last_built: 2023-03-18T23:09Z
+last_built: 2024-02-24T00:05Z
 

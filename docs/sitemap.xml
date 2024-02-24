@@ -103,6 +103,12 @@
     <loc>/reference/dv_repair.html</loc>
   </url>
   <url>
+    <loc>/reference/dv_sync_summary.html</loc>
+  </url>
+  <url>
+    <loc>/reference/dv_sync_video.html</loc>
+  </url>
+  <url>
     <loc>/reference/dv_write.html</loc>
   </url>
   <url>
@@ -170,6 +176,9 @@
   </url>
   <url>
     <loc>/reference/read_dv.html</loc>
+  </url>
+  <url>
+    <loc>/reference/remap_player_info.html</loc>
   </url>
   <url>
     <loc>/reference/remap_player_names.html</loc>
