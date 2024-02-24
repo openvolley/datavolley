@@ -484,3 +484,7 @@ single_unique_value_or_na_int <- function(x) {
     u <- unique(na.omit(x))
     if (length(u) == 1) u else NA_integer_
 }
+
+mean_nna <- function(...) mean(..., na.rm = TRUE)
+qmax <- function(...) suppressWarnings(max(..., na.rm = TRUE))
+qmin <- function(...) suppressWarnings(min(..., na.rm = TRUE))
