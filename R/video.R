@@ -1,69 +1,77 @@
-## helper functions for syncing scout files with video
+## helper functions for synchronization scout files with video
 
 #' Synchronize video times
 #'
-#' Warning: experimental! This function uses the scouted clock time of each serve and some simple rules to align each scouted contact with its (approximately correct) time in the corresponding match video.
+#' This function uses the scouted clock time of each serve and some rules to align each scouted contact with its (approximately correct) time in the corresponding match video. Warning: experimental!
 #'
-#' When a match is scouted live, the clock time of each serve will usually be correct because the scout can enter the serve code at the actual time of serve. But the remainder of the touches in the rally might not be at the correct relative times, if the scout can't keep up with the live action. This function uses some simple rules to better synchronize the scouted contacts and corresponding match video.
+#' When a match is scouted live, the clock time of each serve will usually be correct because the scout can enter the serve code at the actual time of serve. But the remainder of the touches in the rally might not be at their correct times, if the scout can't keep up with the live action. This function makes some assumptions about typical contact-to-contact times to better synchronize the scouted contacts with the corresponding match video.
 #'
-#' The \code{config} object contains a set of times (in seconds), which you can adjust to suit your scouting style and level of play. If you have an already-synchronized dvw file, the \code{\link{dv_sync_summary}} function can provide some guidance as to what these values should be. The \code{config} object contains the following entries:
+#' Freeball digs can optionally be treated in the same way as serves, with their scouted clock times used directly in the synchronization process. Obviously this only makes sense if the scout has actually been consistent in their timing when entering freeball digs, but assuming that is the case then setting the \code{freeball_dig_time_offset} to a non-NA value will improve the synchronization of rallies with freeballs. These rallies otherwise tend to synchronize poorly, because the play is messy and less predictable compared to in-system rallies.
+#'
+#' Note that this synchronization relies on the clock times in the file being consistent, and so it will only work if the match has been scouted in a single sitting (either live, or from video playback but without pausing/rewinding/fast-forwarding the video).
+#'
+#' The synchronization is a two-step process. In the first step, the video time of each scouted contact is estimated (i.e. the actual time that the player made contact with the ball). In the second step, skill-specific offsets are added to those contact times. (This is important if your video montage software uses the synchronized video times directly, because you will normally want a video clip to start some seconds before the actual contact of interest).
+#'
+#' The \code{contact_times} object contains a set of times (in seconds), which you can adjust to suit your scouting style and level of play. If you have an already-synchronized dvw file, the \code{\link{dv_sync_summary}} function can provide some guidance as to what these values should be. The \code{contact_times} object contains the following entries:
 #' \itemize{
-#'   \item S_R - the time between serve and reception
-#'   \item S_E - the time between serve and opposition first set (but see also \code{SQ} and \code{SM}, below)
-#'   \item E_A - the time between set and attack (but see also \code{EQ} and \code{EH}, below)
-#'   \item A_B - the time between attack and block
-#'   \item A_A - the time between attacks in the rally (i.e. attack to counter-attack)
-#'   \item D_E - the time between dig and set
-#'   \item RDov - the time between reception or dig overpass and the next touch by the opposition
+#'   \item SQ - time between the scouted serve time and actual serve contact for jump serves
+#'   \item SM - time between the scouted serve time and actual serve contact for jump-float serves
+#'   \item SO - time between the scouted serve time and actual serve contact for all other serves
+#'   \item SQ_R, SM_R, SO_R - the time between serve contact and reception contact for jump, jump-float, and other serves
+#'   \item R_E - the time between reception contact and set contact
+#'   \item EQ_A - the time between set contact and attack contact for quick sets
+#'   \item EH_A - the time between set contact and attack contact for high sets
+#'   \item EO_A - the time between set contact and attack contact for all other sets
+#'   \item A_B - the time between attack contact and block contact
+#'   \item A_D - the time between attack contact and dig contact (no intervening block touch)
+#'   \item A_B_D - the time between attack contact and dig contact (with block touch)
+#'   \item D_E - the time between dig contact and set contact
+#'   \item RDov - the time between reception or dig overpass contact and the next touch by the opposition
 #'   \item END - the time between the last contact and end-of-rally marker
-#'   \item SQ - S_E adjustment for jump serves (this value gets added to S_E for jump serves)
-#'   \item SM - S_E adjustment for jump-float serves (this value gets added S_E for jump-float serves)
-#'   \item EQ - E_A adjustment for quick sets (this value gets added to E_A for quick sets)
-#'   \item EH - E_A adjustment for high sets (this value gets added to E_A for high sets)
 #' }
 #'
-#' @param x datavolley: a single datavolley object as returned by \code{\link{dv_read}}
-#' @param first_serve_time numeric or string: the time of the first serve in the video. This can be a numeric value giving the time in seconds, or a string of the form "MM:SS" (minutes and seconds) or "HH:MM:SS" (hours, minutes and seconds)
-#' @param freeball_digs_accurate logical: if \code{TRUE}, treat the clock time of each freeball dig as being accurate (in the same way that serve times are treated as being accurate). Obviously this requires that the scout has been accurate in their timing when entering freeball digs, but assuming that is the case then setting \code{freeball_digs_accurate} to \code{TRUE} will improve the synchronization of rallies with freeballs (which otherwise tends to be poor, because the play is messy and less predictable compared to in-system rallies)
-#' @param config list: a set of parameters that control the syncing process. See Details, below
+#' The \code{offsets} object defines the offset (in seconds) to be added to each contact time in the second pass of the synchronization process. It contains the entries "S" (serve), "R" (reception), "E" (set), "A" (attack), "D", (dig), "B" (block), and "F" (freeball).
 #'
-#' @return A modified copy of \code{x}
+#' Note that the entries in \code{contact_times} and \code{offsets} can be fractions. The actual video time entries in the returned file are required to be integers and so the final values will be rounded, but using fractional values (particularly for the \code{contact_times} entries) can give better accuracy in the intermediate calculations.
+#'
+#' @param x datavolley: a single datavolley object as returned by \code{\link{dv_read}}
+#' @param first_serve_contact numeric or string: the video time of the first serve contact. This can be a numeric value giving the time in seconds from the start of the video, or a string of the form "MM:SS" (minutes and seconds) or "HH:MM:SS" (hours, minutes and seconds)
+#' @param freeball_dig_time_offset numeric: if non-NA, the clock times of freeball digs will be used directly in the synchronization process. Freeball digs will be aligned using their clock times relative to the first serve contact clock time, with this \code{freeball_dig_time_offset} value (in seconds) added. So if when scouting live you typically enter freeball digs one second after they happen, use \code{freeball_dig_time_offset = -1}. If \code{freeball_dig_time_offset} is NA, which is the default, the clock times of freeball digs will not be used in the synchronization process
+#' @param contact_times list: a set of parameters that control the synchronization process. See Details, below
+#' @param offsets list: a list set of offsets to be added to each contact time in the second step of the synchronization process. See Details, below. If \code{offsets} is NULL or an empty list, no offsets are applied
+#' @param enforce_order logical: the estimated contact times will always be time-ordered (the contact time of a given touch cannot be prior to the contact time of a preceding touch). But the offsets can be different for different skills, leading to final video times that are not time ordered. These will be fixed if \code{enforce_order} is TRUE
+#' @param ... : name-value pairs of elements to override the defaults in \code{dv_sync_contact_times} and \code{dv_sync_offsets}
+#'
+#' @return A copy of \code{x} with modified \code{video_time} values in its \code{plays} component
 #' @seealso \code{\link{dv_sync_summary}}
 #'
 #' @examples
 #' x <- dv_read(dv_example_file())
-#' ## first serve was at 54s in the video
-#' x <- dv_sync_video(x, first_serve_time = 54)
+#' ## first serve contact was at 54s in the video
+#' x <- dv_sync_video(x, first_serve_contact = 54)
 #'
 #' ## with a custom configuration
-#' my_config <- dv_sync_video_config()
-#' my_config$S_A <- 4 ## change entries as necessary
-#' ## first serve was at 3:35 in the video
-#' x <- dv_sync_video(x, first_serve_time = "3:35", config = my_config)
+#' my_contact_times <- dv_sync_contact_times(SQ = 3) ## override default entries as necessary
+#' ## first serve contact was at 3:35 in the video
+#' x <- dv_sync_video(x, first_serve_contact = "3:35", contact_times = my_contact_times)
 #'
 #' @export
-dv_sync_video <- function(x, first_serve_time, freeball_digs_accurate = FALSE, config = dv_sync_video_config()) {
-    if (is.string(first_serve_time)) {
-        temp <- str_trim(strsplit(first_serve_time, ":")[[1]])
+dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA, contact_times = dv_sync_contact_times(), offsets = dv_sync_offsets(), enforce_order = TRUE) {
+    if (is.string(first_serve_contact)) {
+        temp <- str_trim(strsplit(first_serve_contact, ":")[[1]])
         temp <- suppressWarnings(as.numeric(temp))
-        if (length(temp) > 3 || length(temp) < 1 || any(is.na(temp))) stop("first_serve_time is in an unexpected format")
-        first_serve_time <- sum(c(rep(0, 3 - length(temp)), temp) * c(3600, 60, 1))
+        if (length(temp) > 3 || length(temp) < 1 || any(is.na(temp))) stop("first_serve_contact is in an unexpected format")
+        first_serve_contact <- sum(c(rep(0, 3 - length(temp)), temp) * c(3600, 60, 1))
     }
-    if (is.na(first_serve_time) || !is.numeric(first_serve_time)) stop("first_serve_time is not numeric")
-    if (first_serve_time < 0) stop("first_serve_time cannot be negative")
+    if (is.na(first_serve_contact) || !is.numeric(first_serve_contact)) stop("first_serve_contact is not numeric")
+    if (first_serve_contact < 0) stop("first_serve_contact cannot be negative")
 
     px <- plays(x)
     if (all(is.na(px$time))) stop("px does not have any `time` column entries")
 
-    ## equality with NAs considered false
-    `%eq%` <- function(x,y) x == y & !is.na(x) & !is.na(y)
-    `%neq%` <- function(x,y) x != y & !is.na(x) & !is.na(y)
+    contact_times$A_A <- contact_times$A_D + contact_times$D_E + contact_times$EO_A
 
     vt <- rep(NA_integer_, nrow(px)) ## new video times, to be populated
-
-    config$S_A <- config$S_E + config$E_A
-    config$A_D <- config$A_A - config$D_E - config$E_A
-    if (config$A_D < 0) warning("config possibly inconsistent: time between attack and dig is ", config$A_D)
 
     ## "Freeball" skill can be used both for sending a freeball to the opposition as well as receiving one, so disambiguate these usages
     px <- mutate(px, .FREEBALL_OVER = .data$skill %eq% "Freeball" &
@@ -77,8 +85,8 @@ dv_sync_video <- function(x, first_serve_time, freeball_digs_accurate = FALSE, c
     ## clock times within-rally are assumed not to be reliable, except for serves and (optionally) freeball digs
     if (any(diff(px$time[s_idx]) < 0, na.rm = TRUE)) warning("at least one serve has a `time` entry that is out of order (`time` goes backwards from one serve to the next), resync results might be poor")
 
-    sq_idx <- px$skill %eq% "Jump serve"
-    sm_idx <- px$skill %eq% "Jump-float serve"
+    sq_idx <- px$skill_type %eq% "Jump serve"
+    sm_idx <- px$skill_type %eq% "Jump-float serve"
 
     r_idx <- px$skill %eq% "Reception" & lag(s_idx)
 
@@ -89,7 +97,7 @@ dv_sync_video <- function(x, first_serve_time, freeball_digs_accurate = FALSE, c
     d_idx <- px$skill %eq% "Dig" | fd_idx
     b_idx <- px$skill %eq% "Block"
 
-    if (freeball_digs_accurate) {
+    if (!is.na(freeball_dig_time_offset)) {
         if (any(diff(px$time[s_idx | fd_idx]) < 0, na.rm = TRUE)) warning("at least one serve/freeball dig has a `time` entry that is out of order (`time` goes backwards from one action to the next), resync results might be poor")
     }
 
@@ -100,58 +108,106 @@ dv_sync_video <- function(x, first_serve_time, freeball_digs_accurate = FALSE, c
     if (sum(s_idx) < 1) stop("could not find any serves in px")
     ## difference of all serve clock times to the first serve clock time
     clock_time_diff <- difftime(px$time[s_idx], px$time[which(s_idx)[1]], units = "secs")
-    ## align each serve time to this
-    vt[s_idx] <- first_serve_time + clock_time_diff
-    if (freeball_digs_accurate) {
-        ## do the same with freeball digs
-        clock_time_diff <- difftime(px$time[fd_idx], px$time[which(s_idx)[1]], units = "secs")
-        vt[fd_idx] <- first_serve_time + clock_time_diff
+    ## align each scouted serve time to this
+    vt[s_idx] <- first_serve_contact + clock_time_diff
+    ## then adjust to serve contact time according to serve type
+    vt[sq_idx] <- vt[sq_idx] + contact_times$SQ
+    vt[sm_idx] <- vt[sm_idx] + contact_times$SM
+    vt[s_idx & !sq_idx & !sm_idx] <- vt[s_idx & !sq_idx & !sm_idx] + contact_times$SO
+    if (!is.na(freeball_dig_time_offset)) {
+        ## align freeball digs by clock time relative to serve contact time
+        clock_time_diff <- difftime(px$time[fd_idx], px$time[which(s_idx)[1]], units = "secs") ## time difference relative to first serve contact clock time
+        vt[fd_idx] <- first_serve_contact + clock_time_diff + freeball_dig_time_offset
     }
 
     ## serve - reception
-    vt[which(r_idx)] <- vt[which(r_idx) - 1] + config$S_R
+    vt[which(r_idx & lag(sq_idx))] <- vt[which(r_idx & lag(sq_idx)) - 1] + contact_times$SQ_R
+    vt[which(r_idx & lag(sm_idx))] <- vt[which(r_idx & lag(sm_idx)) - 1] + contact_times$SM_R
+    vt[which(r_idx & !lag(sq_idx) & !lag(sm_idx))] <- vt[which(r_idx & !lag(sq_idx) & !lag(sm_idx)) - 1] + contact_times$SO_R
 
-    ## first attack or reception-phase freeball over
-    ## serve followed by opp attack 2 contacts later (no set scouted, but assumed that there actually was one)
+    ## reception-phase set
+    e1_idx <- e_idx & lag(r_idx) & lag(px$team) == px$team
+    vt[which(e1_idx)] <- vt[which(e1_idx) - 1L] + contact_times$R_E
+
+    ## reception-phase attack
+    ## with set scouted
+    a1_idx <- lag(r_idx, 2) & lag(e_idx) & (a_idx | fo_idx) & lag(px$team, 2) == px$team & lag(px$team) == px$team
+    ## adjust for set types
+    vt[which(a1_idx & aq_idx)] <- vt[which(a1_idx & aq_idx) - 1L] + contact_times$EQ_A
+    vt[which(a1_idx & ah_idx)] <- vt[which(a1_idx & ah_idx) - 1L] + contact_times$EH_A
+    vt[which(a1_idx & !aq_idx & !ah_idx)] <- vt[which(a1_idx & !aq_idx & !ah_idx) - 1L] + contact_times$EO_A
+    ## without set scouted. This assumes that there was a set, it just wasn't scouted
     ## TODO allow for P2 attacks
-    a1_idx <- lag(s_idx, 2) & lag(r_idx) & (a_idx | fo_idx) & lag(px$team) %eq% px$team
-    vt[which(a1_idx)] <- vt[which(a1_idx) - 2] + config$S_A
-    ## adjust for serve type Q and M
-    vt[which(a1_idx & lag(sq_idx, 2))] <- vt[which(a1_idx & lag(sq_idx, 2))] + config$SQ
-    vt[which(a1_idx & lag(sm_idx, 2))] <- vt[which(a1_idx & lag(sm_idx, 2))] + config$SM
-    ## adjust for attack types
-    vt[which(a1_idx & aq_idx)] <- vt[which(a1_idx & aq_idx)] + config$EQ
-    vt[which(a1_idx & ah_idx)] <- vt[which(a1_idx & ah_idx)] + config$EH
-
-    ## first attack with set scouted
-    a1_idx <- lag(s_idx, 3) & lag(r_idx, 2) & lag(e_idx) & (a_idx | fo_idx) & lag(px$team, 2) %eq% px$team & lag(px$team) %eq% px$team
-    vt[which(a1_idx)] <- vt[which(a1_idx) - 3] + config$S_A
-    ## adjust for serve type Q and M
-    vt[which(a1_idx & lag(sq_idx, 3))] <- vt[which(a1_idx & lag(sq_idx, 3))] + config$SQ
-    vt[which(a1_idx & lag(sm_idx, 3))] <- vt[which(a1_idx & lag(sm_idx, 3))] + config$SM
-    ## adjust for attack types
-    vt[which(a1_idx & aq_idx)] <- vt[which(a1_idx & aq_idx)] + config$EQ
-    vt[which(a1_idx & ah_idx)] <- vt[which(a1_idx & ah_idx)] + config$EH
+    a1_idx <- lag(r_idx, 1) & (a_idx | fo_idx) & lag(px$team) == px$team
+    vt[which(a1_idx & aq_idx)] <- vt[which(a1_idx & aq_idx) - 1L] + contact_times$EQ_A + contact_times$D_E
+    vt[which(a1_idx & ah_idx)] <- vt[which(a1_idx & ah_idx) - 1L] + contact_times$EH_A + contact_times$D_E
+    vt[which(a1_idx & !aq_idx & !ah_idx)] <- vt[which(a1_idx & !aq_idx & !ah_idx) - 1L] + contact_times$EO_A + contact_times$D_E
 
     ## next touch after overpass on reception
-    ov_idx <- is.na(vt) & lag(s_idx, 2) & lag(r_idx) & lag(px$evaluation_code %eq% "/") & skill_idx & lag(px$team) %neq% px$team
-    vt[which(ov_idx)] <- vt[which(ov_idx) - 2] + config$S_R + config$RDov
-    ## adjust for serve type
-    vt[which(ov_idx & lag(sq_idx, 2))] <- vt[which(ov_idx & lag(sq_idx, 2))] + config$SQ
-    vt[which(ov_idx & lag(sm_idx, 2))] <- vt[which(ov_idx & lag(sm_idx, 2))] + config$SM
-    ## next touch after overpass on dig
-    ov_idx <- is.na(vt) & lag(d_idx) & lag(px$evaluation_code %eq% "/") & skill_idx & lag(px$team) %neq% px$team
-    vt[which(ov_idx)] <- vt[which(ov_idx) - 1] + config$RDov
+    ov_idx <- is.na(vt) & lag(r_idx) & lag(px$evaluation_code %eq% "/") & skill_idx & lag(px$team) != px$team ## optionally remove the "/" condition?
+    vt[which(ov_idx)] <- vt[which(ov_idx) - 1] + contact_times$RDov
 
-    ## set after dig or reception
-    this <- is.na(vt) & e_idx & lag(d_idx | r_idx) & px$team %eq% lag(px$team)
-    vt[which(this)] <- vt[which(this) - 1] + config$D_E
+    ## blocks
+    this <- which(is.na(vt) & b_idx & lag(a_idx))
+    vt[this] <- vt[this - 1] + contact_times$A_B
 
     ## attack after set, necessary in case there was no reception-phase attack but a first transition dig/freeball dig was scouted
     this <- is.na(vt) & a_idx & lag(e_idx) & px$team %eq% lag(px$team)
-    vt[which(this)] <- vt[which(this) - 1] + config$E_A
-    vt[which(this & aq_idx)] <- vt[which(this & aq_idx)] + config$EQ
-    vt[which(this & ah_idx)] <- vt[which(this & ah_idx)] + config$EH
+    vt[which(this & aq_idx)] <- vt[which(this & aq_idx) - 1L] + contact_times$EQ_A
+    vt[which(this & ah_idx)] <- vt[which(this & ah_idx) - 1L] + contact_times$EH_A
+    vt[which(this & !aq_idx & !ah_idx)] <- vt[which(this & !aq_idx & !ah_idx) - 1L] + contact_times$EO_A
+
+    trans_sync <- function(vt) {
+        ## set preceding attack
+        this <- is.na(vt) & e_idx & lead(a_idx) & px$team == lead(px$team)
+        vt[which(this & lead(aq_idx))] <- vt[which(this & lead(aq_idx))] - contact_times$EQ_A
+        vt[which(this & lead(ah_idx))] <- vt[which(this & lead(ah_idx))] - contact_times$EH_A
+        vt[which(this & !lead(aq_idx) & !lead(ah_idx))] <- vt[which(this & !lead(aq_idx) & !lead(ah_idx)) + 1L] - contact_times$EO_A
+
+        ## digs
+        this <- which(is.na(vt) & d_idx & lag(a_idx))
+        vt[this] <- vt[this - 1] + contact_times$A_D
+        ## or with block touch
+        this <- which(is.na(vt) & d_idx & lag(b_idx) & lag(a_idx, 2))
+        vt[this] <- vt[this - 2] + contact_times$A_B_D
+
+        ## next touch after dig overpass
+        ov_idx <- is.na(vt) & lag(d_idx) & skill_idx & lag(px$team) != px$team
+        vt[which(ov_idx)] <- vt[which(ov_idx) - 1] + contact_times$RDov
+
+        ## freeballs over
+        ov_idx <- is.na(vt) & lag(fo_idx) & skill_idx & lag(px$team) != px$team
+        vt[which(ov_idx)] <- vt[which(ov_idx) - 1] + contact_times$RDov
+
+        ## other digs following an opposition touch, e.g. freeball digs not already picked up
+        this <- which(is.na(vt) & d_idx & lag(px$team) != px$team)
+        vt[this] <- vt[this - 1] + contact_times$A_D
+
+        ## set after dig (maybe not preceding attack, e.g. preceding a freeball over)
+        this <- which(is.na(vt) & e_idx & lag(d_idx) & px$team == lag(px$team))
+        vt[this] <- vt[this - 1] + contact_times$D_E
+
+        ## dig (inc freeball dig) preceding set
+        this <- which(is.na(vt) & d_idx & lead(e_idx))
+        vt[this] <- vt[this + 1] - contact_times$D_E
+
+        ## attack following set
+        this <- is.na(vt) & a_idx & lag(e_idx)
+        vt[which(this & aq_idx)] <- vt[which(this & aq_idx) - 1L] + contact_times$EQ_A
+        vt[which(this & ah_idx)] <- vt[which(this & ah_idx) - 1L] + contact_times$EH_A
+        vt[which(this & !aq_idx & !ah_idx)] <- vt[which(this & !aq_idx & !ah_idx) - 1L] + contact_times$EO_A
+
+        ## this is problematic if we aren't scouting transition sets, because we can't differentiate P2 from regular dig-set-attack
+        ## attack following own team touch that wasn't scouted as a set (e.g. P2)
+        this <- which(is.na(vt) & (a_idx | fo_idx) & px$team == lag(px$team))
+        vt[this] <- vt[this - 1] + contact_times$EO_A + contact_times$D_E
+
+        ## blocks
+        this <- which(is.na(vt) & b_idx & lag(a_idx))
+        vt[this] <- vt[this - 1] + contact_times$A_B
+        vt
+    }
+    for (loop in 1:10) vt <- trans_sync(vt)
 
     ## attack to counter-attack by opposition
     last_attack_time <- NA_real_
@@ -161,7 +217,7 @@ dv_sync_video <- function(x, first_serve_time, freeball_digs_accurate = FALSE, c
     for (i in which(a_idx)) {
         if (isTRUE(is.na(vt[i]) && !is.na(last_attack_time) &&
                    last_point_id == px$point_id[i] && (last_team_touch_id == px$team_touch_id[i] - 1) && last_attack_team != px$team[i])) {
-            vt[i] <- last_attack_time + config$A_A
+            vt[i] <- last_attack_time + contact_times$A_A
         }
         last_attack_time <- vt[i]
         last_attack_team <- px$team[i]
@@ -169,59 +225,13 @@ dv_sync_video <- function(x, first_serve_time, freeball_digs_accurate = FALSE, c
         last_team_touch_id <- px$teamtouch_id[i]
     }
 
-    ## we have to run the transition sync process multiple times, because each time through it will add some video times to some rows and then
-    ##  that will allow some other rows to be populated on the next pass
-
-    trans_sync <- function(vt) {
-        ## set preceding attack
-        this <- is.na(vt) & e_idx & lead(a_idx) & px$team %eq% lead(px$team)
-        vt[which(this)] <- vt[which(this) + 1] - config$E_A
-        vt[which(this & lead(aq_idx))] <- vt[which(this & lead(aq_idx))] - config$EQ
-        vt[which(this & lead(ah_idx))] <- vt[which(this & lead(ah_idx))] - config$EH
-
-        ## digs
-        this <- which(is.na(vt) & d_idx & lag(a_idx))
-        vt[this] <- vt[this - 1] + config$A_D
-        ## or with block touch
-        this <- which(is.na(vt) & d_idx & lag(b_idx) & lag(a_idx, 2))
-        vt[this] <- vt[this - 2] + config$A_D
-
-        ## other digs following an opposition touch, e.g. freeball digs not already picked up
-        this <- which(is.na(vt) & d_idx & lag(px$team) %neq% px$team)
-        vt[this] <- vt[this - 1] + config$A_D
-
-        ## set after dig (maybe not preceding attack, e.g. preceding a freeball over)
-        this <- which(is.na(vt) & e_idx & lag(d_idx) & px$team %eq% lag(px$team))
-        vt[this] <- vt[this - 1] + config$D_E
-
-        ## dig (inc freeball dig) preceding set
-        this <- which(is.na(vt) & d_idx & lead(e_idx))
-        vt[this] <- vt[this + 1] - config$D_E
-
-        ## attack following set
-        this <- is.na(vt) & a_idx & lag(e_idx)
-        vt[which(this)] <- vt[which(this) - 1] + config$E_A
-        vt[which(this & aq_idx)] <- vt[which(this & aq_idx)] - config$EQ
-        vt[which(this & ah_idx)] <- vt[which(this & ah_idx)] - config$EH
-
-        ## attack following own team touch that wasn't scouted as a set (e.g. P2)
-        this <- which(is.na(vt) & a_idx & px$team %eq% lag(px$team))
-        vt[this] <- vt[this - 1] + config$E_A
-
-        ## blocks
-        this <- which(is.na(vt) & b_idx & lag(a_idx))
-        vt[this] <- vt[this - 1] + config$A_B
-        vt
-    }
-    for (loop in 1:10) vt <- trans_sync(vt)
-
     ## at this point we should have most of the ball contacts synced. Anything left over should be things that don't fit our expected patterns above
     ## so just do our best to patch them up
 
     ## any un-synced touch following an opposition touch
-    this <- which(is.na(vt) & px$team %neq% lag(px$team) & px$point_id %eq% lag(px$point_id))
-    vt[this] <- vt[this - 1] + config$A_D
-    for (loop in 1:10) vt <- trans_sync(vt)
+    this <- which(is.na(vt) & skill_idx & lag(skill_idx) & px$team != lag(px$team) & px$point_id == lag(px$point_id))
+    vt[this] <- vt[this - 1] + contact_times$A_D
+    for (loop in 1:5) vt <- trans_sync(vt)
 
     ## interpolate all remaining skill times
     s_synced <- !is.na(vt) & skill_idx
@@ -232,31 +242,86 @@ dv_sync_video <- function(x, first_serve_time, freeball_digs_accurate = FALSE, c
         vt[which(ridx)] <- approx(ridx_synced, vt[ridx_synced], which(ridx))$y
     }
 
-    ## end of rally
-    is_point <- grepl("^[a\\*]p", px$code)
-    is_green_code <- grepl("^[a\\*]\\$\\$&H[#=]", px$code) ## green codes [a*]$$&H[#=]
-    last_point_id <- -1
-    last_skill_vt <- NA_integer_
-    for (i in seq_len(nrow(px))) {
-        if (px$point_id[i] %eq% last_point_id && !is.na(last_skill_vt) && is.na(vt[i])) {
-            if (is_green_code[i]) vt[i] <- last_skill_vt
-            if (is_point[i]) vt[i] <- last_skill_vt + config$END
-        }
-        if (isTRUE(skill_idx[i])) last_skill_vt <- vt[i]
-        last_point_id <- px$point_id[i]
-    }
-
     ## timeouts
     to_idx <- grepl("timeout", px$skill, ignore.case = TRUE)
     this <- to_idx & is.na(vt)
     vt[which(this)] <- vt[which(this) - 1]
 
-    ## non-touch rows
-    non_skill <- is.na(px$skill) | to_idx
+    ## non-touch rows, but not green codes or point markers
+    is_point <- grepl("^[a\\*]p", px$code)
+    is_green_code <- grepl("^[a\\*]\\$\\$&H[#=]", px$code) ## green codes [a*]$$&H[#=]
+    non_skill <- (is.na(px$skill) | to_idx) & !is_point & !is_green_code
     this <- which(is.na(vt) & non_skill)
     for (i in setdiff(this, 1)) vt[i] <- vt[i - 1]
 
     ## do we need a final pass to fill anything left over?
+
+    px$contact_time <- vt
+
+    ## step 2: apply offsets
+    char2skill <- list(S = "Serve", R = "Reception", E = "Set", A = "Attack", B = "Block", D = "Dig", F = "Freeball")
+    align_to_prior_skill <- function(vt, target_idx, prior_skill_char) {
+        if (is.logical(target_idx)) target_idx <- which(target_idx)
+        prior_skill <- unname(unlist(char2skill[strsplit(prior_skill_char, "")[[1]]]))
+        if (length(prior_skill) < 1) {
+            warning("cannot match offset to prior skill '", prior_skill_char, "'")
+            return(vt) ## do nothing
+        }
+        for (i in target_idx) {
+            prior_sk <- which(px$skill %in% prior_skill & px$point_id == px$point_id[i])
+            prior_sk <- tail(prior_sk[prior_sk %in% c(i - 1, i - 2)], 1) ## preceding two rows only, or tail(prior_sk[prior_sk < i], 1) ## for any preceding row
+            if (length(prior_sk) == 1) vt[i] <- vt[prior_sk]
+        }
+        vt
+    }
+
+    if (length(offsets) > 0) {
+        offsets_idx <- list(S = s_idx, R = r_idx, E = e_idx, A = a_idx, B = b_idx, D = d_idx, F = fo_idx) ## d_idx includes freeball digs
+        for (pass in 1:2) {
+            ## do numeric offsets on first pass, then character
+            for (skill_char in names(offsets)) {
+                if (!is.null(offsets[[skill_char]]) && !is.na(offsets[[skill_char]])) {
+                    if (pass == 1 && is.numeric(offsets[[skill_char]])) {
+                        vt[offsets_idx[[skill_char]]] <- vt[offsets_idx[[skill_char]]] + offsets[[skill_char]]
+                    } else if (pass == 2 && is.character(offsets[[skill_char]])) {
+                        if (skill_char == "S") {
+                            warning("S offset cannot be character, ignoring")
+                        } else {
+                            vt <- align_to_prior_skill(vt, target_idx = offsets_idx[[skill_char]], prior_skill_char = offsets[[skill_char]])
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ## end of rally, end of set, green codes, substitutions, setter positions
+    ## do these after offsets have been applied
+    last_point_id <- -1
+    last_skill_vt <- NA_integer_
+    is_sub_or_pos <- grepl("^[a\\*][zZcC]", px$code) | grepl("^\\*\\*[[:digit:]]set", px$code)
+    for (i in seq_len(nrow(px))) {
+        if (px$point_id[i] %eq% last_point_id && !is.na(last_skill_vt) && is.na(vt[i])) {
+            if (is_green_code[i]) {
+                vt[i] <- last_skill_vt
+            } else if (is_point[i]) {
+                vt[i] <- last_skill_vt + contact_times$END
+            }
+        }
+        if (i > 1 && isTRUE(is_sub_or_pos[i]) && is.na(vt[i])) vt[i] <- vt[i - 1] + 1L - isTRUE(is_sub_or_pos[i - 1])
+        if (isTRUE(skill_idx[i])) last_skill_vt <- vt[i]
+        last_point_id <- px$point_id[i]
+    }
+
+    if (isTRUE(enforce_order)) {
+        last_vt <- -1
+        for (i in seq_along(vt)) {
+            if (!is.na(vt[i])) {
+                if (vt[i] < last_vt) vt[i] <- last_vt
+                last_vt <- vt[i]
+            }
+        }
+    }
 
     px$video_time <- round(vt) ## video times have to be integer
     plays(x) <- px[, setdiff(names(px), c(".FREEBALL_OVER"))]
@@ -265,20 +330,40 @@ dv_sync_video <- function(x, first_serve_time, freeball_digs_accurate = FALSE, c
 
 #' @rdname dv_sync_video
 #' @export
-dv_sync_video_config <- function() list(S_R = 0, ## time between serve and reception
-                                     S_E = 3, ## serve to set
-                                     E_A = 1, ## set to attack
-                                     A_B = 0, ## attack to block
-                                     A_A = 3.5, ## attack to counter-attack
-                                     D_E = 2, ## dig to set
-                                     RDov = 3, ## reception or dig overpass to next touch by opposition
-                                     END = 3, ## last action to end-of-rally marker
-                                     SQ = 2, ## S_E adjustment for jump serves (add this to S_E for jump serves)
-                                     SM = 1, ## S_E adjustment for jump-float serves (add this S_E for jump-float serves)
-                                     EQ = -0.5, ## E_A adjustment for quick set (add this to E_A for quick sets)
-                                     EH = 1) ## E_A adjustment for high set (add this to E_A for high sets)
+dv_sync_contact_times <- function(...) {
+    defaults <- list(SQ = 4, ## time between the scouted serve time and actual serve contact for jump serves
+                     SM = 2, ## time between the scouted serve time and actual serve contact for jump-float serves
+                     SO = 1, ## time between the scouted serve time and actual serve contact for all other serves
+                     SQ_R = 1, ## time between serve contact and reception contact (jump serves)
+                     SM_R = 1.5, ## time between serve contact and reception contact (jump-float serves)
+                     SO_R = 2, ## time between serve contact and reception contact (all other serves)
+                     R_E = 3, ## time between reception contact and set
+                     EQ_A = 1, ## time between set and attack for quick sets
+                     EH_A = 2, ## time between set and attack for high sets
+                     EO_A = 1.5, ## time between set and attack for all other sets
+                     A_B = 0, ## time between attack and block
+                     A_D = 1, ## time between attack and dig (no block touch)
+                     A_B_D = 1, ## time between attack and dig (with block touch)
+                     D_E = 3, ## time between dig and set
+                     RDov = 3, ## reception or dig overpass to next touch by opposition
+                     END = 3) ## last action to end-of-rally marker
+    out <- list(...)
+    non <- setdiff(names(out), names(defaults))
+    if (length(non) > 0) warning("unrecognized element", if (length(non) > 1) "s", " ", paste(non, collapse = ", "), ", ignoring")
+    out <- out[names(out) %in% names(defaults)]
+    c(out, defaults[!names(defaults) %in% names(out)])
+}
 
-
+#' @rdname dv_sync_video
+#' @export
+dv_sync_offsets <- function(...) {
+    defaults <- list(S = -5, R = "S", E = -8, A = -5, B = -5, D = -6, F = -5)
+    out <- list(...)
+    non <- setdiff(names(out), names(defaults))
+    if (length(non) > 0) warning("unrecognized element", if (length(non) > 1) "s", " ", paste(non, collapse = ", "), ", ignoring")
+    out <- out[names(out) %in% names(defaults)]
+    c(out, defaults[!names(defaults) %in% names(out)])
+}
 
 #' Summarize the video sync times in a dvw file
 #'
@@ -313,11 +398,13 @@ dv_sync_summary <- function(x) {
                      lag(.data$match_id) %eq% .data$match_id & lag(.data$point_id) %eq% .data$point_id &
                      ((!is.na(lead(.data$team)) & !is.na(lead(.data$skill)) & lead(.data$team) != .data$team) | lag(.data$team) %eq% .data$team))
     ## time between serve and reception
-    S_R <- x %>% dplyr::filter(.data$skill == "Serve", lead(.data$skill) == "Reception") %>% dplyr::reframe(tsm("Serve to receive time", .data$t_lead_1 - .data$video_time))
-    S_E <- x %>% dplyr::filter(.data$skill == "Serve", lead(.data$skill) == "Reception", lead(.data$skill, 2) == "Set", lead(.data$team, 2) != .data$team) %>%
+    S_R <- x %>% dplyr::filter(.data$skill == "Serve", lead(.data$skill) == "Reception") %>%
         mutate(skill_type = case_when(.data$skill_type %in% c("Jump serve", "Jump-float serve") ~ .data$skill_type,
                                       TRUE ~ "Other serve types")) %>%
-        group_by(.data$skill_type) %>% dplyr::reframe(tsm(paste0("Serve to set time (", .data$skill_type[1], ")"), .data$t_lead_2 - .data$video_time))
+        group_by(.data$skill_type) %>% dplyr::reframe(tsm(paste0("Serve to reception time (", .data$skill_type[1], ")"), .data$t_lead_1 - .data$video_time))
+
+    R_E <- x %>% dplyr::filter(.data$skill == "Reception", lead(.data$skill) == "Set", lead(.data$team) == .data$team) %>%
+        dplyr::reframe(tsm("Reception to set time", .data$t_lead_2 - .data$video_time))
 
     E_A <- x %>% dplyr::filter(.data$skill == "Set", lead(.data$skill) == "Attack", lead(.data$team) == .data$team) %>%
         mutate(skill_type = case_when(grepl("^Quick|High", .data$skill_type) ~ .data$skill_type,
@@ -325,6 +412,12 @@ dv_sync_summary <- function(x) {
         group_by(.data$skill_type) %>% dplyr::reframe(tsm(paste0("Set to attack time (", .data$skill_type[1], ")"), .data$t_lead_1 - .data$video_time))
 
     A_B <- x %>% dplyr::filter(.data$skill == "Attack", lead(.data$skill) == "Block") %>% dplyr::reframe(tsm("Attack to block time", .data$t_lead_1 - .data$video_time))
+
+    A_D <- x %>% mutate(dig_block = .data$skill == "Dig" & lag(.data$skill) == "Block" & lag(.data$skill, 2) == "Attack" & lag(.data$team, 2) != .data$team,
+                        dig_no_block = .data$skill == "Dig" & lag(.data$skill) == "Attack" & lag(.data$team) != .data$team) %>%
+        dplyr::filter(.data$skill == "Dig", .data$dig_no_block | .data$dig_block) %>%
+        mutate(skill_type = if_else(.data$dig_block, "with block touch", "no block touch")) %>%
+        group_by(.data$skill_type) %>% dplyr::reframe(tsm(paste0("Attack to dig time (", .data$skill_type[1], ")"), .data$video_time - if_else(.data$dig_block, .data$t_lag_2, .data$t_lag_1)))
 
     D_E <- x %>% dplyr::filter(.data$skill == "Dig", lead(.data$skill) == "Set", lead(.data$team) == .data$team) %>%
         dplyr::reframe(tsm("Dig to set time", .data$t_lead_1 - .data$video_time))
@@ -343,7 +436,7 @@ dv_sync_summary <- function(x) {
                                                                 END = .data$end_rally_time - .data$last_touch_time) %>% ungroup %>%
                                                       dplyr::filter(!is.infinite(.data$END)) %>%
                                                       dplyr::reframe(tsm("Last touch to end of rally", .data$END))
-    out <- bind_rows(S_R, S_E, E_A, A_B, D_E, A_A, RDov, END) %>% dplyr::select(-"skill_type")
+    out <- bind_rows(S_R, R_E, E_A, A_B, A_D, D_E, A_A, RDov, END) %>% dplyr::select(-"skill_type")
     ##     for (i in seq_len(nrow(out))) {
     ##         if (i > 1 && sub("\\(.*", "", out$type[i]) != sub("\\(.*", "", out$type[i - 1])) cat("\n")
     ##         if (out$N[i] < 1) {

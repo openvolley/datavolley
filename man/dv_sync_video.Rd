@@ -2,62 +2,84 @@
 % Please edit documentation in R/video.R
 \name{dv_sync_video}
 \alias{dv_sync_video}
-\alias{dv_sync_video_config}
+\alias{dv_sync_contact_times}
+\alias{dv_sync_offsets}
 \title{Synchronize video times}
 \usage{
 dv_sync_video(
   x,
-  first_serve_time,
-  freeball_digs_accurate = FALSE,
-  config = dv_sync_video_config()
+  first_serve_contact,
+  freeball_dig_time_offset = NA,
+  contact_times = dv_sync_contact_times(),
+  offsets = dv_sync_offsets(),
+  enforce_order = TRUE
 )
 
-dv_sync_video_config()
+dv_sync_contact_times(...)
+
+dv_sync_offsets(...)
 }
 \arguments{
 \item{x}{datavolley: a single datavolley object as returned by \code{\link{dv_read}}}
 
-\item{first_serve_time}{numeric or string: the time of the first serve in the video. This can be a numeric value giving the time in seconds, or a string of the form "MM:SS" (minutes and seconds) or "HH:MM:SS" (hours, minutes and seconds)}
+\item{first_serve_contact}{numeric or string: the video time of the first serve contact. This can be a numeric value giving the time in seconds from the start of the video, or a string of the form "MM:SS" (minutes and seconds) or "HH:MM:SS" (hours, minutes and seconds)}
 
-\item{freeball_digs_accurate}{logical: if \code{TRUE}, treat the clock time of each freeball dig as being accurate (in the same way that serve times are treated as being accurate). Obviously this requires that the scout has been accurate in their timing when entering freeball digs, but assuming that is the case then setting \code{freeball_digs_accurate} to \code{TRUE} will improve the synchronization of rallies with freeballs (which otherwise tends to be poor, because the play is messy and less predictable compared to in-system rallies)}
+\item{freeball_dig_time_offset}{numeric: if non-NA, the clock times of freeball digs will be used directly in the synchronization process. Freeball digs will be aligned using their clock times relative to the first serve contact clock time, with this \code{freeball_dig_time_offset} value (in seconds) added. So if when scouting live you typically enter freeball digs one second after they happen, use \code{freeball_dig_time_offset = -1}. If \code{freeball_dig_time_offset} is NA, which is the default, the clock times of freeball digs will not be used in the synchronization process}
 
-\item{config}{list: a set of parameters that control the syncing process. See Details, below}
+\item{contact_times}{list: a set of parameters that control the synchronization process. See Details, below}
+
+\item{offsets}{list: a list set of offsets to be added to each contact time in the second step of the synchronization process. See Details, below. If \code{offsets} is NULL or an empty list, no offsets are applied}
+
+\item{enforce_order}{logical: the estimated contact times will always be time-ordered (the contact time of a given touch cannot be prior to the contact time of a preceding touch). But the offsets can be different for different skills, leading to final video times that are not time ordered. These will be fixed if \code{enforce_order} is TRUE}
+
+\item{...}{: name-value pairs of elements to override the defaults in \code{dv_sync_contact_times} and \code{dv_sync_offsets}}
 }
 \value{
-A modified copy of \code{x}
+A copy of \code{x} with modified \code{video_time} values in its \code{plays} component
 }
 \description{
-Warning: experimental! This function uses the scouted clock time of each serve and some simple rules to align each scouted contact with its (approximately correct) time in the corresponding match video.
+This function uses the scouted clock time of each serve and some rules to align each scouted contact with its (approximately correct) time in the corresponding match video. Warning: experimental!
 }
 \details{
-When a match is scouted live, the clock time of each serve will usually be correct because the scout can enter the serve code at the actual time of serve. But the remainder of the touches in the rally might not be at the correct relative times, if the scout can't keep up with the live action. This function uses some simple rules to better synchronize the scouted contacts and corresponding match video.
+When a match is scouted live, the clock time of each serve will usually be correct because the scout can enter the serve code at the actual time of serve. But the remainder of the touches in the rally might not be at their correct times, if the scout can't keep up with the live action. This function makes some assumptions about typical contact-to-contact times to better synchronize the scouted contacts with the corresponding match video.
 
-The \code{config} object contains a set of times (in seconds), which you can adjust to suit your scouting style and level of play. If you have an already-synchronized dvw file, the \code{\link{dv_sync_summary}} function can provide some guidance as to what these values should be. The \code{config} object contains the following entries:
+Freeball digs can optionally be treated in the same way as serves, with their scouted clock times used directly in the synchronization process. Obviously this only makes sense if the scout has actually been consistent in their timing when entering freeball digs, but assuming that is the case then setting the \code{freeball_dig_time_offset} to a non-NA value will improve the synchronization of rallies with freeballs. These rallies otherwise tend to synchronize poorly, because the play is messy and less predictable compared to in-system rallies.
+
+Note that this synchronization relies on the clock times in the file being consistent, and so it will only work if the match has been scouted in a single sitting (either live, or from video playback but without pausing/rewinding/fast-forwarding the video).
+
+The synchronization is a two-step process. In the first step, the video time of each scouted contact is estimated (i.e. the actual time that the player made contact with the ball). In the second step, skill-specific offsets are added to those contact times. (This is important if your video montage software uses the synchronized video times directly, because you will normally want a video clip to start some seconds before the actual contact of interest).
+
+The \code{contact_times} object contains a set of times (in seconds), which you can adjust to suit your scouting style and level of play. If you have an already-synchronized dvw file, the \code{\link{dv_sync_summary}} function can provide some guidance as to what these values should be. The \code{contact_times} object contains the following entries:
 \itemize{
-  \item S_R - the time between serve and reception
-  \item S_E - the time between serve and opposition first set (but see also \code{SQ} and \code{SM}, below)
-  \item E_A - the time between set and attack (but see also \code{EQ} and \code{EH}, below)
-  \item A_B - the time between attack and block
-  \item A_A - the time between attacks in the rally (i.e. attack to counter-attack)
-  \item D_E - the time between dig and set
-  \item RDov - the time between reception or dig overpass and the next touch by the opposition
+  \item SQ - time between the scouted serve time and actual serve contact for jump serves
+  \item SM - time between the scouted serve time and actual serve contact for jump-float serves
+  \item SO - time between the scouted serve time and actual serve contact for all other serves
+  \item SQ_R, SM_R, SO_R - the time between serve contact and reception contact for jump, jump-float, and other serves
+  \item R_E - the time between reception contact and set contact
+  \item EQ_A - the time between set contact and attack contact for quick sets
+  \item EH_A - the time between set contact and attack contact for high sets
+  \item EO_A - the time between set contact and attack contact for all other sets
+  \item A_B - the time between attack contact and block contact
+  \item A_D - the time between attack contact and dig contact (no intervening block touch)
+  \item A_B_D - the time between attack contact and dig contact (with block touch)
+  \item D_E - the time between dig contact and set contact
+  \item RDov - the time between reception or dig overpass contact and the next touch by the opposition
   \item END - the time between the last contact and end-of-rally marker
-  \item SQ - S_E adjustment for jump serves (this value gets added to S_E for jump serves)
-  \item SM - S_E adjustment for jump-float serves (this value gets added S_E for jump-float serves)
-  \item EQ - E_A adjustment for quick sets (this value gets added to E_A for quick sets)
-  \item EH - E_A adjustment for high sets (this value gets added to E_A for high sets)
 }
+
+The \code{offsets} object defines the offset (in seconds) to be added to each contact time in the second pass of the synchronization process. It contains the entries "S" (serve), "R" (reception), "E" (set), "A" (attack), "D", (dig), "B" (block), and "F" (freeball).
+
+Note that the entries in \code{contact_times} and \code{offsets} can be fractions. The actual video time entries in the returned file are required to be integers and so the final values will be rounded, but using fractional values (particularly for the \code{contact_times} entries) can give better accuracy in the intermediate calculations.
 }
 \examples{
 x <- dv_read(dv_example_file())
-## first serve was at 54s in the video
-x <- dv_sync_video(x, first_serve_time = 54)
+## first serve contact was at 54s in the video
+x <- dv_sync_video(x, first_serve_contact = 54)
 
 ## with a custom configuration
-my_config <- dv_sync_video_config()
-my_config$S_A <- 4 ## change entries as necessary
-## first serve was at 3:35 in the video
-x <- dv_sync_video(x, first_serve_time = "3:35", config = my_config)
+my_contact_times <- dv_sync_contact_times(SQ = 3) ## override default entries as necessary
+## first serve contact was at 3:35 in the video
+x <- dv_sync_video(x, first_serve_contact = "3:35", contact_times = my_contact_times)
 
 }
 \seealso{
