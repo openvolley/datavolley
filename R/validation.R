@@ -449,27 +449,33 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type) {
         ## check scores columns against point_won_by entries
         temp <- plays[!is.na(plays$set_number) & !is.na(plays$point_won_by), ]
         temp <- do.call(rbind, lapply(sort(unique(temp$point_id)), function(pid) {
-            tail(temp[which(temp$point_id == pid), c("point_id", "set_number", "home_team", "visiting_team", "home_team_score", "visiting_team_score", "point_won_by", "file_line_number")], 1)
+            tail(temp[which(temp$point_id == pid), c("point_id", "set_number", "home_team", "visiting_team", "home_team_score", "visiting_team_score", "point_won_by", "file_line_number", "serving_team")], 1)
         }))
+        is_sideout_scoring <- grepl("sideout", x$meta$match$regulation)
         if (!is.null(temp) && nrow(temp) > 0) {
-            temp$won_by_home <- temp$point_won_by==temp$home_team
-            ## dplyr call: temp <- plays %>% group_by(point_id) %>% do(.[,c("set_number","home_team","visiting_team","home_team_score","visiting_team_score","point_won_by")] %>% filter(!is.na(set_number)) %>% distinct()) %>% ungroup %>% filter(!is.na(point_won_by)) %>% arrange(point_id) %>% mutate(won_by_home=point_won_by==home_team)
             temp$home_team_diff <- diff(c(0, temp$home_team_score))
             temp$visiting_team_diff <- diff(c(0, temp$visiting_team_score))
-            temp$point_lost_by <- temp$home_team
-            idx <- temp$point_won_by %eq% temp$home_team
-            temp$point_lost_by[idx] <- temp$visiting_team[idx]
             temp$ok <- rep(TRUE, nrow(temp))
-            idx <- temp$won_by_home
-            temp$ok[idx] <- temp$home_team_diff[idx]==1 & temp$visiting_team_diff[idx]==0
-            idx <- !temp$won_by_home
-            temp$ok[idx] <- temp$visiting_team_diff[idx]==1 & temp$home_team_diff[idx]==0
+            idx <- temp$point_won_by %eq% temp$home_team
+            if (is_sideout_scoring) idx <- idx & temp$serving_team %eq% temp$home_team
+            ## expect point increment for home team on those rows
+            temp$ok[idx] <- temp$home_team_diff[idx] == 1 & temp$visiting_team_diff[idx] == 0
+            idx <- temp$point_won_by %eq% temp$visiting_team
+            if (is_sideout_scoring) idx <- idx & temp$serving_team %eq% temp$visiting_team
+            temp$ok[idx] <- temp$visiting_team_diff[idx] == 1 & temp$home_team_diff[idx] == 0
             ## these won't be valid for first point of each set other than first set
             for (ss in seq_len(max(temp$set_number, na.rm = TRUE))[-1]) {
-                idx <- temp$set_number==ss
+                idx <- temp$set_number == ss
                 if (any(idx)) {
                     idx <- min(which(idx)) ## first point of set ss
-                    temp$ok[idx] <- (temp$won_by_home[idx] && temp$home_team_score[idx]==1 && temp$visiting_team_score[idx]==0) || (!temp$won_by_home[idx] && temp$home_team_score[idx]==0 && temp$visiting_team_score[idx]==1)
+                    temp$ok[idx] <-
+                        (temp$point_won_by[idx] %eq% temp$home_team[idx] && (is_sideout_scoring && temp$serving_team[idx] %eq% temp$home_team[idx] && temp$home_team_score[idx] == 1 && temp$visiting_team_score[idx] == 0)) ||
+                        (temp$point_won_by[idx] %eq% temp$home_team[idx] && (is_sideout_scoring && !temp$serving_team[idx] %eq% temp$home_team[idx] && temp$home_team_score[idx] == 0 && temp$visiting_team_score[idx] == 0)) ||
+                        (temp$point_won_by[idx] %eq% temp$home_team[idx] && (!is_sideout_scoring && temp$home_team_score[idx] == 1 && temp$visiting_team_score[idx] == 0)) ||
+
+                        (temp$point_won_by[idx] %eq% temp$visiting_team[idx] && (is_sideout_scoring && temp$serving_team[idx] %eq% temp$visitingteam[idx] && temp$home_team_score[idx] == 0 && temp$visiting_team_score[idx] == 1)) ||
+                        (temp$point_won_by[idx] %eq% temp$visiting_team[idx] && (is_sideout_scoring && !temp$serving_team[idx] %eq% temp$visiting_team[idx] && temp$home_team_score[idx] == 0 && temp$visiting_team_score[idx] == 0)) ||
+                        (temp$point_won_by[idx] %eq% temp$visiting_team[idx] && (!is_sideout_scoring && temp$home_team_score[idx] == 0 && temp$visiting_team_score[idx] == 1))
                 }
             }
             if (any(is.na(temp$point_won_by))) {
@@ -477,25 +483,23 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type) {
                 ## just assume were ok
                 temp$ok[is.na(temp$point_won_by)] <- TRUE
             }
-            temp <- temp[!temp$ok,]
+            temp <- temp[!temp$ok, ]
             if (nrow(temp)>0) {
                 for (chk in seq_len(nrow(temp))) {
-                    out <- rbind(out,data.frame(file_line_number=temp$file_line_number[chk],video_time=video_time_from_raw(x$raw[temp$file_line_number[chk]]),message=paste0("Point assigned to incorrect team or scores incorrect (point was won by ",temp$point_won_by[chk]," but score was incremented for ",temp$point_lost_by[chk],")"),file_line=mt2nachar(x$raw[temp$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
+                    out <- rbind(out,data.frame(file_line_number = temp$file_line_number[chk], video_time = video_time_from_raw(x$raw[temp$file_line_number[chk]]), message = "Point assigned to incorrect team or scores incorrect", file_line = mt2nachar(x$raw[temp$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
                 }
             }
         }
 
         ## scores not in proper sequence
         ## a team's score should never increase by more than 1 at a time. May be negative (change of sets)
-        temp <- plays[, c("home_team_score","visiting_team_score","set_number")]
-        temp <- apply(temp,2,diff)
+        temp <- plays[, c("home_team_score", "visiting_team_score", "end_of_set")]
+        temp <- apply(temp, 2, diff)
         ## either score increases by more than one, or (decreases and not end of set)
-        chk <- which((temp[,1]>1 | temp[,2]>1) | ((temp[,1]<0 | temp[,2]<0) & !(is.na(temp[,3]) | temp[,3]>0)))
-        ##chk <- diff(plays$home_team_score)>1 | diff(plays$visiting_team_score)>1
-        ##if (any(chk))
-        if (length(chk)>0) {
-            chk <- chk+1 
-           out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Scores do not follow proper sequence (note that the error may be in the point before this one)",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
+        chk <- which((temp[, 1] > 1 | temp[, 2] > 1) | ((temp[, 1] < 0 | temp[, 2] < 0) & !(is.na(temp[, 3]) | temp[, 3] != 0)))
+        if (length(chk) > 0) {
+            chk <- chk + 1L
+           out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Scores do not follow proper sequence (note that the error may be in the point before this one)", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
         }
 
         ## check for incorrect rotation changes
