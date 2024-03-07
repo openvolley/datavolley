@@ -1,3 +1,7 @@
+datavolley 1.7.0
+================
+- fixes to support files using sideout scoring
+
 datavolley 1.6.3
 ================
 - remove dependence on `enc` package, which has been archived from CRAN
