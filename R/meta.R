@@ -85,11 +85,6 @@ read_match <- function(txt, date_format = NULL) {
         p$date <- temp
         if (is.na(p$date)) {
             msgs <- collect_messages(msgs, "Cannot parse the date in the match information", idx + 1, txt[idx + 1], severity = 2)
-        } else {
-            if (p$date < (as.Date(lubridate::now(tzone = "UTC")) - 365 * 10)) {
-                ## date is more than ten years ago!
-                msgs <- collect_messages(msgs, paste0("The date of the match (", format(p$date), ") is more than 10 years ago, is it correct?"), idx + 1, txt[idx + 1], severity = 2)
-            }
         }
     }
     suppressWarnings(p$time <- lubridate::hms(p$time)) ## don't warn on time, because the plays object has it anyway
@@ -99,6 +94,10 @@ read_match <- function(txt, date_format = NULL) {
         p$regulation <- "indoor rally point"
     } else if (p$regulation %eq% 2) {
         p$regulation <- "beach rally point"
+    }
+    if (isTRUE(p$date < (as.Date(lubridate::now(tzone = "UTC")) - 365 * 10)) && !grepl("sideout", p$regulation)) {
+        ## date is more than ten years ago!
+        msgs <- collect_messages(msgs, paste0("The date of the match (", format(p$date), ") is more than 10 years ago, is it correct?"), idx + 1, txt[idx + 1], severity = 2)
     }
     list(match = p, messages = msgs)
 }
