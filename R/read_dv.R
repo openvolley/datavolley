@@ -390,14 +390,19 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     ## add point_id - an identifier of each point. One point may consist of multiple attacks or other actions. Timeouts get assigned to their own "point", but other non-play rows may get assigned as part of a point.
     pid <- 0
-    temp_point_id <- rep(NA,nrow(out$plays))
+    temp_point_id <- rep(NA, nrow(out$plays))
     temp_point_id[1] <- pid
     temp_point <- out$plays$point
     temp_timeout <- out$plays$timeout
-    for (k in 2:nrow(out$plays)) {
-        ##if ((!is.na(out$plays$skill[k]) && out$plays$skill[k]=="Serve") | out$plays$timeout[k]) { ## does not cope with sanctions
-        if (temp_point[k-1] || temp_timeout[k] || temp_timeout[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new point_id
-            pid <- pid+1
+    temp_setterpos <- grepl("^[a\\*]z", out$plays$code)
+    temp_end_of_set <- grepl("^\\*\\*[[:digit:]]set", out$plays$code, ignore.case = TRUE)
+    sideout_scoring <- grepl("sideout", out$meta$match$regulation)
+    for (k in seq_len(nrow(out$plays))[-1]) {
+        if (temp_point[k-1] || temp_timeout[k] || temp_timeout[k-1] || temp_end_of_set[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new point_id. Also temp_end_of_set[k-1] so that new sets start with reset scores
+            pid <- pid + 1
+        } else if (sideout_scoring && temp_setterpos[k]) {
+            ## in sideout scoring, we won't see points assigned unless the team is serving, but we still see the *z or az code
+            pid <- pid + 1
         }
         temp_point_id[k] <- pid
     }
@@ -470,6 +475,27 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## keep track of who won each point
     temp <- as.data.frame(setNames(unique(out$plays[which(out$plays$point), c("point_id", "team")]), c("point_id", "point_won_by")))
     out$plays <- left_join(out$plays, temp, by = "point_id")
+    if (grepl("sideout", out$meta$match$regulation)) {
+        ## points aren't assigned when the winning team was receiving, so $point can't be used like it is with rally point scoring
+        exactly_1 <- function(z) if (length(z) != 1) as(NA, class(z)) else z
+        temp_ws <- out$meta$winning_symbols %>% mutate(skill = case_when(.data$skill == "S" ~ "Serve",
+                                                                         .data$skill == "R" ~ "Reception",
+                                                                         .data$skill == "A" ~ "Attack",
+                                                                         .data$skill == "B" ~ "Block",
+                                                                         .data$skill == "D" ~ "Dig",
+                                                                         .data$skill == "E" ~ "Set",
+                                                                         .data$skill == "F" ~ "Freeball"))
+        out$plays <- out$plays %>% mutate(other_team = case_when(.data$team == .data$home_team ~ .data$visiting_team,
+                                                            .data$team == .data$visiting_team ~ .data$home_team)) %>%
+            left_join(temp_ws, by = c("skill", evaluation_code = "code")) %>%
+            group_by(.data$point_id) %>% mutate(point_won_by = case_when(!is.na(.data$point_won_by[1]) ~ .data$point_won_by[1],
+                                                                         any(.data$code %in% c("*$$&H#", "a$$&H=")) ~ .data$home_team[1],
+                                                                         any(.data$code %in% c("a$$&H#", "*$$&H=")) ~ .data$visiting_team[1],
+                                                                         sum(.data$win_lose == "W", na.rm = TRUE) == 1 ~ exactly_1(.data$team[which(.data$win_lose == "W")]),
+                                                                         sum(.data$win_lose == "L", na.rm = TRUE) == 1 ~ exactly_1(.data$team[which(.data$win_lose == "L")])
+                                                                         )) %>% ungroup %>%
+            dplyr::select(-"win_lose", -"other_team") %>% as.data.frame
+    }
     ## catch any that we missed
     ##dud_point_id <- unique(out$plays$point_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
     ##for (dpi in dud_point_id) {
@@ -494,14 +520,21 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     temp_home_team_score <- scores$home_team_score
     temp_visiting_team_score <- scores$visiting_team_score
+    temp_home_team_score[1] <- temp_visiting_team_score[1] <- 0L ## start with zeros
     ## will still have NA scores for timeouts and technical timeouts, patch NAs where we can
     temp_pt <- out$plays$point
-    for (k in 2:nrow(out$plays)) {
-        if (is.na(temp_home_team_score[k]) & !temp_pt[k]) {
-            temp_home_team_score[k] <- temp_home_team_score[k-1]
-        }
-        if (is.na(temp_visiting_team_score[k]) & !temp_pt[k]) {
-            temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
+    for (k in seq_len(nrow(out$plays))[-1]) {
+        if (grepl(">LUp", out$plays$code[k], ignore.case = TRUE)) {
+            ## the lineup codes at the start of a set should have zero team scores
+            temp_home_team_score[k] <- 0L
+            temp_visiting_team_score[k] <- 0L
+        } else {
+            if (is.na(temp_home_team_score[k]) & !temp_pt[k]) {
+                temp_home_team_score[k] <- temp_home_team_score[k-1]
+            }
+            if (is.na(temp_visiting_team_score[k]) & !temp_pt[k]) {
+                temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
+            }
         }
     }
     out$plays$home_team_score <- temp_home_team_score
@@ -537,8 +570,8 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out$plays$phase <- play_phase(out$plays)
 
     ## add scores at START of point
-    out$plays$home_score_start_of_point <- ifelse(out$plays$point_won_by %eq% out$plays$home_team, as.integer(out$plays$home_team_score - 1L), as.integer(out$plays$home_team_score))
-    out$plays$visiting_score_start_of_point <- ifelse(out$plays$point_won_by %eq% out$plays$visiting_team, as.integer(out$plays$visiting_team_score - 1L), as.integer(out$plays$visiting_team_score))
+    out$plays$home_score_start_of_point <- pmax(ifelse(out$plays$point_won_by %eq% out$plays$home_team, as.integer(out$plays$home_team_score - 1L), as.integer(out$plays$home_team_score)), 0L)
+    out$plays$visiting_score_start_of_point <- pmax(ifelse(out$plays$point_won_by %eq% out$plays$visiting_team, as.integer(out$plays$visiting_team_score - 1L), as.integer(out$plays$visiting_team_score)), 0L)
 
     ## now call custom code parser, if it was provided
     if (!missing(custom_code_parser) && !is.null(custom_code_parser)) {

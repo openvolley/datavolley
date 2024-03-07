@@ -21,6 +21,7 @@ Imports:
     jpeg,
     jsonlite,
     lubridate,
+    methods,
     polyclip,
     readr,
     stringi,

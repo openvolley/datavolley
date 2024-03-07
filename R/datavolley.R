@@ -12,6 +12,7 @@
 #' @importFrom digest digest
 #' @importFrom dplyr %>% across all_of as_tibble .data bind_cols bind_rows case_when distinct if_else group_by lag lead left_join mutate pull slice tibble tribble ungroup rows_update
 #' @importFrom graphics lines par plot text
+#' @importFrom methods as
 #' @importFrom stringi stri_trans_general stri_enc_detect
 #' @importFrom stringr fixed regex str_locate str_match str_match_all str_replace_all str_split str_sub str_to_title str_trim
 #' @importFrom stats approx na.omit runif setNames
