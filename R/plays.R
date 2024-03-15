@@ -334,7 +334,7 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
         ## D! is block cover that does not give attacking team a chance to re-attack or is an error
         dtbl$evaluation[dtbl$skill=="D" & dtbl$evaluation_code=="!"] <- "Poor block cover"
         ## E/ is a reach
-        dtbl$evaluation[dtbl$skill=="E" & dtbl$evaluation_code=="/"] <- "Error (reach over net)"
+        dtbl$evaluation[dtbl$skill=="E" & dtbl$evaluation_code=="/"] <- "Error" ## reach over net
     } else if (style == "german") {
         ## swap B= Error and B/ Invasion
         dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="/"] <- "Error"
