@@ -143,12 +143,12 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type) {
         if ("point" %in% names(x$plays)) { ## not in peranavolley files (yet)
             chk <- sum(x$meta$result$score_home_team, na.rm = TRUE) == sum(x$plays$team == x$plays$home_team & x$plays$point, na.rm = TRUE)
             if (!chk) {
-                msg <- "The total of the home team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the home team in the plays data"
+                msg <- "The total of the home team scores in the match result summary does not match the total number of points recorded for the home team in the plays data"
                 out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
             }
             chk <- sum(x$meta$result$score_visiting_team, na.rm = TRUE) == sum(x$plays$team == x$plays$visiting_team & x$plays$point, na.rm = TRUE)
             if (!chk) {
-                msg <- "The total of the visiting team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the visiting team in the plays data"
+                msg <- "The total of the visiting team scores in the match result summary does not match the total number of points recorded for the visiting team in the plays data"
                 out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
             }
         }
