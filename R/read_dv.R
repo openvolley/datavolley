@@ -398,7 +398,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     temp_end_of_set <- grepl("^\\*\\*[[:digit:]]set", out$plays$code, ignore.case = TRUE)
     sideout_scoring <- grepl("sideout", out$meta$match$regulation)
     for (k in seq_len(nrow(out$plays))[-1]) {
-        if (temp_point[k-1] || temp_timeout[k] || temp_timeout[k-1] || temp_end_of_set[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new point_id. Also temp_end_of_set[k-1] so that new sets start with reset scores
+        if (temp_point[k-1] || temp_timeout[k] || temp_timeout[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new point_id
             pid <- pid + 1
         } else if (sideout_scoring && temp_setterpos[k]) {
             ## in sideout scoring, we won't see points assigned unless the team is serving, but we still see the *z or az code
@@ -520,14 +520,13 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
 
     temp_home_team_score <- scores$home_team_score
     temp_visiting_team_score <- scores$visiting_team_score
-    temp_home_team_score[1] <- temp_visiting_team_score[1] <- 0L ## start with zeros
     ## will still have NA scores for timeouts and technical timeouts, patch NAs where we can
     temp_pt <- out$plays$point
     for (k in seq_len(nrow(out$plays))[-1]) {
-        if (grepl(">LUp", out$plays$code[k], ignore.case = TRUE)) {
-            ## the lineup codes at the start of a set should have zero team scores
-            temp_home_team_score[k] <- 0L
-            temp_visiting_team_score[k] <- 0L
+        if (grepl("^\\*\\*[[:digit:]]set", out$plays$code[k], ignore.case = TRUE)) {
+            ## make end-of-set row have the same as the preceding scores
+            if (is.na(temp_home_team_score[k])) temp_home_team_score[k] <- temp_home_team_score[k-1]
+            if (is.na(temp_visiting_team_score[k])) temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
         } else {
             if (is.na(temp_home_team_score[k]) & !temp_pt[k]) {
                 temp_home_team_score[k] <- temp_home_team_score[k-1]
