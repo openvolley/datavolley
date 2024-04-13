@@ -474,7 +474,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     out_end_cone <- rep(NA_integer_, N)
     out_end_subzone <- rep(NA_character_, N)
     out_skill_subtype <- rep(NA_character_, N)
-    out_num_players <- rep(NA, N)
+    out_num_players <- rep(NA_character_, N)
     out_num_players_numeric <- rep(NA, N)
     out_special_code <- rep(NA_character_, N)
     out_custom_code <- rep(NA_character_, N)
