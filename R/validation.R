@@ -516,7 +516,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type) {
             nsk <- rep(NA_integer_, nrow(temp))
             skcount <- 0L
             for (ii in seq_along(nsk)) {
-                if (temp$end_of_set[ii]) skcount <- 0L ## reset
+                if (isTRUE(temp$end_of_set[ii])) skcount <- 0L ## reset
                 if (!is.na(temp$skill[ii])) skcount <- skcount + 1L
                 nsk[ii] <- skcount
             }

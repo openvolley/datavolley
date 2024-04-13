@@ -398,9 +398,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     temp_end_of_set <- grepl("^\\*\\*[[:digit:]]set", out$plays$code, ignore.case = TRUE)
     sideout_scoring <- grepl("sideout", out$meta$match$regulation)
     for (k in seq_len(nrow(out$plays))[-1]) {
-        if (temp_point[k-1] || temp_timeout[k] || temp_timeout[k-1]) { ## timeout[k-1] otherwise the following play does not start with a new point_id
+        if (isTRUE(temp_point[k-1] || temp_timeout[k] || temp_timeout[k-1])) { ## timeout[k-1] otherwise the following play does not start with a new point_id
             pid <- pid + 1
-        } else if (sideout_scoring && temp_setterpos[k]) {
+        } else if (isTRUE(sideout_scoring && temp_setterpos[k])) {
             ## in sideout scoring, we won't see points assigned unless the team is serving, but we still see the *z or az code
             pid <- pid + 1
         }
@@ -694,7 +694,7 @@ print.summary.datavolley <- function(x,...) {
 #' @export
 dvlist_summary <- function(z) {
     out <- list(number_of_matches = length(z), number_of_sets = sum(vapply(z, function(z) as.integer(sum(z$meta$teams$sets_won)), FUN.VALUE = 1L, USE.NAMES = FALSE)))
-    out$date_range <- range(as.Date(bind_rows(lapply(z, function(q) q$meta$match[, "date"]))$date))
+    out$date_range <- range(as.Date(bind_rows(lapply(z, function(q) list(date = q$meta$match$date)))$date), na.rm = TRUE)
     teams <- bind_rows(lapply(z, function(q) q$meta$teams[, c("team", "won_match")])) %>%
         group_by(.data$team) %>% dplyr::summarize(played = dplyr::n(), won = sum(.data$won_match), win_rate = .data$won / .data$played)
 
