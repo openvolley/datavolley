@@ -3,12 +3,12 @@ find_duplicate_player_numbers <- function(x) {
     hpn <- hpn[hpn$number %in% hpn$number[duplicated(hpn$number)], ]
     vpn <- cbind(hv = "visiting", team_id = visiting_team_id(x), x$meta$players_v[, c("number", "player_id")])
     vpn <- vpn[vpn$number %in% vpn$number[duplicated(vpn$number)], ]
-    pnums <- rbind(hpn, vpn)
+    rbind(hpn, vpn)
 }
 
 find_duplicate_player_ids <- function(x) {
     pids <- c(x$meta$players_h$player_id, x$meta$players_v$player_id)
-    dpids <- pids[duplicated(pids)]
+    pids[duplicated(pids)]
 }
 
 #' Attempt to repair a datavolley object
@@ -114,11 +114,15 @@ dv_repair <- function(x) {
     tryCatch(pnums <- find_duplicate_player_numbers(x), error = function(e) {
         stop("players with duplicate jersey numbers were not able to be fixed")
     })
-    if (nrow(pnums) > 0) stop("players with duplicate jersey numbers were not able to be fixed")
+    if (nrow(pnums) > 0) {
+        temp <- distinct(pnums) %>% dplyr::arrange(.data$hv)
+        msg <- paste0("    ", temp$hv, " team jersey number: ", temp$number, collapse = "\n")
+        stop("players with duplicate jersey numbers were not able to be fixed:\n", msg)
+    }
     tryCatch(dpids <- find_duplicate_player_ids(x), error = function(e) {
         stop("players with duplicate player IDs were not able to be fixed")
     })
-    if (length(dpids) > 0) stop("players with duplicate player IDs were not able to be fixed")
+    if (length(dpids) > 0) stop("players with duplicate player IDs were not able to be fixed. Player ID(s): ", paste0(dpids, collapse = ", "))
     if (length(msgs) > 0) {
         ## append to x$messages
         x$messages <- rbind(x$messages, data.frame(file_line_number = NA_integer_, video_time = NA_integer_, message = msgs, file_line = NA_character_))
