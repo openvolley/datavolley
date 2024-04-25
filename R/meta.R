@@ -291,7 +291,7 @@ winning_symbols_df <- function(txt) {
 }
 
 winning_symbols_df2txt <- function(x) {
-    if (!is.data.frame(x) || !setequal(names(x), c("skill", "win_lose", "code")) || !all(c("S", "R", "A", "B", "D", "E", "F") %in% x$skill)) stop("input in unexpected format")
+    if (!is.data.frame(x) || !setequal(names(x), c("skill", "win_lose", "code"))) stop("input in unexpected format")
     tildepad <- function(z) paste0(paste0(z, collapse = ""), paste0(rep("~", 4 - length(z)), collapse = ""))
     out <- vapply(c("S", "R", "A", "B", "D", "E", "F"), function(z) {
         paste0(tildepad(x$code[x$skill == z & x$win_lose == "L"]), tildepad(x$code[x$skill == z & x$win_lose == "W"]))
