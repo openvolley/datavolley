@@ -1007,8 +1007,8 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
     }
     ## fill in player_name and player_id from player_number
     idx <- !is.na(out_player_number)
-    out_player_name[idx] <- get_player_name(out_team[idx],out_player_number[idx],meta)
-    out_player_id[idx] <- get_player_id(out_team[idx],out_player_number[idx],meta)
+    out_player_name[idx] <- get_player_name(out_team[idx], out_player_number[idx], meta)
+    out_player_id[idx] <- get_player_id(out_team[idx], out_player_number[idx], meta)
     dudidx <- (!is.na(out_player_number) & is.na(out_player_name)) | grepl("unknown player", out_player_name, ignore.case = TRUE)
     if (any(dudidx))
         msgs <- collect_messages(msgs,paste0("Player number ",out_player_number[dudidx]," could not be resolved to a player name/id"),code_line_num[dudidx],full_lines[dudidx],severity=2)

@@ -1,3 +1,11 @@
+datavolley 1.7.3
+================
+- minor bugfixes
+
+datavolley 1.7.1
+================
+- the evaluation string used for a set with a "/" evaluation code has been changed from "Error (reach over net)" to just "Error" for consistency with other skills (applies to files using VolleyMetrics conventions only)
+
 datavolley 1.7.0
 ================
 - fixes to support files using sideout scoring
