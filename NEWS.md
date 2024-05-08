@@ -1,3 +1,7 @@
+datavolley 1.7.4
+================
+- minor revisions to the `dv_sync_video` function
+
 datavolley 1.7.3
 ================
 - minor bugfixes
@@ -9,6 +13,10 @@ datavolley 1.7.1
 datavolley 1.7.0
 ================
 - fixes to support files using sideout scoring
+
+datavolley 1.6.4
+================
+- add experimental video sync functions
 
 datavolley 1.6.3
 ================

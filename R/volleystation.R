@@ -6,40 +6,85 @@ vs_int2role <- function(x) {
     out
 }
 
+unlist1 <- function(p) if (!is.data.frame(p) && is.list(p) && length(p) == 1) p[[1]] else p
+
+vs_reformat_teams <- function(jx) {
+    c1 <- str_trim(paste(str_trim(jx$team$home$staff$coach$firstName), str_trim(jx$team$home$staff$coach$lastName)))
+    if (length(c1) < 1) c1 <- NA_character_
+    c2 <- str_trim(paste(str_trim(jx$team$away$staff$coach$firstName), str_trim(jx$team$away$staff$coach$lastName)))
+    if (length(c2) < 1) c2 <- NA_character_
+    a1n <- head(intersect(names(jx$team$home$staff), c("assistantCoach", "assistant1")), 1)
+    a2n <- head(intersect(names(jx$team$home$staff), c("assistantCoach2", "assistant2")), 1)
+    if (length(a1n) < 1) a1n <- "foo"
+    if (length(a2n) < 1) a2n <- "foo"
+    a1 <- c(paste(str_trim(jx$team$home$staff[[a1n]]$firstName), str_trim(jx$team$home$staff[[a1n]]$lastName)), paste(str_trim(jx$team$home$staff[[a2n]]$firstName), str_trim(jx$team$home$staff[[a2n]]$lastName)))
+    a1 <- str_trim(paste(a1[nzchar(a1)], collapse = " / "))
+    if (length(a1) < 1) a1 <- NA_character_
+    a1 <- sub("^/ ", "", a1)
+    if (!nzchar(str_trim(a1))) a1 <- NA_character_
+    a2 <- c(paste(str_trim(jx$team$away$staff[[a1n]]$firstName), str_trim(jx$team$away$staff[[a1n]]$lastName)), paste(str_trim(jx$team$away$staff[[a2n]]$firstName), str_trim(jx$team$away$staff[[a2n]]$lastName)))
+    a2 <- str_trim(paste(a2[nzchar(a2)], collapse = " / "))
+    if (length(a2) < 1) a2 <- NA_character_
+    a2 <- sub("^/ ", "", a2)
+    if (!nzchar(str_trim(a2))) a2 <- NA_character_
+    dv_create_meta_teams(team_ids = c(jx$team$home$code, jx$team$away$code), teams = c(jx$team$home$name, jx$team$away$name),
+                         coaches = c(c1, c2), assistants = c(a1, a2))
+}
+
 vs_reformat_players <- function(jx, which = "home") {
     jt <- if (which == "home") jx$team$home else jx$team$away
-    if (!"position" %in% names(jt$players)) jt$players$position <- NA_integer_
+    p_h <- unlist1(jx$team$home$players)
+    p_v <- unlist1(jx$team$away$players)
+    lib <- unlist1(jt$libero)
+    ply <- if (which == "home") p_h else p_v
+    if (!"position" %in% names(ply)) ply$position <- NA_integer_
     px <- tibble(X1 = if (which == "home") 0L else 1L,
-                 number = as.integer(jt$players$shirtNumber),
-                 X3 = seq_len(nrow(jt$players)) + if (which %in% "home") 0L else nrow(jx$team$home$players),
+                 number = as.integer(ply$shirtNumber),
+                 X3 = seq_len(nrow(ply)) + if (which %in% "home") 0L else nrow(p_h),
                  starting_position_set1 = NA_character_,
                  starting_position_set2 = NA_character_,
                  starting_position_set3 = NA_character_,
                  starting_position_set4 = NA_character_,
                  starting_position_set5 = NA_character_,
-                 player_id = jt$players$code,
-                 lastname = jt$players$lastName,
-                 firstname = jt$players$firstName,
+                 player_id = ply$code,
+                 lastname = ply$lastName,
+                 firstname = ply$firstName,
                  nickname = "",
                  special_role = NA_character_,
-                 role = vs_int2role(jt$players$position),
+                 role = vs_int2role(ply$position),
                  foreign = FALSE,
                  X16 = NA)
     px$name <- paste(px$firstname, px$lastname)
-    px$role[is.na(px$role) & px$number %in% jt$libero] <- "libero"
+    px$role[is.na(px$role) & px$number %in% lib] <- "libero"
     px$special_role[px$role %in% "libero"] <- "L"
     ## starting positions
-    sx <- jx$scout$sets$startingLineup[[if (which %in% "home") "home" else "away"]]$positions
-    if (isTRUE(ncol(sx) %in% c(2, 6))) { ## presumably beach is 2?
-        for (si in seq_len(nrow(sx))) {
-            this <- rep(NA_character_, nrow(px))
-            for (i in seq_len(ncol(sx))) this[which(px$number == sx[si, i])] <- i
-            px[[paste0("starting_position_set", si)]] <- this
+    sx <- unlist1(jx$scout$sets)$startingLineup[[if (which %in% "home") "home" else "away"]]
+    if (length(names(sx)) > 0 && "positions" %in% names(sx)) sx <- sx$positions
+    if (is.data.frame(sx)) {
+        if (isTRUE(ncol(sx) %in% c(2, 6))) { ## presumably beach is 2?
+            for (si in seq_len(nrow(sx))) {
+                this <- rep(NA_character_, nrow(px))
+                for (i in seq_len(ncol(sx))) this[which(px$number == sx[si, i])] <- i
+                px[[paste0("starting_position_set", si)]] <- this
+            }
+        } else {
+            warning("expecting a 2- or 6-column data frame for ", which, " team starting positions, ignoring")
         }
-    } else {
-        warning("expecting a 2- or 6-column data frame for ", which, " team starting positions, ignoring")
+    } else if (is.list(sx)) {
+        ## provided as a list of vectors, one per set
+        have_warned <- FALSE
+        for (si in seq_along(sx)) {
+            if (isTRUE(length(sx[[si]]) %in% c(2, 6))) { ## presumably beach is 2?
+                this <- rep(NA_character_, nrow(px))
+                for (i in seq_along(sx[[si]])) this[which(px$number == sx[[si]][i])] <- i
+                px[[paste0("starting_position_set", si)]] <- this
+            } else {
+                if (!have_warned) warning("expecting a 2- or 6-element vector for ", which, " team starting positions, ignoring")
+                have_warned <- TRUE
+            }
+        }
     }
-    px %>% dplyr::arrange(.data$number) %>% mutate(X3 = dplyr::row_number() + if (which %in% "home") 0L else nrow(jx$team$home$players))
+    px %>% dplyr::arrange(.data$number) %>% mutate(X3 = dplyr::row_number() + if (which %in% "home") 0L else nrow(p_h))
 }
 
 dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, do_transliterate = FALSE, extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
@@ -99,18 +144,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         mx$comments = dv_create_meta_comments()
     }
     mx$result <- dv_create_meta_result(home_team_scores = jx$scout$sets$score$home, visiting_team_scores = jx$scout$sets$score$away) ## will be further populated by dv_update_meta below
-    c1 <- paste(str_trim(jx$team$home$staff$coach$firstName), str_trim(jx$team$home$staff$coach$lastName))
-    if (length(c1) < 1) c1 <- NA_character_
-    c2 <- paste(str_trim(jx$team$away$staff$coach$firstName), str_trim(jx$team$away$staff$coach$lastName))
-    if (length(c2) < 1) c2 <- NA_character_
-    a1 <- paste(paste(str_trim(jx$team$home$staff$assistantCoach$firstName), str_trim(jx$team$home$staff$assistantCoach$lastName)), paste(str_trim(jx$team$home$staff$assistantCoach2$firstName), str_trim(jx$team$home$staff$assistantCoach2$lastName)), collapse = " / ")
-    if (length(a1) < 1) a1 <- NA_character_
-    a2 <- paste(paste(str_trim(jx$team$away$staff$assistantCoach$firstName), str_trim(jx$team$away$staff$assistantCoach$lastName)), paste(str_trim(jx$team$away$staff$assistantCoach2$firstName), str_trim(jx$team$away$staff$assistantCoach2$lastName)), collapse = " / ")
-    if (length(a2) < 1) a2 <- NA_character_
-    tx <- dv_create_meta_teams(team_ids = c(jx$team$home$code, jx$team$away$code),
-                                     teams = c(jx$team$home$name, jx$team$away$name),
-                                     coaches = c(c1, c2),
-                                     assistants = c(a1, a2))
+
+    tx <- vs_reformat_teams(jx)
     if (has_dvmsg(tx)) msgs <- collect_messages(msgs, get_dvmsg(tx), xraw = x$raw)
     mx$teams <- clear_dvmsg(tx)
 
@@ -237,11 +272,13 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         thisex <- left_join(thisex, this_vtl, by = "point_id")
         ## home team lineup
         this_htl <- thisev$lineup$home$positions %>% mutate(point_id = this_point_ids) %>%
-            dplyr::rename(home_p1 = "1", home_p2 = "2", home_p3 = "3", home_p4 = "4", home_p5 = "5", home_p6 = "6")
+            dplyr::rename(home_p1 = "1", home_p2 = "2")
+        if (file_type == "indoor") this_htl <- this_htl %>% dplyr::rename(home_p3 = "3", home_p4 = "4", home_p5 = "5", home_p6 = "6")
         thisex <- left_join(thisex, this_htl, by = "point_id")
         ## visiting team lineup
         this_vtl <- thisev$lineup$away$positions %>% mutate(point_id = this_point_ids) %>%
-            dplyr::rename(visiting_p1 = "1", visiting_p2 = "2", visiting_p3 = "3", visiting_p4 = "4", visiting_p5 = "5", visiting_p6 = "6")
+            dplyr::rename(visiting_p1 = "1", visiting_p2 = "2")
+        if (file_type == "indoor") this_vtl <- this_vtl %>% dplyr::rename(visiting_p3 = "3", visiting_p4 = "4", visiting_p5 = "5", visiting_p6 = "6")
         thisex <- left_join(thisex, this_vtl, by = "point_id")
         ## update each rally, deal with score adjustment, update setter positions, etc
         temp <- list()
@@ -626,7 +663,7 @@ vsm_row2code <- function(x, data_type, style) {
     idx <- which(idx & x$team %in% c("a", "*"))
     if (length(idx) < 1) return(out)
     temp <- x[idx, ]
-    pnum <- lead0(case_when(is.na(temp$player) | temp$player %in% c("Unknown", "Unknown player") ~ "00", TRUE ~ temp$player))
+    pnum <- lead0(case_when(is.na(temp$player) | temp$player %in% c("Unknown", "Unknown player") ~ "00", TRUE ~ as.character(temp$player)))
     pnum[nchar(pnum) > 2 | grepl("^\\-", pnum)] <- "00" ## illegal numbers, treat as unknown
     ## defaults
     if (!is.null(default_scouting_table)) {
