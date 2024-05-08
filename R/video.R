@@ -2,13 +2,15 @@
 
 #' Synchronize video times
 #'
-#' This function uses the scouted clock time of each serve and some rules to align each scouted contact with its (approximately correct) time in the corresponding match video. Warning: experimental!
+#' This function uses the time of each serve and some rules to align the other contacts in a rally with their (approximately correct) times in the corresponding match video. Warning: experimental!
 #'
-#' When a match is scouted live, the clock time of each serve will usually be correct because the scout can enter the serve code at the actual time of serve. But the remainder of the touches in the rally might not be at their correct times, if the scout can't keep up with the live action. This function makes some assumptions about typical contact-to-contact times to better synchronize the scouted contacts with the corresponding match video.
+#' When a match is scouted live, the clock time of each serve will usually be correct because the scout can enter the serve code at the actual time of serve. But the remainder of the touches in the rally might not be at their correct times if the scout can't keep up with the live action. This function makes some assumptions about typical contact-to-contact times to better synchronize the scouted contacts with the corresponding match video.
 #'
-#' Freeball digs can optionally be treated in the same way as serves, with their scouted clock times used directly in the synchronization process. Obviously this only makes sense if the scout has actually been consistent in their timing when entering freeball digs, but assuming that is the case then setting the \code{freeball_dig_time_offset} to a non-NA value will improve the synchronization of rallies with freeballs. These rallies otherwise tend to synchronize poorly, because the play is messy and less predictable compared to in-system rallies.
+#' The clock time of each serve will be used as the reference time for each rally. If clock times are not present in the file, the video time of each serve will be used instead. If those are also missing, the function will fail.
 #'
-#' Note that this synchronization relies on the clock times in the file being consistent, and so it will only work if the match has been scouted in a single sitting (either live, or from video playback but without pausing/rewinding/fast-forwarding the video).
+#' Freeball digs can optionally be treated in the same way as serves, with their scouted times used directly in the synchronization process. Obviously this only makes sense if the scout has actually been consistent in their timing when entering freeball digs, but assuming that is the case then setting the \code{freeball_dig_time_offset} to a non-NA value will improve the synchronization of rallies with freeballs. These rallies otherwise tend to synchronize poorly, because the play is messy and less predictable compared to in-system rallies.
+#'
+#' Note that this synchronization relies on the serve clock times in the file being consistent, and so it will only work if the match has been scouted in a single sitting (either live, or from video playback but without pausing/rewinding/fast-forwarding the video). If your clock times are not consistent but the video time of each serve is correct, then you can use the video time of each serve as the reference time instead.
 #'
 #' The synchronization is a two-step process. In the first step, the video time of each scouted contact is estimated (i.e. the actual time that the player made contact with the ball). In the second step, skill-specific offsets are added to those contact times. (This is important if your video montage software uses the synchronized video times directly, because you will normally want a video clip to start some seconds before the actual contact of interest).
 #'
@@ -39,6 +41,7 @@
 #' @param freeball_dig_time_offset numeric: if non-NA, the clock times of freeball digs will be used directly in the synchronization process. Freeball digs will be aligned using their clock times relative to the first serve contact clock time, with this \code{freeball_dig_time_offset} value (in seconds) added. So if when scouting live you typically enter freeball digs one second after they happen, use \code{freeball_dig_time_offset = -1}. If \code{freeball_dig_time_offset} is NA, which is the default, the clock times of freeball digs will not be used in the synchronization process
 #' @param contact_times list: a set of parameters that control the synchronization process. See Details, below
 #' @param offsets list: a list set of offsets to be added to each contact time in the second step of the synchronization process. See Details, below. If \code{offsets} is NULL or an empty list, no offsets are applied
+#' @param times_from string: either "clock" or "video": take the serve times (and freeball dig times, if `freeball_dig_time_offset` is non-NA) from clock or video times. By default, clock times are used unless they are all missing
 #' @param enforce_order logical: the estimated contact times will always be time-ordered (the contact time of a given touch cannot be prior to the contact time of a preceding touch). But the offsets can be different for different skills, leading to final video times that are not time ordered. These will be fixed if \code{enforce_order} is TRUE
 #' @param ... : name-value pairs of elements to override the defaults in \code{dv_sync_contact_times} and \code{dv_sync_offsets}
 #'
@@ -56,7 +59,7 @@
 #' x <- dv_sync_video(x, first_serve_contact = "3:35", contact_times = my_contact_times)
 #'
 #' @export
-dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA, contact_times = dv_sync_contact_times(), offsets = dv_sync_offsets(), enforce_order = TRUE) {
+dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA, contact_times = dv_sync_contact_times(), offsets = dv_sync_offsets(), times_from, enforce_order = TRUE) {
     if (is.string(first_serve_contact)) {
         temp <- str_trim(strsplit(first_serve_contact, ":")[[1]])
         temp <- suppressWarnings(as.numeric(temp))
@@ -67,7 +70,40 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     if (first_serve_contact < 0) stop("first_serve_contact cannot be negative")
 
     px <- plays(x)
-    if (all(is.na(px$time))) stop("px does not have any `time` column entries")
+
+    s_idx <- px$skill %eq% "Serve"
+
+    if (missing(times_from) || is.null(times_from) || is.na(times_from)) {
+        ## figure out whether to use clock times (preferred) or video times as reference times
+        time_col <- "time" ## use clock times as reference
+        chk <- px$time[s_idx]
+        if (all(is.na(chk))) {
+            time_col <- "video_time"
+            chk <- px$video_time[s_idx]
+        }
+        if (all(is.na(chk))) {
+            stop("the plays component of `x` is missing all of the `time` (clock time) and `video_time` entries on serves")
+        }
+        ## this is likely to lead to confusing behaviour with files that have partially-missing clock and video times
+        ## if (any(is.na(chk))) {
+        ##     ## choose whichever has the least missing?
+        ##     time_col <- if (sum(is.na(px$time[s_idx])) <= sum(is.na(px$video_time[s_idx]))) "time" else "video_time"
+        ## }
+        if (time_col == "video_time") warning("using serve video time (not clock time) as the reference time for each rally")
+    } else {
+        times_from <- tolower(times_from)
+        time_col <- if (match.arg(times_from, c("clock", "video")) == "clock") "time" else "video_time"
+    }
+
+    ref_times <- px[[time_col]]
+    if (any(is.na(ref_times))) {
+        warning("the plays component of `x` is missing at least one `", time_col, "` entry on serves")
+    }
+
+    if (inherits(ref_times, "POSIXt")) {
+        ## were clock times
+        ref_times <- as.numeric(ref_times)
+    }
 
     contact_times$A_A <- contact_times$A_D + contact_times$D_E + contact_times$EO_A
 
@@ -81,9 +117,8 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     ## pre-locate a bunch of things so we don't need to repeat these operations multiple times
     skill_idx <- !is.na(px$skill) & !grepl("timeout|rotation", px$skill, ignore.case = TRUE)
 
-    s_idx <- px$skill %eq% "Serve"
     ## clock times within-rally are assumed not to be reliable, except for serves and (optionally) freeball digs
-    if (any(diff(px$time[s_idx]) < 0, na.rm = TRUE)) warning("at least one serve has a `time` entry that is out of order (`time` goes backwards from one serve to the next), resync results might be poor")
+    if (any(diff(ref_times[s_idx]) < 0, na.rm = TRUE)) warning("at least one serve has a `time` entry that is out of order (`time` goes backwards from one serve to the next), resync results might be poor")
 
     sq_idx <- px$skill_type %eq% "Jump serve"
     sm_idx <- px$skill_type %eq% "Jump-float serve"
@@ -98,7 +133,7 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     b_idx <- px$skill %eq% "Block"
 
     if (!is.na(freeball_dig_time_offset)) {
-        if (any(diff(px$time[s_idx | fd_idx]) < 0, na.rm = TRUE)) warning("at least one serve/freeball dig has a `time` entry that is out of order (`time` goes backwards from one action to the next), resync results might be poor")
+        if (any(diff(ref_times[s_idx | fd_idx]) < 0, na.rm = TRUE)) warning("at least one serve/freeball dig has a `time` entry that is out of order (`time` goes backwards from one action to the next), resync results might be poor")
     }
 
     a_idx <- px$skill %eq% "Attack"
@@ -107,7 +142,7 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
 
     if (sum(s_idx) < 1) stop("could not find any serves in px")
     ## difference of all serve clock times to the first serve clock time
-    clock_time_diff <- difftime(px$time[s_idx], px$time[which(s_idx)[1]], units = "secs")
+    clock_time_diff <- ref_times[s_idx] - ref_times[which(s_idx)[1]]
     ## align each scouted serve time to this
     vt[s_idx] <- first_serve_contact + clock_time_diff
     ## then adjust to serve contact time according to serve type
@@ -116,7 +151,7 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     vt[s_idx & !sq_idx & !sm_idx] <- vt[s_idx & !sq_idx & !sm_idx] + contact_times$SO
     if (!is.na(freeball_dig_time_offset)) {
         ## align freeball digs by clock time relative to serve contact time
-        clock_time_diff <- difftime(px$time[fd_idx], px$time[which(s_idx)[1]], units = "secs") ## time difference relative to first serve contact clock time
+        clock_time_diff <- ref_times[fd_idx] - ref_times[which(s_idx)[1]] ## time difference relative to first serve contact clock time
         vt[fd_idx] <- first_serve_contact + clock_time_diff + freeball_dig_time_offset
     }
 
@@ -222,7 +257,7 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
         last_attack_time <- vt[i]
         last_attack_team <- px$team[i]
         last_point_id <- px$point_id[i]
-        last_team_touch_id <- px$teamtouch_id[i]
+        last_team_touch_id <- px$team_touch_id[i]
     }
 
     ## at this point we should have most of the ball contacts synced. Anything left over should be things that don't fit our expected patterns above
@@ -239,22 +274,24 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     for (pid in na.omit(unique(px$point_id[which(s_unsynced)]))) {
         ridx <- px$point_id == pid
         ridx_synced <- which(ridx & s_synced)
-        vt[which(ridx)] <- approx(ridx_synced, vt[ridx_synced], which(ridx))$y
+        if (length(ridx_synced) > 0) vt[which(ridx)] <- approx(ridx_synced, vt[ridx_synced], which(ridx))$y
     }
 
-    ## timeouts
+    ## find timeouts
     to_idx <- grepl("timeout", px$skill, ignore.case = TRUE)
-    this <- to_idx & is.na(vt)
-    vt[which(this)] <- vt[which(this) - 1]
 
-    ## non-touch rows, but not green codes or point markers
+    ## non-touch rows including timeouts, but not green codes or point markers
     is_point <- grepl("^[a\\*]p", px$code)
     is_green_code <- grepl("^[a\\*]\\$\\$&H[#=]", px$code) ## green codes [a*]$$&H[#=]
     non_skill <- (is.na(px$skill) | to_idx) & !is_point & !is_green_code
     this <- which(is.na(vt) & non_skill)
     for (i in setdiff(this, 1)) vt[i] <- vt[i - 1]
 
-    ## do we need a final pass to fill anything left over?
+    ## timeouts
+    this <- to_idx & is.na(vt)
+    vt[which(this)] <- vt[which(this) - 1]
+    ## note though that this probably has not worked, because the time preceding a timeout is likely to be the last rally point assignment code
+    ## but timeouts are processed again after applying offsets
 
     px$contact_time <- vt
 
@@ -296,11 +333,14 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     }
 
     ## end of rally, end of set, green codes, substitutions, setter positions
+    ## give timeouts the most recent non-missing video time
     ## do these after offsets have been applied
     last_point_id <- -1
     last_skill_vt <- NA_integer_
+    last_non_missing_vt <- NA_integer_
     is_sub_or_pos <- grepl("^[a\\*][zZcC]", px$code) | grepl("^\\*\\*[[:digit:]]set", px$code)
     for (i in seq_len(nrow(px))) {
+        if (to_idx[i] && !is.na(last_non_missing_vt)) vt[i] <- last_non_missing_vt
         if (px$point_id[i] %eq% last_point_id && !is.na(last_skill_vt) && is.na(vt[i])) {
             if (is_green_code[i]) {
                 vt[i] <- last_skill_vt
@@ -310,6 +350,7 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
         }
         if (i > 1 && isTRUE(is_sub_or_pos[i]) && is.na(vt[i])) vt[i] <- vt[i - 1] + 1L - isTRUE(is_sub_or_pos[i - 1])
         if (isTRUE(skill_idx[i])) last_skill_vt <- vt[i]
+        if (!is.na(vt[i])) last_non_missing_vt <- vt[i]
         last_point_id <- px$point_id[i]
     }
 
