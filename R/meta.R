@@ -233,8 +233,6 @@ read_players <- function(txt,team,surname_case) {
 ## attack codes
 read_attacks <- function(txt) {
     msgs <- list()
-    txt0 <- txt
-    idx <- find_section_idx("[3ATTACKCOMBINATION]", txt, required = FALSE)
     txt <- text_chunk(txt, "[3ATTACKCOMBINATION]")
     if (!nzchar(str_trim(txt))) {
         list(attacks = NULL, messages = NULL)
@@ -255,17 +253,23 @@ read_attacks <- function(txt) {
 }
 
 read_setter_calls <- function(txt) {
+    msgs <- list()
     txt <- text_chunk(txt, "[3SETTERCALL]")
     if (!nzchar(str_trim(txt))) {
-        NULL
+        list(sets = NULL, messages = NULL)
     } else {
         ## with read_semi_text, need to force col 9 to be char (it's a comma-separated string of ints) else it gets parsed into a single number
         tryCatch(p <- read_semi_text(txt, col_types = "c?c??iiic??"), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         names(p)[1:10] <- c("code", "X2", "description", "X4", "colour", "start_coordinate", "mid_coordinate", "end_coordinate", "path", "path_colour")
-        ## V9 is a comma-separated list of indices that give a path
+        p <- dplyr::distinct(p)
+        if (any(duplicated(p$code))) {
+            msgs <- collect_messages(msgs, "At least one setter call code in the [3SETTERCALL] section is duplicated, ignoring duplicate entries", severity = 2)
+            p <- p[!duplicated(p$code), ]
+        }
+        ## 'path' column is a comma-separated list of indices that give a path
         try(p$colour <- dv_int2rgb(p$colour))
         try(p$path_colour <- dv_int2rgb(p$path_colour))
-        p
+        list(sets = p, messages = msgs)
     }
 }
 
@@ -390,7 +394,9 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
     tryCatch(temp <- read_attacks(txt), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
     out$attacks <- temp$attacks
     msgs <- join_messages(msgs, temp$messages)
-    tryCatch(out$sets <- read_setter_calls(txt), error = function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
+    tryCatch(temp <- read_setter_calls(txt), error = function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
+    out$sets <- temp$sets
+    msgs <- join_messages(msgs, temp$messages)
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
     out$match_id <- dv_create_meta_match_id(out)
     if (length(msgs) > 0) {
