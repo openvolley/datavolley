@@ -232,17 +232,25 @@ read_players <- function(txt,team,surname_case) {
 
 ## attack codes
 read_attacks <- function(txt) {
-    txt <- text_chunk(txt,"[3ATTACKCOMBINATION]")
-    if (str_trim(txt)=="") {
-        NULL
+    msgs <- list()
+    txt0 <- txt
+    idx <- find_section_idx("[3ATTACKCOMBINATION]", txt, required = FALSE)
+    txt <- text_chunk(txt, "[3ATTACKCOMBINATION]")
+    if (!nzchar(str_trim(txt))) {
+        list(attacks = NULL, messages = NULL)
     } else {
         ##tryCatch({ p <- read.table(text=txt,sep=";",quote="",header=FALSE,stringsAsFactors=FALSE) },error=function(e) { stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") })
         tryCatch(p <- read_semi_text(txt, fallback = "read.table"), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         names(p)[1:9] <- c("code", "attacker_position", "side", "type", "description", "X6", "colour", "start_coordinate", "set_type")
+        p <- dplyr::distinct(p)
+        if (any(duplicated(p$code))) {
+            msgs <- collect_messages(msgs, "At least one attack combination code in the [3ATTACKCOMBINATION] section is duplicated, ignoring duplicate entries", severity = 2)
+            p <- p[!duplicated(p$code), ]
+        }
         p$start_coordinate <- as.integer(p$start_coordinate)
         try(p$colour <- dv_int2rgb(p$colour))
-        p
+        list(attacks = p, messages = msgs)
     }
 }
 
@@ -379,7 +387,9 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
 
     tryCatch(out$players_h <- read_players(txt, "home", surname_case), error = function(e) stop("could not read the [3PLAYERS-H] section of the input file")) ## fatal
     tryCatch(out$players_v <- read_players(txt, "visiting", surname_case), error = function(e) stop("could not read the [3PLAYERS-V] section of the input file")) ## fatal
-    tryCatch(out$attacks <- read_attacks(txt), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
+    tryCatch(temp <- read_attacks(txt), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
+    out$attacks <- temp$attacks
+    msgs <- join_messages(msgs, temp$messages)
     tryCatch(out$sets <- read_setter_calls(txt), error = function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
     out$match_id <- dv_create_meta_match_id(out)
