@@ -112,22 +112,22 @@ join_messages <- function(msgs1,msgs2) {
 # @param token2: ending token
 #
 # @return string
-text_chunk <- function(txt,token1,token2) {
-    idx1 <- grep(token1,txt,fixed=TRUE)
-    if (length(idx1)<1) return("")
+text_chunk <- function(txt, token1, token2) {
+    idx1 <- grep(token1, txt, fixed = TRUE)
+    if (length(idx1) < 1) return("")
     if (missing(token2)) {
         ## find next section starting with "["
-        idx2=grep("^\\[",txt)
-        idx2=idx2[idx2>idx1][1]
+        idx2 <- grep("^\\[", txt)
+        idx2 <- idx2[idx2 > idx1][1]
     } else {
-        idx2=grep(token2,txt,fixed=TRUE)
+        idx2 <- grep(token2, txt, fixed = TRUE)
     }
-    if (idx2==(idx1+1)) {
+    if (idx2 == (idx1 + 1)) {
         ""
     } else {
-        out <- txt[(idx1+1):(idx2-1)]
-        out <- out[sapply(out,is.notempty.string)]##!is.na(out)]
-        paste(out,collapse="\n")
+        out <- txt[(idx1 + 1):(idx2 - 1)]
+        out <- out[sapply(out, is.notempty.string)]
+        paste(out, collapse = "\n")
     }
 }
 

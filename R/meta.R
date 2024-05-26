@@ -46,9 +46,19 @@ read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
     }))
 }
 
+find_section_idx <- function(section, txt, required = TRUE) {
+    idx <- grep(section, txt, fixed = TRUE)
+    if (required && length(idx) < 1) stop("could not read the ", section, " section of the input file, it is missing from the input file")
+    if (length(idx) > 1) {
+        if (required) stop("could not read the ", section, " section of the input file, there are multiple section headers in the input file")
+        ## otherwise use the first?
+        idx <- integer()
+    }
+    idx
+}
 ## match details
 read_match <- function(txt, date_format = NULL) {
-    idx <- grep("[3MATCH]", txt, fixed = TRUE)
+    idx <- find_section_idx("[3MATCH]", txt)
     ##tryCatch(p <- read.table(text=txt[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE),
     ##         error=function(e) { stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") })
     tryCatch(p <- read_semi_text(txt[idx + 1], fallback = "read.table"), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
@@ -103,7 +113,7 @@ read_match <- function(txt, date_format = NULL) {
 }
 
 read_more <- function(txt) {
-    idx <- grep("[3MORE]",txt,fixed=TRUE)
+    idx <- find_section_idx("[3MORE]", txt)
     ##tryCatch(p <- read.table(text = txt[idx+1], sep = ";", quote = "", stringsAsFactors = FALSE, header = FALSE),
     ##         error=function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     tryCatch(p <- read_semi_text(txt[idx+1], fallback = "read.table"), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
@@ -113,7 +123,8 @@ read_more <- function(txt) {
 }
 
 read_result <- function(txt) {
-    txt <- text_chunk(txt,"[3SET]")
+    find_section_idx("[3SET]", txt) ## just to check that it can be found
+    txt <- text_chunk(txt, "[3SET]")
     ##suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") }))
     tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     names(p)[1] <- "played"
@@ -135,7 +146,7 @@ read_result <- function(txt) {
 
 ## teams
 read_teams <- function(txt) {
-    idx <- grep("[3TEAMS]", txt, fixed = TRUE)
+    idx <- find_section_idx("[3TEAMS]", txt)
     txt0 <- txt
     txt <- text_chunk(txt, "[3TEAMS]")
     msgs <- list()
@@ -180,6 +191,7 @@ read_players <- function(txt,team,surname_case) {
     if (missing(surname_case)) surname_case <- "asis"
     if (missing(team)) team <- "home"
     chnkmarker <- if (tolower(team)=="home") "[3PLAYERS-H]" else "[3PLAYERS-V]"
+    find_section_idx(chnkmarker, txt)
     txt <- text_chunk(txt, chnkmarker)
 ##    suppressWarnings(tryCatch({ p <- data.table::fread(txt, data.table=FALSE, sep=";", header=FALSE, na.strings="NA", logical01=FALSE) },error=function(e) { stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?") }))
     tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
@@ -235,7 +247,7 @@ read_attacks <- function(txt) {
 }
 
 read_setter_calls <- function(txt) {
-    txt <- text_chunk(txt,"[3SETTERCALL]")
+    txt <- text_chunk(txt, "[3SETTERCALL]")
     if (!nzchar(str_trim(txt))) {
         NULL
     } else {
@@ -250,7 +262,7 @@ read_setter_calls <- function(txt) {
 }
 
 read_video <- function(txt) {
-    txt <- text_chunk(txt,"[3VIDEO]")
+    txt <- text_chunk(txt, "[3VIDEO]")
     p <- data.frame(camera = character(), file = character(), stringsAsFactors = FALSE)
     if (nzchar(str_trim(txt))) {
         p <- tryCatch(
@@ -273,7 +285,7 @@ read_video <- function(txt) {
 }
 
 read_winning_symbols <- function(txt) {
-    txt <- str_trim(text_chunk(txt,"[3WINNINGSYMBOLS]"))
+    txt <- str_trim(text_chunk(txt, "[3WINNINGSYMBOLS]"))
     if (nzchar(txt)) tryCatch(winning_symbols_df(txt), error = function(e) "") else ""
 }
 
@@ -300,7 +312,7 @@ winning_symbols_df2txt <- function(x) {
 }
 
 read_comments <- function(txt) {
-    txt <- text_chunk(txt,"[3COMMENTS]")
+    txt <- text_chunk(txt, "[3COMMENTS]")
     ## default to NA comments
     p <- setNames(as.data.frame(rep(list(NA_character_), 5)), paste0("comment_", 1:5))
     if (nzchar(str_trim(txt))) {
