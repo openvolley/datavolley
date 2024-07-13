@@ -4,7 +4,9 @@
 #' The current validation messages/checks are:
 #' \itemize{
 #'   \item message "The total of the [home|visiting] team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the [home|visiting] team in the plays data"
+#'   \item message "[Home|Visiting] team roster is empty": the home or visiting team roster has not been entered
 #'   \item message "Players xxx and yyy have the same player ID": player IDs should be unique, and so duplicated IDs will be flagged here
+#'   \item message "Players xxx and yyy have the same jersey number": players on the same team should not have the same jersey number
 #'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
 #'   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
 #'   \item message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
@@ -82,6 +84,21 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type) {
     if (validation_level<1) return(out)
 
     ## metadata checks
+    if (is.null(x$meta$players_h) || nrow(x$meta$players_h) < 1) {
+        ## home team player list is empty
+        flnm <- grep("[3PLAYERS-H]", x$raw, fixed = TRUE)
+        if (length(flnm) != 1) flnm <- NA_integer_
+        out <- rbind(out, data.frame(file_line_number = flnm, video_time = NA_integer_, message = "Home team roster is empty",
+                                     file_line = if (!is.na(flnm)) x$raw[flnm] else NA_character_, severity = 3, stringsAsFactors = FALSE))
+    }
+    if (is.null(x$meta$players_v) || nrow(x$meta$players_v) < 1) {
+        ## visiting team player list is empty
+        flnm <- grep("[3PLAYERS-V]", x$raw, fixed = TRUE)
+        if (length(flnm) != 1) flnm <- NA_integer_
+        out <- rbind(out, data.frame(file_line_number = flnm, video_time = NA_integer_, message = "Visiting team roster is empty",
+                                     file_line = if (!is.na(flnm)) x$raw[flnm] else NA_character_, severity = 3, stringsAsFactors = FALSE))
+    }
+
     ## check for duplicate player IDs across both teams
     ph <- x$meta$players_h
     ph$team <- home_team(x)
@@ -96,6 +113,14 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type) {
         msg <- paste0("Players have the same player ID (", dpid, "): ")
         this_players <- paste0(plyrs$name[idx], " (", plyrs$hv[idx], " team ", plyrs$team[idx], " #", plyrs$number[idx], ")", collapse=", ")
         out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = paste0(msg, this_players), file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
+    }
+
+    ## check for duplicate jersey numbers within a team
+    chk <- find_duplicate_player_numbers(x)
+    if (!is.null(chk) && nrow(chk) > 0) {
+        chk <- chk %>% group_by(.data$hv, .data$number) %>% dplyr::summarize(player_ids = paste(.data$player_id, collapse = ", ")) %>%
+            ungroup %>% mutate(msg = paste0("Players have the same jersey number ", .data$number, ": ", .data$hv, " team ", ifelse(.data$hv == "home", home_team(x), visiting_team(x)), " player IDs ", .data$player_ids))
+        out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = chk$msg, file_line = NA_character_, severity = 3, stringsAsFactors = FALSE))
     }
 
     if (file_type == "indoor") {

@@ -1,13 +1,21 @@
 find_duplicate_player_numbers <- function(x) {
-    hpn <- cbind(hv = "home", team_id = home_team_id(x), x$meta$players_h[, c("number", "player_id")])
-    hpn <- hpn[hpn$number %in% hpn$number[duplicated(hpn$number)], ]
-    vpn <- cbind(hv = "visiting", team_id = visiting_team_id(x), x$meta$players_v[, c("number", "player_id")])
-    vpn <- vpn[vpn$number %in% vpn$number[duplicated(vpn$number)], ]
+    if (!is.null(x$meta$players_h) && nrow(x$meta$players_h) > 0) {
+        hpn <- cbind(hv = "home", team_id = home_team_id(x), x$meta$players_h[, c("number", "player_id")])
+        hpn <- hpn[hpn$number %in% hpn$number[duplicated(hpn$number)], ]
+    } else {
+        hpn <- NULL
+    }
+    if (!is.null(x$meta$players_v) && nrow(x$meta$players_v) > 0) {
+        vpn <- cbind(hv = "visiting", team_id = visiting_team_id(x), x$meta$players_v[, c("number", "player_id")])
+        vpn <- vpn[vpn$number %in% vpn$number[duplicated(vpn$number)], ]
+    } else {
+        vpn <- NULL
+    }
     rbind(hpn, vpn)
 }
 
 find_duplicate_player_ids <- function(x) {
-    pids <- c(x$meta$players_h$player_id, x$meta$players_v$player_id)
+    pids <- c(if (!is.null(x$meta$players_h) && nrow(x$meta$players_h) > 0) x$meta$players_h$player_id, if (!is.null(x$meta$players_v) && nrow(x$meta$players_v) > 0) x$meta$players_v$player_id)
     pids[duplicated(pids)]
 }
 
@@ -28,7 +36,7 @@ dv_repair <- function(x) {
     msgs <- c()
     ## duplicated jersey numbers (team-specific)
     pnums <- find_duplicate_player_numbers(x)
-    if (nrow(pnums) > 0) {
+    if (!is.null(pnums) && nrow(pnums) > 0) {
         for (j in seq_len(nrow(pnums))) {
             this_hv <- pnums$hv[j]
             if (this_hv == "home") {
@@ -114,7 +122,7 @@ dv_repair <- function(x) {
     tryCatch(pnums <- find_duplicate_player_numbers(x), error = function(e) {
         stop("players with duplicate jersey numbers were not able to be fixed")
     })
-    if (nrow(pnums) > 0) {
+    if (!is.null(pnums) && nrow(pnums) > 0) {
         temp <- distinct(pnums) %>% dplyr::arrange(.data$hv)
         msg <- paste0("    ", temp$hv, " team jersey number: ", temp$number, collapse = "\n")
         stop("players with duplicate jersey numbers were not able to be fixed:\n", msg)
