@@ -631,7 +631,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     ## apply additional validation
     if (extra_validation > 0) {
-        moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
+        moreval <- dv_validate(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
     }
     if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = integer(), message = character(), file_line = character())

@@ -9,7 +9,7 @@
 #' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4 (for indoor files) or when the team scores sum to 21 in sets 1--2 (beach). Otherwise a two-element list can be supplied, giving the scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
 #' @param extra_validation numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking
-#' @param validation_options list: additional options to pass to the validation step. See \code{help('validate_dv')} for details
+#' @param validation_options list: additional options to pass to the validation step. See \code{\link{dv_validate}} for details
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed
 #' @param date_format string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If \code{date_format} is something other than "guess", that date format will be preferred where dates are ambiguous
@@ -22,7 +22,7 @@
 #'
 #' @return A named list with several elements. \code{meta} provides match metadata, \code{plays} is the main play-by-play data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file.
 #'
-#' @seealso \code{\link{skill_evaluation_decoder}} \code{\link{validate_dv}}
+#' @seealso \code{\link{skill_evaluation_decoder}} \code{\link{dv_validate}}
 #' @examples
 #' \dontrun{
 #'   ## to read the example file bundled with the package
@@ -40,7 +40,7 @@
 #'   x <- dv_read(myfile, skill_evaluation_decode = "volleymetrics")
 #' }
 #' @export
-read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", date_format = "guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta) {
+dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", date_format = "guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta) {
     assert_that(is.string(filename))
     if (nchar(filename) < 1) stop("filename was specified as an empty string (\"\")")
     if (!file.exists(filename)) stop("specified input file (", filename, ") does not exist")
@@ -129,7 +129,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                 enclist <- intersect(enclist, tolower(encoding)) ## don't use the embedded encoding if it isn't the suggested list from stri_enc_detect
                 if (length(enclist)>0) {
                     try({
-                        out <- read_dv(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], date_format = date_format, extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose, edited_meta=edited_meta)
+                        out <- dv_read(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], date_format = date_format, extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose, edited_meta=edited_meta)
                         ## TODO: need to check that this actually worked, because there are files with the wrong encoding specified in their metadata
                         ## some files also appear to use different encodings for the home/visiting player lists
                         if (verbose) message(sprintf("Using text encoding: %s", enclist[1]))
@@ -589,7 +589,7 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
     if (extra_validation > 0) {
-        moreval <- validate_dv(out, validation_level = extra_validation, options = validation_options, file_type = file_type)
+        moreval <- dv_validate(out, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) {
             moreval$file_line <- as.character(moreval$file_line)
             out$messages <- bind_rows(out$messages, moreval)
@@ -625,9 +625,9 @@ read_dv <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     out
 }
 
-#' @rdname read_dv
+#' @rdname dv_read
 #' @export
-dv_read <- read_dv
+read_dv <- dv_read
 
 #' A simple summary of a volleyball match
 #'

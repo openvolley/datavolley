@@ -41,7 +41,7 @@
 #'   \item message "Serve (that was not an error) did not have an accompanying reception"
 #'   \item message "Rally had ball contacts but no serve"
 #' }
-#' 
+#'
 #' @param x datavolley: datavolley object as returned by \code{dv_read}
 #' @param validation_level numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes)
 #' @param options list: named list of options that control optional validation behaviour. Valid entries are:
@@ -57,15 +57,15 @@
 #' @examples
 #' \dontrun{
 #'   x <- dv_read(dv_example_file(), insert_technical_timeouts = FALSE)
-#'   xv <- validate_dv(x)
+#'   xv <- dv_validate(x)
 #'
 #'   ## specifying "PP" as the setter tip code
 #'   ## front-row attacks (using this code) by a back-row player won't be flagged as errors
-#'   xv <- validate_dv(x, options = list(setter_tip_codes = c("PP"))) 
+#'   xv <- dv_validate(x, options = list(setter_tip_codes = c("PP"))) 
 #' }
 #'
 #' @export
-validate_dv <- function(x, validation_level = 2, options = list(), file_type) {
+dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
     assert_that(is.numeric(validation_level) && validation_level %in% 0:3)
     assert_that(is.list(options))
     if (missing(file_type)) file_type <- if (isTRUE(grepl("beach", x$file_meta$file_type))) "beach" else "indoor"
@@ -595,3 +595,7 @@ validate_dv <- function(x, validation_level = 2, options = list(), file_type) {
     if (nrow(out) > 0) out <- dplyr::arrange(out, .data$file_line_number)
     out[, setdiff(names(out), "severity")]
 }
+
+#' @rdname dv_validate
+#' @export
+validate_dv <- dv_validate

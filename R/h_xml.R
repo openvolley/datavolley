@@ -754,7 +754,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     x$messages <- msgs[, setdiff(names(msgs), c("severity"))]
     ## apply additional validation
     if (extra_validation > 0) {
-        moreval <- validate_dv(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
+        moreval <- dv_validate(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
     }
     if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character())
