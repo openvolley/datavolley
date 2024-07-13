@@ -97,6 +97,9 @@
     <loc>/reference/dv_point_phase.html</loc>
   </url>
   <url>
+    <loc>/reference/dv_read.html</loc>
+  </url>
+  <url>
     <loc>/reference/dv_read_sq.html</loc>
   </url>
   <url>
@@ -107,6 +110,9 @@
   </url>
   <url>
     <loc>/reference/dv_sync_video.html</loc>
+  </url>
+  <url>
+    <loc>/reference/dv_validate.html</loc>
   </url>
   <url>
     <loc>/reference/dv_write.html</loc>
@@ -176,6 +182,9 @@
   </url>
   <url>
     <loc>/reference/read_dv.html</loc>
+  </url>
+  <url>
+    <loc>/reference/reexports.html</loc>
   </url>
   <url>
     <loc>/reference/remap_player_info.html</loc>
