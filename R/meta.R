@@ -227,6 +227,7 @@ read_players <- function(txt,team,surname_case) {
     p$starting_position_set5 <- str_trim(as.character(p$starting_position_set5))
     p$foreign[is.na(p$foreign)] <- FALSE
     p$number <- as.integer(p$number)
+    for (nm in names(p)[grepl("^X[[:digit:]]+", names(p))]) p[[nm]] <- as.character(p[[nm]]) ## to avoid problems when row-binding later
     p
 }
 

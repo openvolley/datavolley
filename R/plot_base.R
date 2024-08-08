@@ -83,7 +83,7 @@
 #' @export
 dv_court <- function(plot_package = "base", court="full", show_zones=TRUE, labels=c("Serving team","Receiving team"), as_for_serve=FALSE, show_zone_lines=TRUE, show_minor_zones=FALSE, grid_colour="black", zone_colour="grey70", minor_zone_colour="grey80", fixed_aspect_ratio=TRUE, zone_font_size = 10, ...) {
     assert_that(is.string(plot_package))
-    plot_package <- match.arg(tolower(plot_package), c("base", "ggplot", "ggplot2")) ##"rbokeh"
+    plot_package <- match.arg(tolower(plot_package), c("base", "ggplot", "ggplot2"))
     if (plot_package %in% c("ggplot", "ggplot2")) return(ggcourt(court = court, show_zones = show_zones, labels = labels, as_for_serve = as_for_serve, show_zone_lines = show_zone_lines, show_minor_zones = show_minor_zones, grid_colour = grid_colour, zone_colour = zone_colour, minor_zone_colour = minor_zone_colour, fixed_aspect_ratio = fixed_aspect_ratio, zone_font_size = zone_font_size, ...))
 
     court <- match.arg(tolower(court),c("full","lower","upper"))
