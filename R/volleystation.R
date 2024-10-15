@@ -8,7 +8,8 @@ vs_int2role <- function(x) {
 
 unlist1 <- function(p) if (!is.data.frame(p) && is.list(p) && length(p) == 1) p[[1]] else p
 
-vs_reformat_teams <- function(jx) {
+vs_reformat_teams <- function(jx, team_ids_from = "code") {
+    team_ids_from <- match.arg(team_ids_from, c("code", "shortname"))
     c1 <- str_trim(paste(str_trim(jx$team$home$staff$coach$firstName), str_trim(jx$team$home$staff$coach$lastName)))
     if (length(c1) < 1) c1 <- NA_character_
     c2 <- str_trim(paste(str_trim(jx$team$away$staff$coach$firstName), str_trim(jx$team$away$staff$coach$lastName)))
@@ -27,7 +28,8 @@ vs_reformat_teams <- function(jx) {
     if (length(a2) < 1) a2 <- NA_character_
     a2 <- sub("^/ ", "", a2)
     if (!nzchar(str_trim(a2))) a2 <- NA_character_
-    dv_create_meta_teams(team_ids = c(jx$team$home$code, jx$team$away$code), teams = c(jx$team$home$name, jx$team$away$name),
+    dv_create_meta_teams(team_ids = if (team_ids_from == "code") c(jx$team$home$code, jx$team$away$code) else c(jx$team$home$shortName, jx$team$away$shortName),
+                         teams = c(jx$team$home$name, jx$team$away$name),
                          coaches = c(c1, c2), assistants = c(a1, a2))
 }
 
@@ -50,13 +52,14 @@ vs_reformat_players <- function(jx, which = "home") {
                  lastname = ply$lastName,
                  firstname = ply$firstName,
                  nickname = "",
-                 special_role = NA_character_,
+                 special_role = "", ## more below
                  role = vs_int2role(ply$position),
                  foreign = FALSE,
                  X16 = NA)
     px$name <- paste(px$firstname, px$lastname)
     px$role[is.na(px$role) & px$number %in% lib] <- "libero"
     px$special_role[px$role %in% "libero"] <- "L"
+    px$special_role[!nzchar(px$special_role)] <- NA_character_
     ## starting positions
     sx <- unlist1(jx$scout$sets)$startingLineup[[if (which %in% "home") "home" else "away"]]
     if (length(names(sx)) > 0 && "positions" %in% names(sx)) sx <- sx$positions
