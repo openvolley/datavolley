@@ -327,7 +327,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     req <- list(special = NA_character_, custom = NA_character_,
                 start_coordinate_x = NA_real_, mid_coordinate_x = NA_real_, end_coordinate_x = NA_real_,
                 start_coordinate_y = NA_real_, mid_coordinate_y = NA_real_, end_coordinate_y = NA_real_,
-                start_sub_zone = NA_character_)
+                combination = NA_character_,
+                start_zone = NA_integer_, end_zone = NA_integer_, end_sub_zone = NA_character_, start_sub_zone = NA_character_)
     for (rc in names(req)) if (!rc %in% names(px)) { px[[rc]] <- req[[rc]] }
 
     ## check that all expected columns are present
