@@ -141,7 +141,13 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         ## e.g. "---- summary ----\nno comments\n\n---- match description ----\n\n\n---- coach home ----\n\n\n---- coach away ----\n"
         cx <- strsplit(jx$comment, "\n\\-\\-\\-\\-[[:space:]]*")[[1]]
         cx <- str_trim(sub(".*\\-\\-\\-\\-\n", "", cx))
-        cx <- c(cx, rep(NA_character_, 4 - length(cx)))
+        ## discard empty strings
+        cx <- cx[nzchar(cx)]
+        if (length(cx) < 4) {
+            cx <- c(cx, rep(NA_character_, 4 - length(cx)))
+        } else if (length(cx) > 4) {
+            cx <- c(cx[1:3], paste(tail(cx, -3), collapse = "\n"))
+        }
         mx$comments = dv_create_meta_comments(summary = cx[1], match_description = cx[2], home_coach_comments = cx[3], visiting_coach_comments = cx[4])
     } else {
         mx$comments = dv_create_meta_comments()
@@ -192,6 +198,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     prev_time <- NA_real_
     px <- bind_rows(lapply(seq_along(jx$scout$sets$events), function(si) {
         thisev <- jx$scout$sets$events[[si]]
+        if (nrow(thisev) < 1) return(NULL)
         thisex <- thisev$exchange
         this_point_ids <- temp_pid + seq_len(nrow(thisex))
         temp_pid <<- max(this_point_ids)
