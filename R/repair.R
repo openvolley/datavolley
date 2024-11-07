@@ -123,12 +123,13 @@ dv_repair <- function(x) {
         stop("players with duplicate jersey numbers were not able to be fixed")
     })
     if (!is.null(pnums) && nrow(pnums) > 0) {
-        temp <- distinct(pnums) %>% dplyr::arrange(.data$hv)
+        temp <- pnums %>% dplyr::select("hv", "number") %>% distinct %>% dplyr::arrange(.data$hv, .data$number)
         msg <- paste0("    ", temp$hv, " team jersey number: ", temp$number, collapse = "\n")
         stop("players with duplicate jersey numbers were not able to be fixed:\n", msg)
     }
     tryCatch(dpids <- find_duplicate_player_ids(x), error = function(e) {
-        stop("players with duplicate player IDs were not able to be fixed")
+        ## this is unlikely to happen, it's just finding duplicate player IDs, but if we can't find duplicate IDs then there is something very wrong with the file
+        stop("check for duplicate player IDs failed")
     })
     if (length(dpids) > 0) stop("players with duplicate player IDs were not able to be fixed. Player ID(s): ", paste0(dpids, collapse = ", "))
     if (length(msgs) > 0) {
