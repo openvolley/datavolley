@@ -223,7 +223,17 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             if (!is.null(thisex$plays[[j]])) {
                 temp <- thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE)
                 if ("originalTime" %in% names(temp)) temp <- dplyr::select(temp, -"originalTime")
-                if ("travelPath" %in% names(temp)) {
+                if ("invalid" %in% names(temp)) {
+                    ## anything with an "invalid" entry is a generic fault indicator (wrong score, rotation error, etc) - with free text entry from the scout (e.g. ">FORM", ">>>REP", ">>WRONG_SCORE_ref<<")
+                    temp$invalid <- str_trim(temp$invalid)
+                    if (!"code" %in% names(temp)) temp$code <- NA_character_
+                    idx <- !is.na(temp$invalid) & nzchar(temp$invalid) & is.na(temp$code)
+                    temp$code[idx] <- sub("^>>", ">", paste0(">", temp$invalid[idx])) ## prepend with > if not already and put the "invalid" content into code
+                    ## drop some values from the invalid rows, they are almost certainly not relevant
+                    for (cl in intersect(c("skill", "team", "hitType", "effect", "player"), names(temp))) temp[[cl]][idx] <- NA_character_
+                    if ("point" %in% names(temp)) temp$point[idx] <- NA
+                    temp
+                } else if ("travelPath" %in% names(temp)) {
                     tp <- bind_rows(lapply(temp$travelPath, function(z) {
                         if (is.null(z)) {
                             tibble(start_coordinate_x = NA_integer_, start_coordinate_y = NA_integer_,
@@ -337,14 +347,12 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     req <- list(special = NA_character_, custom = NA_character_,
                 start_coordinate_x = NA_real_, mid_coordinate_x = NA_real_, end_coordinate_x = NA_real_,
                 start_coordinate_y = NA_real_, mid_coordinate_y = NA_real_, end_coordinate_y = NA_real_,
-                combination = NA_character_,
+                combination = NA_character_, players = NA_integer_,
                 start_zone = NA_integer_, end_zone = NA_integer_, end_sub_zone = NA_character_, start_sub_zone = NA_character_)
     for (rc in names(req)) if (!rc %in% names(px)) { px[[rc]] <- req[[rc]] }
 
     ## check that all expected columns are present
-##    expctd <- c("point_id", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number", "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq), "code", "team", "skill", "timeout", "player_in", "player_out", "substitution", "_id", "player", "hit_type", "effect", "start_zone", "end_zone", "end_sub_zone", "combination", "target_attacker", "skill_type", "players", "point", "end_of_set")
-##    ## plus start/mid/end coordinate x,y, special, custom, start_sub_zone but we've already ensured these
-##    for (rc in setdiff(expctd, names(px))) px[[rc]] <- NA ## might run into type problems later with these
+##    expctd <- c("point_id", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number", "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq), "code", "team", "skill", "timeout", "player_in", "player_out", "substitution", "_id", "player", "hit_type", "effect", "target_attacker", "skill_type", "point", "end_of_set")
 
     ## other bits that need to be done before rebuilding the scout code
     names(px)[names(px) == "end_sub_zone"] <- "end_subzone"
@@ -499,8 +507,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px$skill_subtype <- clear_dvmsg(temp)
 
     ## number of people ("PLAYERS", p33)
-    px <- dplyr::rename(px, num_players_numeric = "players") %>%
-        mutate(num_players_numeric = as.integer(.data$num_players_numeric))
+    px <- dplyr::rename(px, num_players_numeric = "players") %>% mutate(num_players_numeric = as.integer(.data$num_players_numeric))
     temp <- dv_decode_num_players(px$skill, num_players_code = px$num_players_numeric, data_type = file_type, style = skill_evaluation_decode)
     if (has_dvmsg(temp)) {
         msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
@@ -665,6 +672,7 @@ vsm_row2code <- function(x, data_type, style) {
     }
     ##na2t(c("dsjfldjldk", "a", "", NA_character_, 99), 5) ==> "dsjfl" "a~~~~" "~~~~~" "~~~~~" "99~~~"
     out <- x$code
+    ## a note on custom codes: it seems possible that the x$custom column can contain entries that do not match what the (VS-generated) x$code entry contains
     ## only updating skill codes
     idx <- x$skill %in% c("S", "R", "E", "A", "B", "D", "F")
     if (!all(x$team[idx] %in% c("a", "*"))) {
