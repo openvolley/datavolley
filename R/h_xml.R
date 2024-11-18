@@ -201,7 +201,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     if (length(alli) < 1) stop("xml file has unexpected format")
 
     ## pull out the id, start, end, and code elements of each instance
-    i1 <- xml_find_all(alli, "(id|start|end|code)")
+    i1 <- xml_find_all(alli, "(ID|id|start|end|code)")
     i1 <- tibble(nm = xml_name(i1), val = xml_text(i1))
     ## convert to wide format, one row per id
     i1 <- tibble(id = i1$val[i1$nm == "id"],
@@ -209,9 +209,9 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
                  end = i1$val[i1$nm == "end"],
                  code = i1$val[i1$nm == "code"])
 
-    i2 <- xml_find_all(alli, "(id|label/group)") ## all id and label group elements
+    i2 <- xml_find_all(alli, "(ID|id|label/group)") ## all id and label group elements
     i2 <- tibble(nm = xml_name(i2), val = xml_text(i2))
-    i3 <- xml_find_all(alli, "(id|label/text)") ## all id and label text elements
+    i3 <- xml_find_all(alli, "(ID|id|label/text)") ## all id and label text elements
     i3 <- tibble(nm = xml_name(i3), val = xml_text(i3))
     if (isTRUE(do_transliterate)) i3$val <- stri_trans_general(i3$val, "latin-ascii")
     i3$val <- str_trim(i3$val)
@@ -220,8 +220,8 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     if (length(unique(i3$val[idx])) > 4) stop("this appears to be an indoor file - not yet supported. Please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")
 
     ## find the "id"'s in i2 and i3, each of these is the start of a row group corresponding to a single touch
-    i2i <- c(which(i2$nm == "id"), nrow(i2) + 1)
-    i3i <- c(which(i3$nm == "id"), nrow(i3) + 1)
+    i2i <- c(which(tolower(i2$nm) == "id"), nrow(i2) + 1)
+    i3i <- c(which(tolower(i3$nm) == "id"), nrow(i3) + 1)
     if (!isTRUE(all.equal(i2i, i3i))) stop("mismatch in label group and text")
 
     rally_ids <- i1$id[which(i1$code == "Rally")]
