@@ -220,7 +220,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                       "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq))
         ## row-bind the plays, timeouts, subs, and points, with care to ensure row ordering is correct
         thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
-            if (!is.null(thisex$plays[[j]])) {
+            if (!is.null(thisex$plays[[j]]) && !(is.list(thisex$plays[[j]]) && length(thisex$plays[[j]]) < 1)) {
                 temp <- thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE)
                 if ("originalTime" %in% names(temp)) temp <- dplyr::select(temp, -"originalTime")
                 if ("invalid" %in% names(temp)) {
