@@ -142,8 +142,26 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             ##xiso_idx <- grepl("^x\\-iso",encoding,ignore.case=TRUE)
             ##if (any(xiso_idx))
             ##    encoding <- c(encoding,gsub("^x\\-iso","iso",encoding[xiso_idx]))
-            ## add common ones
-            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS", "CP932", "windows-1251", "iso-8859-9")) ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
+            ## add common ones, in order of preference if tied in scores
+            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS", "CP932", "windows-1251", "iso-8859-9",
+                                      "iso-8859-4", "iso-8859-5", "iso-8859-7", "iso-8859-13", "iso-8859-16"))
+            ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
+            ## 1250 is similar to 8859-2 but not identical
+            ## notes from wikipedia https://en.wikipedia.org/wiki/ISO/IEC_8859
+            ## iso-8859-3 is Maltese and Esperanto
+            ## iso-8859-4 Estonian, Latvian, Lithuanian, Greenlandic, and Sami.
+            ## iso-8859-5 Cyrillic alphabet, including Belarusian, Bulgarian, Macedonian, Russian, Serbian, and Ukrainian (partial)
+            ## iso-8859-6 Covers the most common Arabic language characters. Does not support other languages using the Arabic script. Needs to be BiDi and cursive joining processed for display.
+            ## iso-8859-7 modern Greek
+            ## iso-8859-8 modern Hebrew
+            ## iso-8859-9 Turkish (NB largely the same as ISO/IEC 8859-1, replacing the rarely used Icelandic letters with Turkish ones)
+            ## iso-8859-10 A rearrangement of Latin-4. Considered more useful for Nordic languages. Baltic languages use Latin-4 more.
+            ## iso-8859-11 Thai
+            ## iso-8859-12 Latin/Devanagari but abandoned, possibly being reserved for ISCII Indian
+            ## iso-8859-13 Baltic Rim
+            ## iso-8859-14 Celtic languages such as Gaelic and the Breton language. Welsh letters correspond to the earlier (1994) ISO-IR-182.
+            ## iso-8859-15 A revision of 8859-1 that removes some little-used symbols, replacing them with the euro sign € and the letters Š, š, Ž, ž, Œ, œ, and Ÿ, which completes the coverage of French, Finnish and Estonian.
+            ## iso-8859-16 Albanian, Croatian, Hungarian, Italian, Polish, Romanian and Slovene, but also Finnish, French, German and Irish Gaelic (new orthography). The focus lies more on letters than symbols. The generic currency sign is replaced with the euro sign
             encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
             ##if (length(encoding)<=1) encoding <- iconvlist()
         }

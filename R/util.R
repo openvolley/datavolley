@@ -374,7 +374,8 @@ get_best_encodings <- function(encodings_to_test, filename, read_from = 10, read
     badwords <- c(badwords, c("\u6e\u434\u45a\u69\u434\u45a", "\u76\u69\u434\u45a")) ## "ncic" and "vic" but c with caron (Serbian/Czech/etc) wrongly detected as cyrillic
     badwords <- c(badwords, c("\u79\u69\uf0\u69\u74", "\u75\u6c\u61\ufe", "\u64\u6f\uf0\u61\u6e", "\u70\u6f\uf0\u6c\u75", "\u6e\ufd\u6c\ufc\u66\u65\u72", ## 1252
                               "\u64\u6f\u111\u61\u6e", "\u75\u6c\u61\u163", ## 1250
-                              "\u62\u44c\u6c", "\u44c\u6d\u69\u74", "\u62\u65\u6c\u65\u64\u44d\u79", "\u6e\u44d\u6c\u44c\u66\u65\u72")) ## 1251 - Turkish iso-8859-9 wrongly detected as windows-1252 or 1250 or 1251. Need to be a little careful because some characters (e.g. \uf0, \ufe) are valid in e.g. Icelandic and Faroese
+                              "\u62\u44c\u6c", "\u44c\u6d\u69\u74", "\u62\u65\u6c\u65\u64\u44d\u79", "\u6e\u44d\u6c\u44c\u66\u65\u72", ## 1251
+                              "\u62\u65\u6c\u65\u64\u169\u79", "\u6e\u169\u6c\ufc\u66\u65\u72")) ## Turkish iso-8859-9 wrongly detected as windows-1252 or 1250 or 1251 or other. Need to be a little careful because some characters (e.g. \uf0, \ufe) are valid in e.g. Icelandic and Faroese
     badwords_trans <- c("oooo", "ouuoo", "oouoo", "uuou", "uuoo") ## badwords after transliteration, e.g. wrongly-detected cyrillic
     ## get the \uxx numbers from sprintf("%x",utf8ToInt(tolower(dodgy_string_or_char))) or paste0("\\u", sprintf("%x", utf8ToInt(tolower("dodgy"))), collapse = "")
     read_with_enc <- function(filename, enc_to_test) {
