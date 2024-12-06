@@ -63,6 +63,9 @@ The current validation messages/checks are:
   \item message "Multiple receptions in a single rally"
   \item message "Serve (that was not an error) did not have an accompanying reception"
   \item message "Rally had ball contacts but no serve"
+  \item message "Replacement of [home|visiting] setter: the team is in rotation [pos] but the replacement setter is not in that position"
+  \item message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+  \item message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
 }
 }
 \examples{

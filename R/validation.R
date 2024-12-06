@@ -40,6 +40,9 @@
 #'   \item message "Multiple receptions in a single rally"
 #'   \item message "Serve (that was not an error) did not have an accompanying reception"
 #'   \item message "Rally had ball contacts but no serve"
+#'   \item message "Replacement of [home|visiting] setter: the team is in rotation [pos] but the replacement setter is not in that position"
+#'   \item message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+#'   \item message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
 #' }
 #'
 #' @param x datavolley: datavolley object as returned by \code{dv_read}
@@ -426,8 +429,79 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                     out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
             }
             ## TO DO, perhaps: check for liberos making a front-court set that is then attacked
+
+            ## checking some setter and setter-call related issues
+            ## identify designated setter on court and add player roles
+            plays <- mutate(plays, home_setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,
+                                                              .data$home_setter_position == 2 ~ .data$home_player_id2,
+                                                              .data$home_setter_position == 3 ~ .data$home_player_id3,
+                                                              .data$home_setter_position == 4 ~ .data$home_player_id4,
+                                                              .data$home_setter_position == 5 ~ .data$home_player_id5,
+                                                              .data$home_setter_position == 6 ~ .data$home_player_id6),
+                            visiting_setter_id = case_when(.data$visiting_setter_position == 1 ~ .data$visiting_player_id1,
+                                                           .data$visiting_setter_position == 2 ~ .data$visiting_player_id2,
+                                                           .data$visiting_setter_position == 3 ~ .data$visiting_player_id3,
+                                                           .data$visiting_setter_position == 4 ~ .data$visiting_player_id4,
+                                                           .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
+                                                           .data$visiting_setter_position == 6 ~ .data$visiting_player_id6),
+                            setter_id = case_when(.data$team_id == .data$home_team_id ~ .data$home_setter_id,
+                                                  .data$team_id == .data$visiting_team_id ~ .data$visiting_setter_id))
+
+            ## when a setter is replaced, check that the jersey number matches that of the player in home_setter_position or visiting_setter_position
+            ## there is a complication in that there can be a *Pnn code (with things on that line being inconsistent) followed by *zN to the correct position
+            ## and further complications if multiple subs are involved. So let's do the check at the next serve: everything should be correct by then
+            ## Also need to cope with multiple setter replacement codes in a block (e.g. *P1 something *P2 serve, the *P1 is redundant but can be ignored)
+            srvidx <- which(plays$skill == "Serve")
+            chk <- bind_rows(lapply(c("\\*", "a"), function(tmcode) {
+                rsidx <- which(grepl(paste0("^", tmcode, "P[[:digit:]]+"), plays$code) & !grepl(">LUp", plays$code, ignore.case = TRUE)) ## setter replacements but not lineup rows
+                if (length(rsidx) > 0) {
+                    chk <- bind_rows(lapply(rsidx, function(i) { ## for each setter replacement line
+                        ## take the code from the setter replacement (rsidx) line and the remainder from the first serve after that
+                        temp <- srvidx[srvidx > i]
+                        if (length(temp) < 1 || (any(rsidx > i & rsidx < temp[1]))) {
+                            ## no serve after this OR there is another setter replacement code in between this one and the next serve
+                            NULL
+                        } else {
+                            plays[temp[1], ] %>% mutate(code = plays$code[i])
+                        }
+                    }))
+                } else {
+                    NULL
+                }
+            }))
+            if (nrow(chk) > 0) {
+                chk <- chk %>%
+                    mutate(declared_setter_num = as.numeric(stringr::str_match(.data$code, "^[a\\*]P([[:digit:]]+)")[, 2]),
+                           expected_setter_num = case_when(grepl("^a", .data$code) ~ case_when(.data$visiting_setter_position == 1 ~ .data$visiting_p1,
+                                                                                               .data$visiting_setter_position == 2 ~ .data$visiting_p2,
+                                                                                               .data$visiting_setter_position == 3 ~ .data$visiting_p3,
+                                                                                               .data$visiting_setter_position == 4 ~ .data$visiting_p4,
+                                                                                               .data$visiting_setter_position == 5 ~ .data$visiting_p5,
+                                                                                               .data$visiting_setter_position == 6 ~ .data$visiting_p6),
+                                                           TRUE ~ case_when(.data$home_setter_position == 1 ~ .data$home_p1,
+                                                                            .data$home_setter_position == 2 ~ .data$home_p2,
+                                                                            .data$home_setter_position == 3 ~ .data$home_p3,
+                                                                            .data$home_setter_position == 4 ~ .data$home_p4,
+                                                                            .data$home_setter_position == 5 ~ .data$home_p5,
+                                                                            .data$home_setter_position == 6 ~ .data$home_p6))) %>%
+                    dplyr::filter(.data$expected_setter_num != .data$declared_setter_num)
+            }
+            if (nrow(chk) > 0) {
+                temp <- paste0("Replacement of ", ifelse(grepl("^a", chk$code), "visiting", "home"), " setter: the team is in rotation ",
+                               ifelse(grepl("^a", chk$code), chk$visiting_setter_position, chk$home_setter_position),
+                               " but the replacement setter is not in that position")
+                out <- rbind(out, chk_df(chk, temp), severity = 3)
+            }
+            ## TODO perhaps check outgoing sub of the designated setter, is there a replacement setter code before the next serve?
+
+            ## expect that any set made in reception phase on a perfect/good reception should be made by the designated setter
+            chk <- plays %>% dplyr::filter(.data$skill == "Set", lag(.data$skill) == "Reception", .data$team == lag(.data$team), grepl("^(Perfect|Good|Positive)", lag(.data$evaluation)), (.data$player_id != .data$setter_id))
+            if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)", severity = 2))
+            ## depending on the scout, we might not expect setter calls to be included on sets made by a player other than the designated setter
+            chk <- plays %>% dplyr::filter(!is.na(.data$set_code), (.data$player_id != .data$setter_id))
+            if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)", severity = 1))
         }
-        
+
         ## duplicate entries with same skill and evaluation code for the same player
         idx <- which((plays$evaluation_code[-1] %eq% plays$evaluation_code[-nrow(plays)]) &
                      (plays$skill[-1] %eq% plays$skill[-nrow(plays)]) &
