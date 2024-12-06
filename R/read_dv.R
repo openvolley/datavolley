@@ -105,49 +105,30 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ##    if (missing(insert_technical_timeouts)) warning("the current default value insert_technical_timeouts=TRUE will change to FALSE in a forthcoming release")
     out <- list()
     ## read raw lines in
-    file_text <- readLines(filename,warn=FALSE)
+    if (length(encoding) < 1) encoding <- "guess"
     assert_that(is.character(encoding))
-    if (length(encoding)>1 || identical(tolower(encoding), "guess")) {
-        ## try to guess encoding based on the first few lines of the file
-        ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
-        idx1 <- suppressWarnings(grep("[3MATCH]",file_text,fixed=TRUE))
-        idx2 <- suppressWarnings(grep("[3SETTERCALL]",file_text,fixed=TRUE))+1
+    are_guessing_encoding <- identical(tolower(encoding), "guess")
+    if (length(encoding) > 1 || are_guessing_encoding) {
+        file_text <- readLines(filename, warn = FALSE)
+        ## test from [3MATCH] section to end of [3SETTERCALL] or [3ATTACKCOMBINATION]
+        idx1 <- suppressWarnings(grep("[3MATCH]", file_text, fixed = TRUE)) + 1L
+        idx2 <- suppressWarnings(grep("[3WINNINGSYMBOLS]", file_text, fixed = TRUE)) - 1L ## click and scout doesn't have this, nor does it have attack combos or setter calls
         ## fallback
-        if (length(idx1)<1 || is.na(idx1)) idx1 <- 10
-        if (length(idx2)<1 || is.na(idx2)) idx2 <- 90
-        tst <- paste(file_text[idx1:idx2],collapse="")
-        if (identical(tolower(encoding),"guess")) {
-            ## first try using the embedded encoding info in the 3MATCH section
-            textenc <- tryCatch(suppressWarnings({
-                idx <- suppressWarnings(grep("[3MATCH]", file_text, fixed=TRUE))
-                setdiff(as.character(read.table(text=file_text[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)$V9), "1") ## 1 seems to be used to indicate the default locale encoding, which doesn't help us
-            }), error=function(e) NULL)
-            encoding <- stri_enc_detect(tst)[[1]]
-            encoding <- encoding$Encoding[encoding$Confidence > 0.8]
-            if (!is.null(textenc)) {
-                enclist <- intersect(paste0(c("windows-", "cp"), tolower(textenc)), tolower(iconvlist()))
-                enclist <- intersect(enclist, tolower(encoding)) ## don't use the embedded encoding if it isn't the suggested list from stri_enc_detect
-                if (length(enclist)>0) {
-                    try({
-                        out <- dv_read(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], date_format = date_format, extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose, edited_meta=edited_meta)
-                        ## TODO: need to check that this actually worked, because there are files with the wrong encoding specified in their metadata
-                        ## some files also appear to use different encodings for the home/visiting player lists
-                        if (verbose) message(sprintf("Using text encoding: %s", enclist[1]))
-                        return(out)
-                    }, silent=TRUE)
-                    ## if that fails, we'll drop through to our previous guessing code
-                }
-            }
-            ## stri might return "x-iso*" encodings, but iconvlist() doesn't have them. Can these be treated just as iso*?
-            ##xiso_idx <- grepl("^x\\-iso",encoding,ignore.case=TRUE)
-            ##if (any(xiso_idx))
-            ##    encoding <- c(encoding,gsub("^x\\-iso","iso",encoding[xiso_idx]))
+        if (length(idx1) < 1 || is.na(idx1)) idx1 <- 10
+        if (length(idx2) < 1 || is.na(idx2)) idx2 <- 90
+        if (!isTRUE(idx2 > idx1)) { idx1 <- 10; idx2 <- 90; }
+        ok <- FALSE
+        enclist <- character()
+        if (!are_guessing_encoding) {
+            ## user has provided multiple encodings to try
+            encodings_to_test <- encoding
+        } else {
+            likely_encodings <- detect_encodings(file_text)
             ## add common ones, in order of preference if tied in scores
-            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS", "CP932", "windows-1251", "iso-8859-9",
-                                      "iso-8859-4", "iso-8859-5", "iso-8859-7", "iso-8859-13", "iso-8859-16"))
+            encodings_to_test <- tolower(c(likely_encodings$likely, likely_encodings$embedded_resolved, "windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "windows-1251", "SHIFT-JIS", "CP932", "iso-8859-9", "iso-8859-4", "iso-8859-5", "iso-8859-7", "iso-8859-13", "iso-8859-16"))
             ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
-            ## 1250 is similar to 8859-2 but not identical
-            ## notes from wikipedia https://en.wikipedia.org/wiki/ISO/IEC_8859
+            ## windows-1250 is similar to 8859-2 but not identical
+            ## additional notes from wikipedia https://en.wikipedia.org/wiki/ISO/IEC_8859
             ## iso-8859-3 is Maltese and Esperanto
             ## iso-8859-4 Estonian, Latvian, Lithuanian, Greenlandic, and Sami.
             ## iso-8859-5 Cyrillic alphabet, including Belarusian, Bulgarian, Macedonian, Russian, Serbian, and Ukrainian (partial)
@@ -162,31 +143,54 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             ## iso-8859-14 Celtic languages such as Gaelic and the Breton language. Welsh letters correspond to the earlier (1994) ISO-IR-182.
             ## iso-8859-15 A revision of 8859-1 that removes some little-used symbols, replacing them with the euro sign € and the letters Š, š, Ž, ž, Œ, œ, and Ÿ, which completes the coverage of French, Finnish and Estonian.
             ## iso-8859-16 Albanian, Croatian, Hungarian, Italian, Polish, Romanian and Slovene, but also Finnish, French, German and Irish Gaelic (new orthography). The focus lies more on letters than symbols. The generic currency sign is replaced with the euro sign
-            encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
-            ##if (length(encoding)<=1) encoding <- iconvlist()
+            encodings_to_test <- unique(intersect(encodings_to_test, tolower(iconvlist())))
         }
-        encoding <- unique(encoding)
-        expect_tildes <- tryCatch(!any(grepl("PRG: Essential Stats", dvlines)), error = function(e) FALSE)
-        encoding <- get_best_encodings(encoding, filename = filename, read_from = idx1, read_to = idx2, expect_tildes = expect_tildes)
-        if (length(encoding$encodings) < 1) stop("error in guessing text encoding")
-        if (encoding$error_score > 0) {
-            ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect
-            ## now just brute force it over all possible encodings (will be slow)
-            encoding_brute <- get_best_encodings(iconvlist(), filename = filename, read_from = idx1, read_to = idx2)
-            if (length(encoding_brute$encodings) > 0 && encoding_brute$error_score < encoding$error_score) encoding <- encoding_brute
+        ## if it's a DV4 file with embedded UTF8 strings, try basing our guess on those first
+        ## there's some ambiguity about how much we care about text encodings if we have a DV4 file, because most of the text should be available in the utf8-encoded sections (which we should be able to decode regardless of what encoding was used to read the file) and so it doesn't matter if we read the file with the wrong encoding. BUT we won't get e.g. attack and set code descriptions, because these aren't provided as utf8-encoded copies. So we still want to get the encoding right. But (i) it's possible that the player names etc are in plain ASCII and so the embedded utf8 sections don't give us any hints about the broader file encoding, and (ii) it's presumably possible that the file has been read and re-saved (in some other non-DV4-software, maybe DV2007) with a different encoding to that used by DV4. The other software won't update the embedded utf8 sections, so if we guess our encoding based on the embedded utf8 it will be wrong. But it's difficult to see how we can cope with that
+        if (any_dv_utf8(file_text)) {
+            chk <- enc_from_embedded_utf8(file_text, encodings_to_test = encodings_to_test)
+            if (length(chk$encodings) > 0 && chk$error_score < 1) {
+                enclist <- chk$encodings
+                ok <- TRUE
+            }
         }
-        encoding <- encoding$encodings
+        ## if this doesn't give an unambiguous answer, it probably indicates that the file was text-edited or modified by other software, or that the embedded utf8 encodings are equivalent to plain ASCII so we don't get any info from them
+        ## if there is no embedded UTF8 (file from earlier DV version), or if it does not give an unambiguous answer, try the embedded encoding BUT only if it appears in the list suggested by detect_encodings
+        if (!ok && are_guessing_encoding && length(likely_encodings$embedded_resolved) == 1 && likely_encodings$embedded_resolved %in% likely_encodings$likely) {
+            try({
+                out <- dv_read(filename = filename, insert_technical_timeouts = insert_technical_timeouts, do_warn = do_warn, do_transliterate = do_transliterate, encoding = likely_encodings$embedded_resolved, date_format = date_format, extra_validation = extra_validation, validation_options = validation_options, surname_case = surname_case, skill_evaluation_decode = skill_evaluation_decode, custom_code_parser = custom_code_parser, metadata_only = metadata_only, verbose = verbose, edited_meta = edited_meta)
+                ## TODO: perhaps check that this actually worked, because there are files with the wrong encoding specified in their metadata. But with luck this situation should be uncommon, because an incorrect embedded encoding hopefully won't appear in the list of suggested encodings
+                ## some files also appear to use different encodings for the home/visiting player lists, but it is going to be very difficult to handle the possibility of different encodings in different parts of the file
+                if (verbose) message("Using text encoding: ", likely_encodings$embedded_resolved)
+                return(out)
+            }, silent = TRUE)
+        }
+        ## and finally just test the encodings, either those provided by the user or the guessed list
+        if (!ok) {
+            expect_tildes <- tryCatch(!any(grepl("PRG: Essential Stats", dvlines)), error = function(e) FALSE)
+            chk <- get_best_encodings(encodings_to_test, expect_tildes = expect_tildes, file_text = file_text, read_from = idx1, read_to = idx2) ## filename = filename
+            if (!isTRUE(chk$error_score < 1) && are_guessing_encoding) {
+                ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect
+                ## now just brute force it over all possible encodings (will be slow)
+                encoding_brute <- get_best_encodings(iconvlist(), expect_tildes = expect_tildes, file_text = file_text, read_from = idx1, read_to = idx2) ## filename = filename
+                if (length(encoding_brute$encodings) > 0 && encoding_brute$error_score < encoding$error_score) chk <- encoding_brute
+            }
+            enclist <- chk$encodings
+        }
+        if (length(enclist) < 1) enclist <- "windows-1251" ## absolute fallback
         ## so now we have a list of possible encodings
-        ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then just whatever was first
-        other_enc <- encoding
-        if (any(grepl("^windows",tolower(encoding)))) {
-            encoding <- encoding[grepl("^windows",tolower(encoding))][1]
-        } else if (any(tolower(encoding) %in% c("utf-8", "utf8"))) {
-            encoding <- encoding[tolower(encoding) %in% c("utf-8", "utf8")][1]
-        } else if (any(tolower(encoding) %in% c("us-ascii"))) {
-            encoding <- encoding[tolower(encoding) %in% c("us-ascii")][1]
+        ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then CP, then just whatever was first
+        other_enc <- enclist
+        if (any(grepl("^windows",tolower(enclist)))) {
+            encoding <- enclist[grepl("^windows",tolower(enclist))][1]
+        } else if (any(tolower(enclist) %in% c("utf-8", "utf8"))) {
+            encoding <- enclist[tolower(enclist) %in% c("utf-8", "utf8")][1]
+        } else if (any(tolower(enclist) %in% c("us-ascii"))) {
+            encoding <- enclist[tolower(enclist) %in% c("us-ascii")][1]
+        } else if (any(grepl("^cp[[:digit:]\\-]",tolower(enclist)))) {
+            encoding <- enclist[grepl("^cp[[:digit:]\\-]",tolower(enclist))][1]
         } else {
-            encoding <- encoding[1]
+            encoding <- enclist[1]
         }
         other_enc <- setdiff(other_enc, encoding)
         if (verbose) {
@@ -200,13 +204,11 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     file_text <- read_lines_enc(filename, file_encoding = encoding)
     file_text <- gsub("Secondo tocco di[[:space:]]+l.;","Secondo tocco di la;", file_text)
 
-##    file_text <- iconv(file_text,from=encoding,to="utf-8") ## convert to utf-8
     ## so we got to here, either by reading the file, or using the supplied file_text
     out$raw <- file_text
-    if (do_transliterate) {
-        ##if (missing(encoding)) warning("transliteration may not work without an encoding specified")
-        file_text <- stri_trans_general(file_text,"latin-ascii") ##file_text <- iconv(file_text,from="utf-8",to="ascii//TRANSLIT")
-    }
+
+    if (do_transliterate) file_text <- stri_trans_general(file_text, "latin-ascii")
+
     ## file metadata
     if (!do_warn) {
         suppressWarnings(temp <- read_filemeta(file_text, date_format = if (date_format == "guess") date_format_suggested else date_format))
@@ -264,6 +266,7 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             }
         }, silent = TRUE)
         if (is.null(this_main)) {
+            ## don't need to pass encoding here, because we are only reading the [3SCOUT] section
             if (!do_warn) {
                 this_main <- suppressWarnings(read_main(filename))
             } else {
