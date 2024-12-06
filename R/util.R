@@ -492,3 +492,56 @@ single_unique_value_or_na_int <- function(x) {
 mean_nna <- function(...) mean(..., na.rm = TRUE)
 qmax <- function(...) suppressWarnings(max(..., na.rm = TRUE))
 qmin <- function(...) suppressWarnings(min(..., na.rm = TRUE))
+
+## deal with DV's UTF8-encoded text
+## their encoded text starts with \u000f
+is_dv_utf8 <- function(z) grepl("^\u000f", z) ## one element per element of z
+any_dv_utf8 <- function(z) any(grepl("\u000f", z, useBytes = TRUE), na.rm = TRUE) ## TRUE if anything in z is encoded
+
+## decode a vector of text
+decode_dv_utf8 <- function(z, warn = FALSE) {
+    if (length(z) > 1) return(unname(sapply(z, decode_dv_utf8)))
+    if (!is_dv_utf8(z)) {
+        if (warn) warning("text is not UTF8-encoded")
+        return(z)
+    }
+    ## string starts with \u000f then 2 or 4 for 2-byte or 4-byte encoding
+    if (nchar(z) < 3) return("") ## empty string
+    nbytes <- as.numeric(substr(z, 2, 2))
+    if (nbytes <= 1 || (nbytes %% 2 != 0)) {
+        if (warn) warning("could not decode text")
+        return(z)
+    }
+    str_trim(sub_u_spaces(intToUtf8(strtoi(stringi::stri_sub(z, seq(3, nchar(z), by = nbytes), length = nbytes), 16))))
+}
+
+## unicode includes a bunch of space character that aren't necessarily detected by the regexp [[:space:]] (e.g. the \ua0 non-breaking space is not)
+sub_u_spaces <- function(z) {
+    spcs <- utf8ToInt(c("\u00a0\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u200b\u202f\u205f\u3000\ufeff"))
+    zi <- lapply(z, utf8ToInt)
+    zi <- lapply(zi, function(x) { x[x %in% spcs] <- 32; x }) ## standard space
+    unlist(lapply(zi, intToUtf8))
+}
+
+## replace un-encoded columns of data.frame p with their encoded copies
+process_dv_utf8 <- function(p, from, to) {
+    ## from and to are vectors of column numbers or names
+    if (length(from) != length(to)) {
+        warning("from and to are different lengths")
+        return(p)
+    }
+    if (is.character(from)) {
+        ## convert to column numbers
+        from <- vapply(from, function(nm) if (nm %in% names(p)) which(names(p) == nm)[1] else NA_integer_, FUN.VALUE = 1L, USE.NAMES = FALSE)
+    }
+    todrop <- rep(FALSE, length(from))
+    for (i in seq_along(from)) {
+        if (!is.na(from[i]) && ncol(p) >= from[i] && any_dv_utf8(p[[from[i]]])) {
+            try({
+                p[[to[i]]] <- decode_dv_utf8(p[[from[i]]])
+                todrop[i] <- TRUE
+            })
+        }
+    }
+    if (any(todrop)) p[, setdiff(seq_len(ncol(p)), from[todrop])] else p
+}

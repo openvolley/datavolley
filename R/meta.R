@@ -78,6 +78,7 @@ read_match <- function(txt, date_format = NULL) {
     c2n <- function(z) if (is.character(z) && !is.na(z) && !is.na(as.numeric(z))) as.numeric(z) else z
     p$day_number <- c2n(p$day_number)
     p$match_number <- c2n(p$match_number)
+    process_dv_utf8(p, from = 13:15, to = c("league", "phase", "home_away")) ## use UTF8 columns if available
     if (is.na(p$date)) {
         msgs <- collect_messages(msgs, "Match information is missing the date", idx + 1, txt[idx + 1], severity = 2)
         date_was_missing <- TRUE
@@ -119,7 +120,7 @@ read_more <- function(txt) {
     tryCatch(p <- read_semi_text(txt[idx+1], fallback = "read.table"), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     for (k in c(1, 4:6)) p[[k]] <- as.character(p[[k]])
     names(p)[1:6] <- c("referees", "spectators", "receipts", "city", "arena","scout")
-    p
+    process_dv_utf8(p, from = 7:10, to = c("referees", "city", "arena", "scout")) ## use UTF8 columns if available
 }
 
 read_result <- function(txt) {
@@ -159,6 +160,7 @@ read_teams <- function(txt) {
     names(p)[5] <- "assistant"
     if (ncol(p) > 5) names(p)[6] <- "shirt_colour"
     try(p$shirt_colour <- dv_int2rgb(p$shirt_colour), silent = TRUE)
+    p <- process_dv_utf8(p, from = 7:9, to = c("team", "coach", "assistant")) ## use UTF8 columns if available
     p$home_away_team <- c("*","a")
     p$team_id <- str_trim(as.character(p$team_id)) ## force to be char
     p$team <- str_trim(p$team)
@@ -197,6 +199,7 @@ read_players <- function(txt,team,surname_case) {
     tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     if (ncol(p) < 1) p <- as_tibble(setNames(as.data.frame(matrix(nrow = 0, ncol = 18)), paste0("X", 1:18)))
     names(p)[c(2, 4:15)] <- c("number", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role", "foreign")
+    p <- process_dv_utf8(p, from = 18:20, to = c("lastname", "firstname", "nickname")) ## use UTF8 columns if available before manipulating names
     if (is.character(surname_case)) {
         p$lastname <- switch(tolower(surname_case),
                              upper = toupper(p$lastname),
