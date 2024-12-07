@@ -706,7 +706,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         }
         start_zone <- some_codes[3]##substr(code,7,7)
         if (not_tilde(start_zone)) {
-            out_start_zone[ci] <- as.numeric(start_zone)
+            out_start_zone[ci] <- suppressWarnings(as.numeric(start_zone))
             if ((skill=="R" || skill=="S") && !any(start_zone==c(1,9,6,7,5))) {
                 msgs <- collect_messages(msgs,paste0("Unexpected serve/reception start zone: ",start_zone),code_line_num[ci],full_lines[ci],severity=2)
             }
@@ -714,13 +714,13 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         end_zone <- some_codes[4]##substr(code,8,8)
         if (not_tilde(end_zone)) {
             if (skill %eq% "A" && using_cones) {
-                out_end_cone[ci] <- as.integer(end_zone)
+                out_end_cone[ci] <- suppressWarnings(as.integer(end_zone))
                 ## NOT YET
                 ##if ((start_zone %in% c(4, 7, 5, 2, 9, 1) && !out_end_cone[ci] %in% 1:7) || (start_zone %in% c(3, 8) && !out_end_cone[ci] %in% 1:8)) {
                 ##    msgs <- collect_messages(msgs, paste0("Unexpected attack cone: ", end_zone), code_line_num[ci], full_lines[ci], severity = 2)
                 ##}
             } else {
-                out_end_zone[ci] <- as.integer(end_zone)
+                out_end_zone[ci] <- suppressWarnings(as.integer(end_zone))
                 if (skill=="B" && !out_end_zone[ci] %in% c(2, 3, 4)) {
                     msgs <- collect_messages(msgs, paste0("Unexpected block end zone: ", end_zone), code_line_num[ci], full_lines[ci], severity = 2)
                 }
@@ -803,7 +803,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         ## number of people ("PLAYERS", p33)
         num_players <- some_codes[7]##substr(code,11,11)
         if (not_tilde(num_players)) {
-            out_num_players_numeric[ci] <- as.numeric(num_players)
+            out_num_players_numeric[ci] <- suppressWarnings(as.numeric(num_players))
             if (skill=="A") {
                 if (!num_players %in% as.character(0:4)) {
                     msgs <- collect_messages(msgs,paste0("Unexpected number of players: ",num_players),code_line_num[ci],full_lines[ci],severity=2)
@@ -1025,7 +1025,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         msgs <- data.frame(file_line_number=integer(),video_time=numeric(),message=character(),file_line=character())
     }
 
-    list(plays = data.frame(code = in_code, team = out_team, player_number = out_player_number, player_name = out_player_name, player_id = out_player_id, skill = out_skill, skill_type = out_skill_type, evaluation_code = out_evaluation_code, evaluation = out_evaluation, attack_code = out_attack_code, attack_description = out_attack_description, set_code = out_set_code, set_description = out_set_description, set_type = out_set_type, start_zone = out_start_zone, end_zone = out_end_zone, end_subzone = out_end_subzone, end_cone = out_end_cone, skill_subtype = out_skill_subtype, num_players = out_num_players, num_players_numeric = out_num_players_numeric, special_code = out_special_code, timeout = out_timeout, end_of_set = out_end_of_set, substitution = out_substitution, point = out_point, home_team_score = out_home_team_score, visiting_team_score = out_visiting_team_score, home_setter_position = out_home_setter_position, visiting_setter_position = out_visiting_setter_position, custom_code = out_custom_code, file_line_number = as.integer(code_line_num), stringsAsFactors = FALSE), messages = msgs)
+    list(plays = data.frame(code = in_code, team = out_team, player_number = out_player_number, player_name = out_player_name, player_id = out_player_id, skill = out_skill, skill_type = out_skill_type, evaluation_code = out_evaluation_code, evaluation = out_evaluation, attack_code = out_attack_code, attack_description = out_attack_description, set_code = out_set_code, set_description = out_set_description, set_type = out_set_type, start_zone = out_start_zone, end_zone = out_end_zone, end_subzone = out_end_subzone, end_cone = out_end_cone, skill_subtype = out_skill_subtype, num_players = out_num_players, num_players_numeric = out_num_players_numeric, special_code = out_special_code, timeout = out_timeout, end_of_set = out_end_of_set, substitution = out_substitution, point = out_point, home_team_score = out_home_team_score, visiting_team_score = out_visiting_team_score, home_setter_position = out_home_setter_position, visiting_setter_position = out_visiting_setter_position, custom_code = out_custom_code, file_line_number = suppressWarnings(as.integer(code_line_num)), stringsAsFactors = FALSE), messages = msgs)
 }
 
 ## single parenthesised capture
