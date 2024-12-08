@@ -520,6 +520,11 @@ read_comments <- function(txt) {
         }
 
         p2 <- tryCatch(read_semi_text2(txt, nms = paste0("comment_", 1:10)), error = function(e) warning("could not read the [3COMMENTS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
+        ## collapse multiple lines into single
+        if (nrow(p2) > 1) {
+            p2 <- p2 %>% dplyr::summarize(across(everything(), function(z) paste(Filter(Negate(is.na), z), collapse = "\n")))
+        }
+        p2[!nzchar(p2)] <- NA_character_
         if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
     }
     p2

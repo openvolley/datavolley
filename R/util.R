@@ -639,7 +639,7 @@ decode_dv_utf8 <- function(z, warn = FALSE) {
         return(z)
     }
     ## string starts with \u000f then 2 or 4 for 2-byte or 4-byte encoding
-    if (nchar(z) < 3) return("") ## empty string
+    if (nchar(z) < 3) return(NA_character_) ## empty string, but in general if we were reading from the delimited text this would be read as NA_character_, so return that here for consistency
     nbytes <- as.numeric(substr(z, 2, 2))
     if (nbytes <= 1 || (nbytes %% 2 != 0)) {
         if (warn) warning("could not decode text")
