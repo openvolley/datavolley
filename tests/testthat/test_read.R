@@ -1,7 +1,7 @@
 context("dvw file reader")
 
 test_that("text encoding is guessed correctly", {
-    expect_message(dv_read(dv_example_file(1), insert_technical_timeouts=FALSE, verbose=TRUE), "Using text encoding: UTF-8")
+    expect_message(dv_read(dv_example_file(1), insert_technical_timeouts=FALSE, verbose=TRUE), "Using text encoding: UTF-8", ignore.case = TRUE)
     expect_message(dv_read(dv_example_file(2), insert_technical_timeouts=FALSE, verbose=TRUE), "Using text encoding: windows-1250")
 })
 

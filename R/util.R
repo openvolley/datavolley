@@ -567,7 +567,7 @@ dv_int2rgb <- function(z) {
 #' @rdname dv_int2rgb
 dv_rgb2int <- function(x) {
     out <- grDevices::col2rgb(x)
-    out <- as.integer(apply(out, 2, function(z) z[1] * 256 * 256 + z[2] * 256 + z[3]))
+    out <- suppressWarnings(as.integer(apply(out, 2, function(z) z[1] * 256 * 256 + z[2] * 256 + z[3])))
     out[is.na(x)] <- NA_integer_
     out
 }
@@ -628,7 +628,7 @@ qmin <- function(...) suppressWarnings(min(..., na.rm = TRUE))
 
 ## deal with DV's UTF8-encoded text
 ## their encoded text starts with \u000f
-is_dv_utf8 <- function(z) grepl("^\u000f", z) ## one element per element of z
+is_dv_utf8 <- function(z) grepl("^\u000f", z, useBytes = TRUE) ## one element per element of z
 any_dv_utf8 <- function(z) any(grepl("\u000f", z, useBytes = TRUE), na.rm = TRUE) ## TRUE if anything in z is encoded
 
 ## decode a vector of text
@@ -677,4 +677,15 @@ process_dv_utf8 <- function(p, from, to) {
         }
     }
     if (any(todrop)) p[, setdiff(seq_len(ncol(p)), from[todrop])] else p
+}
+
+## for debugging timings
+options(dvtiming = list())
+mark_timing <- function(label) {
+    opt <- getOption("dvtiming")
+    opt[[label]] <- proc.time()
+    options(dvtiming = opt)
+}
+show_timing <- function(label) {
+    message(label, " execution time: ", round((proc.time() - getOption("dvtiming")[[label]])[3] * 1000), " ms")
 }
