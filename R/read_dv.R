@@ -386,8 +386,9 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                         idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
                         if (length(idx) > 0) {
                             idx <- idx[1]
-                            ##cat(sprintf("Inserting technical timeout at row %d (set %d, score %d)\n",idx,this_set,thisp))
-                            out$plays <- bind_rows(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
+                            out$plays <- bind_rows(out$plays[seq_len(idx), ],
+                                                   data.frame(skill = "Technical timeout", custom_code = "", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
+                                                   out$plays[(idx+1):nrow(out$plays), ])
                         }
                     }
                 }
@@ -398,7 +399,9 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                     idx <- which(insert_technical_timeouts[[si]](out$plays$home_team_score, out$plays$visiting_team_score) & out$plays$set_number==this_set)
                     if (length(idx) > 0) {
                         idx <- idx[1]
-                        out$plays <- bind_rows(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
+                        out$plays <- bind_rows(out$plays[seq_len(idx), ],
+                                               data.frame(skill = "Technical timeout", custom_code = "", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
+                                               out$plays[(idx+1):nrow(out$plays), ])
                     }
                 }
             }
