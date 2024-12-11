@@ -43,6 +43,7 @@
 #'   \item message "Replacement of [home|visiting] setter: the team is in rotation [pos] but the replacement setter is not in that position"
 #'   \item message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
 #'   \item message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+#'   \item message "Set by the [home|visiting] team was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"
 #' }
 #'
 #' @param x datavolley: datavolley object as returned by \code{dv_read}
@@ -520,6 +521,19 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                       (plays$skill[idx0] %eq% "Set" & plays$skill[idx0_next] %eq% "Block")))
         if (length(idx)>0)
             out <- rbind(out,chk_df(plays[idx+1,],"Consecutive actions by the same player",severity=3))
+
+        ## look for aR -> *E -> aA or similar, suggesting that the set was assigned to the wrong team
+        chk <- plays %>% dplyr::filter(.data$skill == "Set",
+                                       ## preceded by reception or dig by the other team (but not D/ or R/)
+                                       lag(.data$team) != .data$team, lag(.data$skill) %in% c("Reception", "Dig") & !lag(.data$evaluation) %in% c("Poor, no attack", "Ball directly back over net"),
+                                       ## and followed by an attack by the other team
+                                       lead(.data$skill) == "Attack", lead(.data$team) != .data$team)
+        if (nrow(chk) > 0) {
+            tm <- case_when(chk$team == chk$home_team ~ "by the home team",
+                            chk$team == chk$visiting_team ~ "by the visiting team",
+                            TRUE ~ "")
+            out <- rbind(out, chk_df(chk, paste0("Set ", tm, " was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"), severity = 3))
+        }
 
         ## every point (with any actual skill) should have a winning action or error
         tmp_any_skill <- !is.na(plays$skill) & !plays$skill %in% c("Timeout", "Technical timeout", "Substitution")
