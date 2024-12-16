@@ -126,9 +126,9 @@ dvw_setter_calls <- function(x, text_encoding) {
         "[3SETTERCALL]"
     } else {
         ## force coords to be 4-digit ints
-        tmp$start_coordinate <- sprintf("%04d", tmp$start_coordinate)
-        tmp$mid_coordinate <- sprintf("%04d", tmp$mid_coordinate)
-        tmp$end_coordinate <- sprintf("%04d", tmp$end_coordinate)
+        tmp$start_coordinate[!is.na(tmp$start_coordinate)] <- formatC(tmp$start_coordinate[!is.na(tmp$start_coordinate)], width = 4, flag = "0")
+        tmp$mid_coordinate[!is.na(tmp$mid_coordinate)] <- formatC(tmp$mid_coordinate[!is.na(tmp$mid_coordinate)], width = 4, flag = "0")
+        tmp$end_coordinate[!is.na(tmp$end_coordinate)] <- formatC(tmp$end_coordinate[!is.na(tmp$end_coordinate)], width = 4, flag = "0")
         if (is.character(tmp$colour)) tmp$colour <- dv_rgb2int(tmp$colour)
         if ("path_colour" %in% names(tmp) && is.character(tmp$path_colour)) tmp$path_colour <- dv_rgb2int(tmp$path_colour)
         sect2txt(tmp, "meta$sets", "[3SETTERCALL]")
