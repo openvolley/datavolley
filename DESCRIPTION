@@ -37,6 +37,7 @@ Suggests:
     covr
 Encoding: UTF-8
 License: MIT + file LICENSE
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 Remotes: openvolley/vscoututils

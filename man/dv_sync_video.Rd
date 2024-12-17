@@ -56,20 +56,20 @@ The synchronization is a two-step process. In the first step, the video time of 
 
 The \code{contact_times} object contains a set of times (in seconds), which you can adjust to suit your scouting style and level of play. If you have an already-synchronized dvw file, the \code{\link{dv_sync_summary}} function can provide some guidance as to what these values should be. The \code{contact_times} object contains the following entries:
 \itemize{
-  \item SQ - time between the scouted serve time and actual serve contact for jump serves
-  \item SM - time between the scouted serve time and actual serve contact for jump-float serves
-  \item SO - time between the scouted serve time and actual serve contact for all other serves
-  \item SQ_R, SM_R, SO_R - the time between serve contact and reception contact for jump, jump-float, and other serves
-  \item R_E - the time between reception contact and set contact
-  \item EQ_A - the time between set contact and attack contact for quick sets
-  \item EH_A - the time between set contact and attack contact for high sets
-  \item EO_A - the time between set contact and attack contact for all other sets
-  \item A_B - the time between attack contact and block contact
-  \item A_D - the time between attack contact and dig contact (no intervening block touch)
-  \item A_B_D - the time between attack contact and dig contact (with block touch)
-  \item D_E - the time between dig contact and set contact
-  \item RDov - the time between reception or dig overpass contact and the next touch by the opposition
-  \item END - the time between the last contact and end-of-rally marker
+\item SQ - time between the scouted serve time and actual serve contact for jump serves
+\item SM - time between the scouted serve time and actual serve contact for jump-float serves
+\item SO - time between the scouted serve time and actual serve contact for all other serves
+\item SQ_R, SM_R, SO_R - the time between serve contact and reception contact for jump, jump-float, and other serves
+\item R_E - the time between reception contact and set contact
+\item EQ_A - the time between set contact and attack contact for quick sets
+\item EH_A - the time between set contact and attack contact for high sets
+\item EO_A - the time between set contact and attack contact for all other sets
+\item A_B - the time between attack contact and block contact
+\item A_D - the time between attack contact and dig contact (no intervening block touch)
+\item A_B_D - the time between attack contact and dig contact (with block touch)
+\item D_E - the time between dig contact and set contact
+\item RDov - the time between reception or dig overpass contact and the next touch by the opposition
+\item END - the time between the last contact and end-of-rally marker
 }
 
 The \code{offsets} object defines the offset (in seconds) to be added to each contact time in the second pass of the synchronization process. It contains the entries "S" (serve), "R" (reception), "E" (set), "A" (attack), "D", (dig), "B" (block), and "F" (freeball).
