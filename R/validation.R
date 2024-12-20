@@ -43,6 +43,7 @@
 #'   \item message "Replacement of home/visiting setter: the team is in rotation X but the replacement setter is not in that position"
 #'   \item message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
 #'   \item message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+#'   \item "Setter call on negative reception"
 #'   \item message "Set by the home/visiting team was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"
 #' }
 #'
@@ -502,6 +503,9 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
             ## depending on the scout, we might not expect setter calls to be included on sets made by a player other than the designated setter
             chk <- plays %>% dplyr::filter(!is.na(.data$set_code), (.data$player_id != .data$setter_id))
             if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)", severity = 1))
+            ## or on negative reception
+            chk <- plays %>% dplyr::filter(!is.na(.data$set_code), lag(.data$skill == "Reception"), grepl("^(Poor|Negative)", lag(.data$evaluation)), .data$team == lag(.data$team))
+            if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Setter call on negative reception", severity = 1))
         }
 
         ## duplicate entries with same skill and evaluation code for the same player
