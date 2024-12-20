@@ -28,8 +28,8 @@ data.frame with columns message (the validation message), file_line_number (the 
 This function is automatically run as part of \code{dv_read} if \code{extra_validation} is greater than zero.
 The current validation messages/checks are:
 \itemize{
-\item message "The total of the \link{home|visiting} team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the \link{home|visiting} team in the plays data"
-\item message "\link[=home|visiting]{Home|Visiting} team roster is empty": the home or visiting team roster has not been entered
+\item message "The total of the home/visiting team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the home/visiting team in the plays data"
+\item message "Home/Visiting team roster is empty": the home or visiting team roster has not been entered
 \item message "Players xxx and yyy have the same player ID": player IDs should be unique, and so duplicated IDs will be flagged here
 \item message "Players xxx and yyy have the same jersey number": players on the same team should not have the same jersey number
 \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
@@ -41,13 +41,13 @@ The current validation messages/checks are:
 \item message "Winning serve not coded as an ace"
 \item message "Non-winning serve was coded as an ace"
 \item message "Serving player not in position 1"
-\item message "Player designated as libero was recorded making a \link{serve|attack|block}"
+\item message "Player designated as libero was recorded making a serve/attack/block"
 \item message "Attack (which was blocked) does not have number of blockers recorded"
 \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
 \item message "Repeated row with same skill and evaluation_code for the same player"
 \item message "Consecutive actions by the same player"
 \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
-\item message "Point awarded to incorrect team (or \link{winning play} evaluation incorrect)"
+\item message "Point awarded to incorrect team (or winning play evaluation incorrect)"
 \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
 \item message "Visiting/Home team rotation has changed incorrectly"
 \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
@@ -56,17 +56,17 @@ The current validation messages/checks are:
 \item message "Reception start zone does not match serve start zone"
 \item message "Reception end zone does not match serve end zone"
 \item message "Reception end sub-zone does not match serve end sub-zone"
-\item message "Attack type (\link{type}) does not match set type (\link{type})": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
-\item message "Block type (\link{type}) does not match attack type (\link{type})": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
-\item message "Dig type (\link{type}) does not match attack type (\link{type})": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
+\item message "Attack type does not match set type": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
+\item message "Block type does not match attack type": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
+\item message "Dig type does not match attack type": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
 \item message "Multiple serves in a single rally"
 \item message "Multiple receptions in a single rally"
 \item message "Serve (that was not an error) did not have an accompanying reception"
 \item message "Rally had ball contacts but no serve"
-\item message "Replacement of \link{home|visiting} setter: the team is in rotation \link{pos} but the replacement setter is not in that position"
+\item message "Replacement of home/visiting setter: the team is in rotation X but the replacement setter is not in that position"
 \item message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
 \item message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
-\item message "Set by the \link{home|visiting} team was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"
+\item message "Set by the home/visiting team was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"
 }
 }
 \examples{
