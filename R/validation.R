@@ -3,8 +3,8 @@
 #' This function is automatically run as part of \code{dv_read} if \code{extra_validation} is greater than zero.
 #' The current validation messages/checks are:
 #' \itemize{
-#'   \item message "The total of the [home|visiting] team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the [home|visiting] team in the plays data"
-#'   \item message "[Home|Visiting] team roster is empty": the home or visiting team roster has not been entered
+#'   \item message "The total of the home/visiting team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the home/visiting team in the plays data"
+#'   \item message "Home/Visiting team roster is empty": the home or visiting team roster has not been entered
 #'   \item message "Players xxx and yyy have the same player ID": player IDs should be unique, and so duplicated IDs will be flagged here
 #'   \item message "Players xxx and yyy have the same jersey number": players on the same team should not have the same jersey number
 #'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
@@ -16,14 +16,14 @@
 #'   \item message "Winning serve not coded as an ace"
 #'   \item message "Non-winning serve was coded as an ace"
 #'   \item message "Serving player not in position 1"
-#'   \item message "Player designated as libero was recorded making a [serve|attack|block]"
+#'   \item message "Player designated as libero was recorded making a serve/attack/block"
 #'   \item message "Attack (which was blocked) does not have number of blockers recorded"
 #'   \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
 #   \item message "End zone of attack does not match the end zone implied by the end coordinate"
 #'   \item message "Repeated row with same skill and evaluation_code for the same player"
 #'   \item message "Consecutive actions by the same player"
 #'   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
-#'   \item message "Point awarded to incorrect team (or [winning play] evaluation incorrect)"
+#'   \item message "Point awarded to incorrect team (or winning play evaluation incorrect)"
 #'   \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
 #'   \item message "Visiting/Home team rotation has changed incorrectly"
 #'   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
@@ -33,13 +33,18 @@
 #'   \item message "Reception start zone does not match serve start zone"
 #'   \item message "Reception end zone does not match serve end zone"
 #'   \item message "Reception end sub-zone does not match serve end sub-zone"
-#'   \item message "Attack type ([type]) does not match set type ([type])": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
-#'   \item message "Block type ([type]) does not match attack type ([type])": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
-#'   \item message "Dig type ([type]) does not match attack type ([type])": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
+#'   \item message "Attack type does not match set type": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
+#'   \item message "Block type does not match attack type": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
+#'   \item message "Dig type does not match attack type": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
 #'   \item message "Multiple serves in a single rally"
 #'   \item message "Multiple receptions in a single rally"
 #'   \item message "Serve (that was not an error) did not have an accompanying reception"
 #'   \item message "Rally had ball contacts but no serve"
+#'   \item message "Replacement of home/visiting setter: the team is in rotation X but the replacement setter is not in that position"
+#'   \item message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+#'   \item message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+#'   \item "Setter call on negative reception"
+#'   \item message "Set by the home/visiting team was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"
 #' }
 #'
 #' @param x datavolley: datavolley object as returned by \code{dv_read}
@@ -61,7 +66,7 @@
 #'
 #'   ## specifying "PP" as the setter tip code
 #'   ## front-row attacks (using this code) by a back-row player won't be flagged as errors
-#'   xv <- dv_validate(x, options = list(setter_tip_codes = c("PP"))) 
+#'   xv <- dv_validate(x, options = list(setter_tip_codes = c("PP")))
 #' }
 #'
 #' @export
@@ -75,6 +80,7 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
 
     out <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
+    ## internal note, severity level 1 = minor, 2 = intermediate, 3 = major
     mt2nachar <- function(z) if (length(z) < 1) NA_character_ else z
     chk_df <- function(chk, msg, severity = 2) {
         vt <- video_time_from_raw(x$raw[chk$file_line_number])
@@ -426,8 +432,81 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                     out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
             }
             ## TO DO, perhaps: check for liberos making a front-court set that is then attacked
+            ## checking some setter and setter-call related issues
+            ## identify designated setter on court and add player roles
+            plays <- mutate(plays, home_setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,
+                                                              .data$home_setter_position == 2 ~ .data$home_player_id2,
+                                                              .data$home_setter_position == 3 ~ .data$home_player_id3,
+                                                              .data$home_setter_position == 4 ~ .data$home_player_id4,
+                                                              .data$home_setter_position == 5 ~ .data$home_player_id5,
+                                                              .data$home_setter_position == 6 ~ .data$home_player_id6),
+                            visiting_setter_id = case_when(.data$visiting_setter_position == 1 ~ .data$visiting_player_id1,
+                                                           .data$visiting_setter_position == 2 ~ .data$visiting_player_id2,
+                                                           .data$visiting_setter_position == 3 ~ .data$visiting_player_id3,
+                                                           .data$visiting_setter_position == 4 ~ .data$visiting_player_id4,
+                                                           .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
+                                                           .data$visiting_setter_position == 6 ~ .data$visiting_player_id6),
+                            setter_id = case_when(.data$team_id == .data$home_team_id ~ .data$home_setter_id,
+                                                  .data$team_id == .data$visiting_team_id ~ .data$visiting_setter_id))
+
+            ## when a setter is replaced, check that the jersey number matches that of the player in home_setter_position or visiting_setter_position
+            ## there is a complication in that there can be a *Pnn code (with things on that line being inconsistent) followed by *zN to the correct position
+            ## and further complications if multiple subs are involved. So let's do the check at the next serve: everything should be correct by then
+            ## Also need to cope with multiple setter replacement codes in a block (e.g. *P1 something *P2 serve, the *P1 is redundant but can be ignored)
+            srvidx <- which(plays$skill == "Serve")
+            chk <- bind_rows(lapply(c("\\*", "a"), function(tmcode) {
+                rsidx <- which(grepl(paste0("^", tmcode, "P[[:digit:]]+"), plays$code) & !grepl(">LUp", plays$code, ignore.case = TRUE)) ## setter replacements but not lineup rows
+                if (length(rsidx) > 0) {
+                    chk <- bind_rows(lapply(rsidx, function(i) { ## for each setter replacement line
+                        ## take the code from the setter replacement (rsidx) line and the remainder from the first serve after that
+                        temp <- srvidx[srvidx > i]
+                        if (length(temp) < 1 || (any(rsidx > i & rsidx < temp[1]))) {
+                            ## no serve after this OR there is another setter replacement code in between this one and the next serve
+                            NULL
+                        } else {
+                            plays[temp[1], ] %>% mutate(code = plays$code[i])
+                        }
+                    }))
+                } else {
+                    NULL
+                }
+            }))
+            if (nrow(chk) > 0) {
+                chk <- chk %>%
+                    mutate(declared_setter_num = as.numeric(stringr::str_match(.data$code, "^[a\\*]P([[:digit:]]+)")[, 2]),
+                           expected_setter_num = case_when(grepl("^a", .data$code) ~ case_when(.data$visiting_setter_position == 1 ~ .data$visiting_p1,
+                                                                                               .data$visiting_setter_position == 2 ~ .data$visiting_p2,
+                                                                                               .data$visiting_setter_position == 3 ~ .data$visiting_p3,
+                                                                                               .data$visiting_setter_position == 4 ~ .data$visiting_p4,
+                                                                                               .data$visiting_setter_position == 5 ~ .data$visiting_p5,
+                                                                                               .data$visiting_setter_position == 6 ~ .data$visiting_p6),
+                                                           TRUE ~ case_when(.data$home_setter_position == 1 ~ .data$home_p1,
+                                                                            .data$home_setter_position == 2 ~ .data$home_p2,
+                                                                            .data$home_setter_position == 3 ~ .data$home_p3,
+                                                                            .data$home_setter_position == 4 ~ .data$home_p4,
+                                                                            .data$home_setter_position == 5 ~ .data$home_p5,
+                                                                            .data$home_setter_position == 6 ~ .data$home_p6))) %>%
+                    dplyr::filter(.data$expected_setter_num != .data$declared_setter_num)
+            }
+            if (nrow(chk) > 0) {
+                temp <- paste0("Replacement of ", ifelse(grepl("^a", chk$code), "visiting", "home"), " setter: the team is in rotation ",
+                               ifelse(grepl("^a", chk$code), chk$visiting_setter_position, chk$home_setter_position),
+                               " but the replacement setter is not in that position")
+                out <- rbind(out, chk_df(chk, temp), severity = 3)
+            }
+            ## TODO perhaps check outgoing sub of the designated setter, is there a replacement setter code before the next serve?
+
+            ## expect that any set made in reception phase on a perfect/good reception should be made by the designated setter
+            chk <- plays %>% dplyr::filter(.data$skill == "Set", lag(.data$skill) == "Reception", .data$team == lag(.data$team), grepl("^(Perfect|Good|Positive)", lag(.data$evaluation)), (.data$player_id != .data$setter_id))
+            if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)", severity = 2))
+            ## depending on the scout, we might not expect setter calls to be included on sets made by a player other than the designated setter
+            chk <- plays %>% dplyr::filter(!is.na(.data$set_code), (.data$player_id != .data$setter_id))
+            if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)", severity = 1))
+            ## or on negative reception
+            chk <- plays %>% dplyr::filter(!is.na(.data$set_code), lag(.data$skill == "Reception"), grepl("^(Poor|Negative)", lag(.data$evaluation)), .data$team == lag(.data$team))
+            if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Setter call on negative reception", severity = 1))
         }
-        
+
         ## duplicate entries with same skill and evaluation code for the same player
         idx <- which((plays$evaluation_code[-1] %eq% plays$evaluation_code[-nrow(plays)]) &
                      (plays$skill[-1] %eq% plays$skill[-nrow(plays)]) &
@@ -446,6 +525,19 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                       (plays$skill[idx0] %eq% "Set" & plays$skill[idx0_next] %eq% "Block")))
         if (length(idx)>0)
             out <- rbind(out,chk_df(plays[idx+1,],"Consecutive actions by the same player",severity=3))
+
+        ## look for aR -> *E -> aA or similar, suggesting that the set was assigned to the wrong team
+        chk <- plays %>% dplyr::filter(.data$skill == "Set",
+                                       ## preceded by reception or dig by the other team (but not D/ or R/)
+                                       lag(.data$team) != .data$team, lag(.data$skill) %in% c("Reception", "Dig") & !lag(.data$evaluation) %in% c("Poor, no attack", "Ball directly back over net"),
+                                       ## and followed by an attack by the other team
+                                       lead(.data$skill) == "Attack", lead(.data$team) != .data$team)
+        if (nrow(chk) > 0) {
+            tm <- case_when(chk$team == chk$home_team ~ "by the home team",
+                            chk$team == chk$visiting_team ~ "by the visiting team",
+                            TRUE ~ "")
+            out <- rbind(out, chk_df(chk, paste0("Set ", tm, " was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"), severity = 3))
+        }
 
         ## every point (with any actual skill) should have a winning action or error
         tmp_any_skill <- !is.na(plays$skill) & !plays$skill %in% c("Timeout", "Technical timeout", "Substitution")
