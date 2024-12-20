@@ -65,7 +65,7 @@
 #'
 #'   ## specifying "PP" as the setter tip code
 #'   ## front-row attacks (using this code) by a back-row player won't be flagged as errors
-#'   xv <- dv_validate(x, options = list(setter_tip_codes = c("PP"))) 
+#'   xv <- dv_validate(x, options = list(setter_tip_codes = c("PP")))
 #' }
 #'
 #' @export
@@ -78,7 +78,8 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
 
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
 
-    out <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
+    out <- data.frame(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character(), severity = numeric(), stringsAsFactors = FALSE)
+    ## internal note, severity level 1 = minor, 2 = intermediate, 3 = major
     mt2nachar <- function(z) if (length(z) < 1) NA_character_ else z
     chk_df <- function(chk, msg, severity = 2) {
         vt <- video_time_from_raw(x$raw[chk$file_line_number])

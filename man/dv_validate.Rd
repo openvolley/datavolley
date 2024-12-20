@@ -76,7 +76,7 @@ The current validation messages/checks are:
 
   ## specifying "PP" as the setter tip code
   ## front-row attacks (using this code) by a back-row player won't be flagged as errors
-  xv <- dv_validate(x, options = list(setter_tip_codes = c("PP"))) 
+  xv <- dv_validate(x, options = list(setter_tip_codes = c("PP")))
 }
 
 }
