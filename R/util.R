@@ -410,7 +410,7 @@ enc_from_embedded_utf8 <- function(file_text, encodings_to_test) {
         ## now we need to check that our reference text is actually informative. It is possible that a file can contain all ASCII in the above sections but still otherwise-encoded text in the attack combo descriptions and/or setter call descriptions, and these do not have UTF8 info in them
         if (ok) try({
             chk <- str_trim(stri_trans_general(reftxt$encoded, "latin-ascii"))
-            if (sum(sapply(seq_along(chk), function(i) adist(chk[i], reftxt$utf8[i]))) < 1) {
+            if (sum(sapply(seq_along(chk), function(i) adist(chk[i], reftxt$utf8[i])), na.rm = TRUE) < 1) {
                 ok <- FALSE
                 ## warning("embedded utf8 is uninformative")
             }
@@ -487,7 +487,7 @@ get_best_encodings <- function(encodings_to_test, reftext, filename, read_from =
                 sum(sapply(seq_along(chk), function(i) adist(chk[i], reftext$utf8[i])))
             }
         })
-        idx <- which(encerrors == min(encerrors, na.rm = TRUE))
+        idx <- which(encerrors == suppressWarnings(min(encerrors, na.rm = TRUE)))
         if (length(idx) < 1) {
             list(encodings = character(), error_score = NA_integer_)
         } else {

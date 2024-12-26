@@ -66,6 +66,7 @@ The current validation messages/checks are:
 \item message "Replacement of home/visiting setter: the team is in rotation X but the replacement setter is not in that position"
 \item message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
 \item message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+\item "Setter call on negative reception"
 \item message "Set by the home/visiting team was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"
 }
 }

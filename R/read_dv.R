@@ -106,7 +106,10 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     out <- list()
     file_text <- readLines(filename, warn = FALSE) ## read raw lines in
     ## some files have a wacky string of 0x00 bytes at the start, which means that the first line is empty (should be "[3DATAVOLLEYSCOUT]")
-    if (grepl("^$", file_text[1], useBytes = TRUE) && !any(grepl("[3DATAVOLLEYSCOUT]", file_text, useBytes = TRUE, fixed = TRUE))) file_text[1] <- "[3DATAVOLLEYSCOUT]"
+    if (grepl("^$", file_text[1], useBytes = TRUE) && length(grep("[3MATCH]", file_text, useBytes = TRUE, fixed = TRUE)) == 1 &&
+        length(grep("[3TEAMS]", file_text, useBytes = TRUE, fixed = TRUE)) == 1 && !any(grepl("[3DATAVOLLEYSCOUT]", file_text, useBytes = TRUE, fixed = TRUE))) {
+        file_text[1] <- "[3DATAVOLLEYSCOUT]"
+    }
     ## also check to see if the [3SCOUT] entry is the last one, if it is then we can't read the file anyway, it has no play-by-play data
     if (length(file_text) > 0 && grepl("[3SCOUT]", file_text[length(file_text)], fixed = TRUE, useBytes = TRUE) && !isTRUE(metadata_only)) {
         stop("file cannot be read, the [3SCOUT] section is empty (no plays have been scouted)")
