@@ -126,9 +126,9 @@ dvw_setter_calls <- function(x, text_encoding) {
         "[3SETTERCALL]"
     } else {
         ## force coords to be 4-digit ints
-        tmp$start_coordinate <- sprintf("%04d", tmp$start_coordinate)
-        tmp$mid_coordinate <- sprintf("%04d", tmp$mid_coordinate)
-        tmp$end_coordinate <- sprintf("%04d", tmp$end_coordinate)
+        tmp$start_coordinate[!is.na(tmp$start_coordinate)] <- formatC(tmp$start_coordinate[!is.na(tmp$start_coordinate)], width = 4, flag = "0")
+        tmp$mid_coordinate[!is.na(tmp$mid_coordinate)] <- formatC(tmp$mid_coordinate[!is.na(tmp$mid_coordinate)], width = 4, flag = "0")
+        tmp$end_coordinate[!is.na(tmp$end_coordinate)] <- formatC(tmp$end_coordinate[!is.na(tmp$end_coordinate)], width = 4, flag = "0")
         if (is.character(tmp$colour)) tmp$colour <- dv_rgb2int(tmp$colour)
         if ("path_colour" %in% names(tmp) && is.character(tmp$path_colour)) tmp$path_colour <- dv_rgb2int(tmp$path_colour)
         sect2txt(tmp, "meta$sets", "[3SETTERCALL]")
@@ -250,6 +250,24 @@ dvw_scout <- function(x, text_encoding = text_encoding) {
     ## setter position uses 0 or 5 when unknown
     xp$home_setter_position[is.na(xp$home_setter_position)] <- 5
     xp$visiting_setter_position[is.na(xp$visiting_setter_position)] <- 5
+    ## deal with coordinates
+    ## first reformat as strings representing 4-digit (zero-padded) integers
+    reformat_coords <- function(z) {
+        out <- rep(NA_character_, length(z))
+        z <- suppressWarnings(as.integer(z)) ## should not be needed, but just to be sure
+        idx <- !is.na(z)
+        out[idx] <- formatC(z[idx], width = 4, flag = "0")
+        out
+    }
+    xp$start_coordinate <- reformat_coords(xp$start_coordinate)
+    xp$mid_coordinate <- reformat_coords(xp$mid_coordinate)
+    xp$end_coordinate <- reformat_coords(xp$end_coordinate)
+    ## then use -1-1 instead of missing, but only if at least one other non-missing coord on the same line has been provided
+    nmidx <- !is.na(xp$start_coordinate) | !is.na(xp$mid_coordinate) | !is.na(xp$end_coordinate) ## lines with at least one non-missing coord
+    xp$start_coordinate[is.na(xp$start_coordinate) & nmidx] <- "-1-1"
+    xp$mid_coordinate[is.na(xp$mid_coordinate) & nmidx] <- "-1-1"
+    xp$end_coordinate[is.na(xp$end_coordinate) & nmidx] <- "-1-1"
+
     nms <- c("code_modified", "point_phase", "attack_phase", "na_col", ## cols 1-4
              "start_coordinate", "mid_coordinate", "end_coordinate", ## cols 5-7
              "time", ## col 8, HH.MM.SS format

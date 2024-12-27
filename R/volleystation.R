@@ -611,7 +611,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     x$plays <- px %>% mutate(video_time = round(round(.data$time / 10)), ## must be integer
                              time = as.POSIXct(NA), video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
-                             end_cone = NA_integer_) %>%
+                             end_cone = NA_integer_,
+                             custom = if_else(is.na(.data$custom), "", as.character(.data$custom))) %>%
         dplyr::select("match_id", ##"_id",
                       "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id",
                       "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type",

@@ -7,7 +7,7 @@
 dv_point_phase(x)
 }
 \arguments{
-\item{x}{datavolleyplays: the plays component of a datavolley object as returned by [dv_read()]}
+\item{x}{datavolleyplays: the plays component of a datavolley object as returned by \code{\link[=dv_read]{dv_read()}}}
 }
 \value{
 Character vector

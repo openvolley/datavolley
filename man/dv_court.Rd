@@ -53,34 +53,34 @@ Volleyball court schematic suitable for adding to a figure
 \details{
 The datavolley package uses the following dimensions and coordinates for plotting:
 \itemize{
-  \item the court is shown such that the sidelines are oriented vertically and the net is oriented horizontally
-  \item the intersection of the left-hand sideline and the bottom baseline is at (0.5, 0.5)
-  \item the intersection of the right-hand sideline and the top baseline is at (3.5, 6.5)
-  \item the net intersects the sidelines at (0.5, 3.5) and (3.5, 3.5)
-  \item the zones 1-9 (as defined in the DataVolley manual) on the lower half of the court are located at:
-    \enumerate{
-      \item (3, 1)
-      \item (3, 3)
-      \item (2, 3)
-      \item (1, 3)
-      \item (1, 1)
-      \item (2, 1)
-      \item (1, 2)
-      \item (2, 2)
-      \item (3, 2)
-    }
-  \item the zones 1-9 (as defined in the DataVolley manual) on the upper half of the court are located at:
-    \enumerate{
-      \item (1, 6)
-      \item (1, 4)
-      \item (2, 4)
-      \item (3, 4)
-      \item (3, 6)
-      \item (2, 6)
-      \item (3, 5)
-      \item (2, 5)
-      \item (1, 5)
-    }
+\item the court is shown such that the sidelines are oriented vertically and the net is oriented horizontally
+\item the intersection of the left-hand sideline and the bottom baseline is at (0.5, 0.5)
+\item the intersection of the right-hand sideline and the top baseline is at (3.5, 6.5)
+\item the net intersects the sidelines at (0.5, 3.5) and (3.5, 3.5)
+\item the zones 1-9 (as defined in the DataVolley manual) on the lower half of the court are located at:
+\enumerate{
+\item (3, 1)
+\item (3, 3)
+\item (2, 3)
+\item (1, 3)
+\item (1, 1)
+\item (2, 1)
+\item (1, 2)
+\item (2, 2)
+\item (3, 2)
+}
+\item the zones 1-9 (as defined in the DataVolley manual) on the upper half of the court are located at:
+\enumerate{
+\item (1, 6)
+\item (1, 4)
+\item (2, 4)
+\item (3, 4)
+\item (3, 6)
+\item (2, 6)
+\item (3, 5)
+\item (2, 5)
+\item (1, 5)
+}
 }
 
 To get a visual depiction of this, try: \code{ ggplot() + ggcourt() + theme_bw()}

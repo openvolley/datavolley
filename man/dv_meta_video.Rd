@@ -10,12 +10,12 @@ dv_meta_video(x)
 dv_meta_video(x) <- value
 }
 \arguments{
-\item{x}{datavolley: a datavolley object as returned by [datavolley::dv_read()]}
+\item{x}{datavolley: a datavolley object as returned by \code{\link[=dv_read]{dv_read()}}}
 
 \item{value}{string or data.frame: a string containing the path to the video file, or a data.frame with columns "camera" and "file"}
 }
 \value{
-For `dv_meta_video`, the existing video metadata. For `dv_meta_video<-`, the video metadata value in `x` is changed
+For \code{dv_meta_video}, the existing video metadata. For \verb{dv_meta_video<-}, the video metadata value in \code{x} is changed
 }
 \description{
 Get or set the video metadata in a datavolley object

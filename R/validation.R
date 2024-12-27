@@ -79,7 +79,7 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
 
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
 
-    out <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), severity=numeric(), stringsAsFactors=FALSE)
+    out <- data.frame(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character(), severity = numeric(), stringsAsFactors = FALSE)
     ## internal note, severity level 1 = minor, 2 = intermediate, 3 = major
     mt2nachar <- function(z) if (length(z) < 1) NA_character_ else z
     chk_df <- function(chk, msg, severity = 2) {
@@ -432,6 +432,7 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                     out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = paste0("Player designated as libero was recorded making a", ifelse(grepl("^a", tolower(plays$skill[chk])), "n ", " "), tolower(plays$skill[chk])), file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
             }
             ## TO DO, perhaps: check for liberos making a front-court set that is then attacked
+
             ## checking some setter and setter-call related issues
             ## identify designated setter on court and add player roles
             plays <- mutate(plays, home_setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,

@@ -1,28 +1,28 @@
 ## main reader function
 
-#' Read a datavolley file
+#' Read a DataVolley or VolleyStation file
 #'
-#' The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)
+#' The `do_transliterate` option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)
 #'
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
 #' @param insert_technical_timeouts logical or list: should we insert technical timeouts? If TRUE, technical timeouts are inserted at points 8 and 16 of sets 1--4 (for indoor files) or when the team scores sum to 21 in sets 1--2 (beach). Otherwise a two-element list can be supplied, giving the scores at which technical timeouts will be inserted for sets 1--4, and  set 5.
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
 #' @param extra_validation numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking
-#' @param validation_options list: additional options to pass to the validation step. See \code{\link{dv_validate}} for details
+#' @param validation_options list: additional options to pass to the validation step. See [dv_validate()] for details
 #' @param do_transliterate logical: should we transliterate all text to ASCII? See details
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed
-#' @param date_format string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If \code{date_format} is something other than "guess", that date format will be preferred where dates are ambiguous
-#' @param surname_case string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings
-#' @param skill_evaluation_decode function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}
-#' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}
+#' @param date_format string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If `date_format` is something other than "guess", that date format will be preferred where dates are ambiguous
+#' @param surname_case string or function: should we change the case of player surnames? If `surname_case` is a string, valid values are "upper","lower","title", or "asis"; otherwise `surname_case` may be a function that will be applied to the player surname strings
+#' @param skill_evaluation_decode function or string: if `skill_evaluation_decode` is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If `skill_evaluation_decode` is a function, it should convert skill evaluation codes into meaningful phrases. See [skill_evaluation_decoder()]
+#' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the `datavolley` object) and should return a list with two named components: `plays` and `messages`
 #' @param metadata_only logical: don't process the plays component of the file, just the match and player metadata
 #' @param verbose logical: if TRUE, show progress
-#' @param edited_meta list: [very much experimental] if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata
+#' @param edited_meta list: if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata
 #'
-#' @return A named list with several elements. \code{meta} provides match metadata, \code{plays} is the main play-by-play data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file.
+#' @return A named list with several elements. `meta` provides match metadata, `plays` is the main play-by-play data in the form of a data.frame. `raw` is the line-by-line content of the datavolley file. `messages` is a data.frame describing any inconsistencies found in the file.
 #'
-#' @seealso \code{\link{skill_evaluation_decoder}} \code{\link{dv_validate}}
+#' @seealso [skill_evaluation_decoder()], [dv_validate()]
 #' @examples
 #' \dontrun{
 #'   ## to read the example file bundled with the package
@@ -40,7 +40,7 @@
 #'   x <- dv_read(myfile, skill_evaluation_decode = "volleymetrics")
 #' }
 #' @export
-dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_transliterate=FALSE, encoding="guess", date_format = "guess", extra_validation=2, validation_options=list(), surname_case="asis", skill_evaluation_decode="default", custom_code_parser, metadata_only=FALSE, verbose=FALSE, edited_meta) {
+dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE, do_transliterate = FALSE, encoding = "guess", date_format = "guess", extra_validation = 2, validation_options = list(), surname_case = "asis", skill_evaluation_decode = "default", custom_code_parser, metadata_only = FALSE, verbose = FALSE, edited_meta) {
     assert_that(is.string(filename))
     if (nchar(filename) < 1) stop("filename was specified as an empty string (\"\")")
     if (!file.exists(filename)) stop("specified input file (", filename, ") does not exist")
@@ -104,50 +104,40 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## don't do this unless FIVB rules change?
     ##    if (missing(insert_technical_timeouts)) warning("the current default value insert_technical_timeouts=TRUE will change to FALSE in a forthcoming release")
     out <- list()
-    ## read raw lines in
-    file_text <- readLines(filename,warn=FALSE)
+    file_text <- readLines(filename, warn = FALSE) ## read raw lines in
+    ## some files have a wacky string of 0x00 bytes at the start, which means that the first line is empty (should be "[3DATAVOLLEYSCOUT]")
+    if (grepl("^$", file_text[1], useBytes = TRUE) && length(grep("[3MATCH]", file_text, useBytes = TRUE, fixed = TRUE)) == 1 &&
+        length(grep("[3TEAMS]", file_text, useBytes = TRUE, fixed = TRUE)) == 1 && !any(grepl("[3DATAVOLLEYSCOUT]", file_text, useBytes = TRUE, fixed = TRUE))) {
+        file_text[1] <- "[3DATAVOLLEYSCOUT]"
+    }
+    ## also check to see if the [3SCOUT] entry is the last one, if it is then we can't read the file anyway, it has no play-by-play data
+    if (length(file_text) > 0 && grepl("[3SCOUT]", file_text[length(file_text)], fixed = TRUE, useBytes = TRUE) && !isTRUE(metadata_only)) {
+        stop("file cannot be read, the [3SCOUT] section is empty (no plays have been scouted)")
+    }
+    if (length(encoding) < 1) encoding <- "guess"
     assert_that(is.character(encoding))
-    if (length(encoding)>1 || identical(tolower(encoding), "guess")) {
-        ## try to guess encoding based on the first few lines of the file
-        ## test from [3TEAMS] section to end of [3PLAYERS-V] (just before [3ATTACKCOMBINATION])
-        idx1 <- suppressWarnings(grep("[3MATCH]",file_text,fixed=TRUE))
-        idx2 <- suppressWarnings(grep("[3SETTERCALL]",file_text,fixed=TRUE))+1
+    are_guessing_encoding <- identical(tolower(encoding), "guess")
+    if (length(encoding) > 1 || are_guessing_encoding) {
+        if (.debug_meta_read) mark_timing("encoding detection")
+        ## test from [3MATCH] section to end of [3SETTERCALL] or [3ATTACKCOMBINATION]
+        idx1 <- suppressWarnings(grep("[3MATCH]", file_text, fixed = TRUE)) + 1L
+        idx2 <- suppressWarnings(grep("[3WINNINGSYMBOLS]", file_text, fixed = TRUE)) - 1L ## click and scout doesn't have this, nor does it have attack combos or setter calls
         ## fallback
-        if (length(idx1)<1 || is.na(idx1)) idx1 <- 10
-        if (length(idx2)<1 || is.na(idx2)) idx2 <- 90
-        tst <- paste(file_text[idx1:idx2],collapse="")
-        if (identical(tolower(encoding),"guess")) {
-            ## first try using the embedded encoding info in the 3MATCH section
-            textenc <- tryCatch(suppressWarnings({
-                idx <- suppressWarnings(grep("[3MATCH]", file_text, fixed=TRUE))
-                setdiff(as.character(read.table(text=file_text[idx+1],sep=";",quote="",stringsAsFactors=FALSE,header=FALSE)$V9), "1") ## 1 seems to be used to indicate the default locale encoding, which doesn't help us
-            }), error=function(e) NULL)
-            encoding <- stri_enc_detect(tst)[[1]]
-            encoding <- encoding$Encoding[encoding$Confidence > 0.8]
-            if (!is.null(textenc)) {
-                enclist <- intersect(paste0(c("windows-", "cp"), tolower(textenc)), tolower(iconvlist()))
-                enclist <- intersect(enclist, tolower(encoding)) ## don't use the embedded encoding if it isn't the suggested list from stri_enc_detect
-                if (length(enclist)>0) {
-                    try({
-                        out <- dv_read(filename=filename, insert_technical_timeouts=insert_technical_timeouts, do_warn=do_warn, do_transliterate=do_transliterate, encoding=enclist[1], date_format = date_format, extra_validation=extra_validation, validation_options=validation_options, surname_case=surname_case, skill_evaluation_decode=skill_evaluation_decode, custom_code_parser=custom_code_parser, metadata_only=metadata_only, verbose=verbose, edited_meta=edited_meta)
-                        ## TODO: need to check that this actually worked, because there are files with the wrong encoding specified in their metadata
-                        ## some files also appear to use different encodings for the home/visiting player lists
-                        if (verbose) message(sprintf("Using text encoding: %s", enclist[1]))
-                        return(out)
-                    }, silent=TRUE)
-                    ## if that fails, we'll drop through to our previous guessing code
-                }
-            }
-            ## stri might return "x-iso*" encodings, but iconvlist() doesn't have them. Can these be treated just as iso*?
-            ##xiso_idx <- grepl("^x\\-iso",encoding,ignore.case=TRUE)
-            ##if (any(xiso_idx))
-            ##    encoding <- c(encoding,gsub("^x\\-iso","iso",encoding[xiso_idx]))
+        if (length(idx1) < 1 || is.na(idx1)) idx1 <- 10
+        if (length(idx2) < 1 || is.na(idx2)) idx2 <- 90
+        if (!isTRUE(idx2 > idx1)) { idx1 <- 10; idx2 <- 90; }
+        ok <- FALSE
+        enclist <- character()
+        if (!are_guessing_encoding) {
+            ## user has provided multiple encodings to try
+            encodings_to_test <- encoding
+        } else {
+            likely_encodings <- detect_encodings(file_text)
             ## add common ones, in order of preference if tied in scores
-            encoding <- c(encoding, c("windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "SHIFT-JIS", "CP932", "windows-1251", "iso-8859-9",
-                                      "iso-8859-4", "iso-8859-5", "iso-8859-7", "iso-8859-13", "iso-8859-16"))
+            encodings_to_test <- tolower(c(likely_encodings$likely, likely_encodings$embedded_resolved, "windows-1252", "iso-8859-2", "windows-1250", "US-ASCII", "UTF-8", "windows-1251", "SHIFT-JIS", "CP932", "iso-8859-9", "iso-8859-4", "iso-8859-5", "iso-8859-7", "iso-8859-13", "iso-8859-16"))
             ## windows-1252 should be used in preference to "iso-8859-1", see https://en.wikipedia.org/wiki/ISO/IEC_8859-1
-            ## 1250 is similar to 8859-2 but not identical
-            ## notes from wikipedia https://en.wikipedia.org/wiki/ISO/IEC_8859
+            ## windows-1250 is similar to 8859-2 but not identical
+            ## additional notes from wikipedia https://en.wikipedia.org/wiki/ISO/IEC_8859
             ## iso-8859-3 is Maltese and Esperanto
             ## iso-8859-4 Estonian, Latvian, Lithuanian, Greenlandic, and Sami.
             ## iso-8859-5 Cyrillic alphabet, including Belarusian, Bulgarian, Macedonian, Russian, Serbian, and Ukrainian (partial)
@@ -162,31 +152,54 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             ## iso-8859-14 Celtic languages such as Gaelic and the Breton language. Welsh letters correspond to the earlier (1994) ISO-IR-182.
             ## iso-8859-15 A revision of 8859-1 that removes some little-used symbols, replacing them with the euro sign € and the letters Š, š, Ž, ž, Œ, œ, and Ÿ, which completes the coverage of French, Finnish and Estonian.
             ## iso-8859-16 Albanian, Croatian, Hungarian, Italian, Polish, Romanian and Slovene, but also Finnish, French, German and Irish Gaelic (new orthography). The focus lies more on letters than symbols. The generic currency sign is replaced with the euro sign
-            encoding <- encoding[tolower(encoding) %in% tolower(iconvlist())]
-            ##if (length(encoding)<=1) encoding <- iconvlist()
+            encodings_to_test <- unique(intersect(encodings_to_test, tolower(iconvlist())))
         }
-        encoding <- unique(encoding)
-        expect_tildes <- tryCatch(!any(grepl("PRG: Essential Stats", dvlines)), error = function(e) FALSE)
-        encoding <- get_best_encodings(encoding, filename = filename, read_from = idx1, read_to = idx2, expect_tildes = expect_tildes)
-        if (length(encoding$encodings) < 1) stop("error in guessing text encoding")
-        if (encoding$error_score > 0) {
-            ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect
-            ## now just brute force it over all possible encodings (will be slow)
-            encoding_brute <- get_best_encodings(iconvlist(), filename = filename, read_from = idx1, read_to = idx2)
-            if (length(encoding_brute$encodings) > 0 && encoding_brute$error_score < encoding$error_score) encoding <- encoding_brute
+        ## if it's a DV4 file with embedded UTF8 strings, try basing our guess on those first
+        ## there's some ambiguity about how much we care about text encodings if we have a DV4 file, because most of the text should be available in the utf8-encoded sections (which we should be able to decode regardless of what encoding was used to read the file) and so it doesn't matter if we read the file with the wrong encoding. BUT we won't get e.g. attack and set code descriptions, because these aren't provided as utf8-encoded copies. So we still want to get the encoding right. But (i) it's possible that the player names etc are in plain ASCII and so the embedded utf8 sections don't give us any hints about the broader file encoding, and (ii) it's presumably possible that the file has been read and re-saved (in some other non-DV4-software, maybe DV2007) with a different encoding to that used by DV4. The other software won't update the embedded utf8 sections, so if we guess our encoding based on the embedded utf8 it will be wrong. But it's difficult to see how we can cope with that
+        if (any_dv_utf8(file_text)) {
+            chk <- enc_from_embedded_utf8(file_text, encodings_to_test = encodings_to_test)
+            if (length(chk$encodings) > 0 && chk$error_score < 1) {
+                enclist <- chk$encodings
+                ok <- TRUE
+            }
         }
-        encoding <- encoding$encodings
+        ## if this doesn't give an unambiguous answer, it probably indicates that the file was text-edited or modified by other software, or that the embedded utf8 encodings are equivalent to plain ASCII so we don't get any info from them
+        ## if there is no embedded UTF8 (file from earlier DV version), or if it does not give an unambiguous answer, try the embedded encoding BUT only if it appears in the list suggested by detect_encodings
+        if (!ok && are_guessing_encoding && length(likely_encodings$embedded_resolved) == 1 && likely_encodings$embedded_resolved %in% likely_encodings$likely) {
+            try({
+                out <- dv_read(filename = filename, insert_technical_timeouts = insert_technical_timeouts, do_warn = do_warn, do_transliterate = do_transliterate, encoding = likely_encodings$embedded_resolved, date_format = date_format, extra_validation = extra_validation, validation_options = validation_options, surname_case = surname_case, skill_evaluation_decode = skill_evaluation_decode, custom_code_parser = custom_code_parser, metadata_only = metadata_only, verbose = verbose, edited_meta = edited_meta)
+                ## TODO: perhaps check that this actually worked, because there are files with the wrong encoding specified in their metadata. But with luck this situation should be uncommon, because an incorrect embedded encoding hopefully won't appear in the list of suggested encodings
+                ## some files also appear to use different encodings for the home/visiting player lists, but it is going to be very difficult to handle the possibility of different encodings in different parts of the file
+                if (verbose) message("Using text encoding: ", likely_encodings$embedded_resolved)
+                return(out)
+            }, silent = TRUE)
+        }
+        ## and finally just test the encodings, either those provided by the user or the guessed list
+        if (!ok) {
+            expect_tildes <- tryCatch(!any(grepl("PRG: Essential Stats", dvlines)), error = function(e) FALSE)
+            chk <- get_best_encodings(encodings_to_test, expect_tildes = expect_tildes, file_text = file_text, read_from = idx1, read_to = idx2) ## filename = filename
+            if (!isTRUE(chk$error_score < 1) && are_guessing_encoding) {
+                ## haven't found an encoding with zero error score, but we have relied on stri_enc_detect
+                ## now just brute force it over all possible encodings (will be slow)
+                encoding_brute <- get_best_encodings(iconvlist(), expect_tildes = expect_tildes, file_text = file_text, read_from = idx1, read_to = idx2) ## filename = filename
+                if (length(encoding_brute$encodings) > 0 && encoding_brute$error_score < chk$error_score) chk <- encoding_brute
+            }
+            enclist <- chk$encodings
+        }
+        if (length(enclist) < 1) enclist <- "windows-1251" ## absolute fallback
         ## so now we have a list of possible encodings
-        ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then just whatever was first
-        other_enc <- encoding
-        if (any(grepl("^windows",tolower(encoding)))) {
-            encoding <- encoding[grepl("^windows",tolower(encoding))][1]
-        } else if (any(tolower(encoding) %in% c("utf-8", "utf8"))) {
-            encoding <- encoding[tolower(encoding) %in% c("utf-8", "utf8")][1]
-        } else if (any(tolower(encoding) %in% c("us-ascii"))) {
-            encoding <- encoding[tolower(encoding) %in% c("us-ascii")][1]
+        ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then CP, then just whatever was first
+        other_enc <- enclist
+        if (any(grepl("^windows",tolower(enclist)))) {
+            encoding <- enclist[grepl("^windows",tolower(enclist))][1]
+        } else if (any(tolower(enclist) %in% c("utf-8", "utf8"))) {
+            encoding <- enclist[tolower(enclist) %in% c("utf-8", "utf8")][1]
+        } else if (any(tolower(enclist) %in% c("us-ascii"))) {
+            encoding <- enclist[tolower(enclist) %in% c("us-ascii")][1]
+        } else if (any(grepl("^cp[[:digit:]\\-]",tolower(enclist)))) {
+            encoding <- enclist[grepl("^cp[[:digit:]\\-]",tolower(enclist))][1]
         } else {
-            encoding <- encoding[1]
+            encoding <- enclist[1]
         }
         other_enc <- setdiff(other_enc, encoding)
         if (verbose) {
@@ -194,19 +207,15 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             if (length(other_enc) > 0)
                 message(sprintf(" (Other possible options: %s)", paste(other_enc, collapse = ", ")))
         }
+        if (.debug_meta_read) show_timing("encoding detection")
     }
-    ## look for the "Secondo tocco di  la" with odd encoding on the trailing a
-    ## this seems to be part of the default dv-generated file structure, so it's a common problem
-    file_text <- read_lines_enc(filename, file_encoding = encoding)
-    file_text <- gsub("Secondo tocco di[[:space:]]+l.;","Secondo tocco di la;", file_text)
+    file_text <- txt2utf8(file_text, from = encoding) ## convert from our detected encoding to utf-8
 
-##    file_text <- iconv(file_text,from=encoding,to="utf-8") ## convert to utf-8
     ## so we got to here, either by reading the file, or using the supplied file_text
     out$raw <- file_text
-    if (do_transliterate) {
-        ##if (missing(encoding)) warning("transliteration may not work without an encoding specified")
-        file_text <- stri_trans_general(file_text,"latin-ascii") ##file_text <- iconv(file_text,from="utf-8",to="ascii//TRANSLIT")
-    }
+
+    if (do_transliterate) file_text <- stri_trans_general(file_text, "latin-ascii")
+
     ## file metadata
     if (!do_warn) {
         suppressWarnings(temp <- read_filemeta(file_text, date_format = if (date_format == "guess") date_format_suggested else date_format))
@@ -227,6 +236,7 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE)
     ## match metadata
     if (missing(edited_meta)) {
+        if (.debug_meta_read) mark_timing("meta")
         if (!do_warn) {
             suppressWarnings(temp <- read_meta(file_text, surname_case, date_format = date_format))
         } else {
@@ -234,6 +244,7 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         }
         out$meta <- temp$meta
         out$meta$filename <- filename
+        if (.debug_meta_read) show_timing("meta")
     } else {
         out$meta <- edited_meta
     }
@@ -250,6 +261,7 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     if (metadata_only) return(out)
     this_main <- NULL
     thismsg <- NULL
+    if (.debug_meta_read) mark_timing("plays")
     tryCatch({
         ## try using the already-read file text first, because it has been read with the proper encoding
         try({
@@ -264,6 +276,7 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
             }
         }, silent = TRUE)
         if (is.null(this_main)) {
+            ## don't need to pass encoding here, because we are only reading the [3SCOUT] section
             if (!do_warn) {
                 this_main <- suppressWarnings(read_main(filename))
             } else {
@@ -293,7 +306,9 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     if (is.null(this_main)) stop("could not read dv file (unspecified error)")
     ##if (!is.null(thismsg)) mymsgs <- bind_rows(mymsgs,thismsg)
     ## don't actually issue this warning, for now at least
+    if (.debug_meta_read) show_timing("plays")
 
+    if (.debug_meta_read) mark_timing("extra")
     ## count line numbers: where do codes start from?
     suppressWarnings(cln <- grep("[3SCOUT]",file_text,fixed=TRUE))
     if (length(cln)==1) {
@@ -374,8 +389,9 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                         idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
                         if (length(idx) > 0) {
                             idx <- idx[1]
-                            ##cat(sprintf("Inserting technical timeout at row %d (set %d, score %d)\n",idx,this_set,thisp))
-                            out$plays <- bind_rows(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
+                            out$plays <- bind_rows(out$plays[seq_len(idx), ],
+                                                   data.frame(skill = "Technical timeout", custom_code = "", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
+                                                   out$plays[(idx+1):nrow(out$plays), ])
                         }
                     }
                 }
@@ -386,7 +402,9 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
                     idx <- which(insert_technical_timeouts[[si]](out$plays$home_team_score, out$plays$visiting_team_score) & out$plays$set_number==this_set)
                     if (length(idx) > 0) {
                         idx <- idx[1]
-                        out$plays <- bind_rows(out$plays[1:idx, ], data.frame(skill = "Technical timeout", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE), out$plays[(idx+1):nrow(out$plays), ])
+                        out$plays <- bind_rows(out$plays[seq_len(idx), ],
+                                               data.frame(skill = "Technical timeout", custom_code = "", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
+                                               out$plays[(idx+1):nrow(out$plays), ])
                     }
                 }
             }
@@ -603,9 +621,11 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
     ## ensure column ordering
     cls <- c("match_id", "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id", "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type", "start_zone", "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout", "end_of_set", "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "custom_code", "file_line_number", paste0("home_p", 1:6), paste0("visiting_p", 1:6), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase", "start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y", paste0("home_player_id", 1:6), paste0("visiting_player_id", 1:6), "set_number", "team_touch_id", "home_team", "visiting_team", "home_team_id", "visiting_team_id", "team_id", "point_won_by", "winning_attack", "serving_team", "phase", "home_score_start_of_point", "visiting_score_start_of_point")
     out$plays <- out$plays[, c(intersect(cls, names(out$plays)), setdiff(names(out$plays), cls))]
+    if (.debug_meta_read) show_timing("extra")
 
     out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
+    if (.debug_meta_read) mark_timing("validation")
     if (extra_validation > 0) {
         moreval <- dv_validate(out, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) {
@@ -619,6 +639,7 @@ dv_read <- function(filename, insert_technical_timeouts=TRUE, do_warn=FALSE, do_
         out$messages <- out$messages[order(out$messages$file_line_number, na.last = FALSE),]
         row.names(out$messages) <- NULL
     }
+    if (.debug_meta_read) show_timing("validation")
 
     ## some final fixes
     ## VS-exported dvw's can have an incorrect end location on reception if serve does not have an end location, but the set has a location

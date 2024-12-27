@@ -16,7 +16,7 @@ validate_dv(x, validation_level = 2, options = list(), file_type)
 
 \item{options}{list: named list of options that control optional validation behaviour. Valid entries are:
 \itemize{
-  \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP","XY"))}
+\item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP","XY"))}
 }}
 
 \item{file_type}{string: "indoor" or "beach". If not provided, will be taken from the \code{x$file_meta$file_format} entry}

@@ -1,6 +1,6 @@
 Package: datavolley
 Title: Reading and Analyzing DataVolley Scout Files
-Version: 1.8.6
+Version: 1.8.6.9900
 Authors@R: c(person("Ben", "Raymond", email = "ben@untan.gl", role = c("aut", "cre")),
              person("Adrien", "Ickowicz", role = "aut"),
              person("Tyler", "Widdison", role = "aut"),
@@ -26,7 +26,7 @@ Imports:
     readr,
     stringi,
     stringr,
-    vscoututils (>= 0.1.9),
+    vscoututils (>= 0.2.0),
     xml2
 Suggests:
     testthat,
@@ -37,6 +37,7 @@ Suggests:
     covr
 Encoding: UTF-8
 License: MIT + file LICENSE
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 Remotes: openvolley/vscoututils

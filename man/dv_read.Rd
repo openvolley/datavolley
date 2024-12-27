@@ -3,7 +3,7 @@
 \name{dv_read}
 \alias{dv_read}
 \alias{read_dv}
-\title{Read a datavolley file}
+\title{Read a DataVolley or VolleyStation file}
 \usage{
 dv_read(
   filename,
@@ -54,11 +54,11 @@ read_dv(
 
 \item{extra_validation}{numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking}
 
-\item{validation_options}{list: additional options to pass to the validation step. See \code{\link{dv_validate}} for details}
+\item{validation_options}{list: additional options to pass to the validation step. See \code{\link[=dv_validate]{dv_validate()}} for details}
 
 \item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 
-\item{skill_evaluation_decode}{function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link{skill_evaluation_decoder}}}
+\item{skill_evaluation_decode}{function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link[=skill_evaluation_decoder]{skill_evaluation_decoder()}}}
 
 \item{custom_code_parser}{function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}}
 
@@ -66,7 +66,7 @@ read_dv(
 
 \item{verbose}{logical: if TRUE, show progress}
 
-\item{edited_meta}{list: [very much experimental] if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata}
+\item{edited_meta}{list: if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata}
 }
 \value{
 A named list with several elements. \code{meta} provides match metadata, \code{plays} is the main play-by-play data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file.
@@ -95,5 +95,5 @@ The \code{do_transliterate} option may be helpful when trying to work with multi
 \url{http://www.dataproject.com/IT/en/Volleyball}
 }
 \seealso{
-\code{\link{skill_evaluation_decoder}} \code{\link{dv_validate}}
+\code{\link[=skill_evaluation_decoder]{skill_evaluation_decoder()}}, \code{\link[=dv_validate]{dv_validate()}}
 }
