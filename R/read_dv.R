@@ -118,7 +118,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     assert_that(is.character(encoding))
     are_guessing_encoding <- identical(tolower(encoding), "guess")
     if (length(encoding) > 1 || are_guessing_encoding) {
-        if (.debug_meta_read) mark_timing("encoding detection")
         ## test from [3MATCH] section to end of [3SETTERCALL] or [3ATTACKCOMBINATION]
         idx1 <- suppressWarnings(grep("[3MATCH]", file_text, fixed = TRUE)) + 1L
         idx2 <- suppressWarnings(grep("[3WINNINGSYMBOLS]", file_text, fixed = TRUE)) - 1L ## click and scout doesn't have this, nor does it have attack combos or setter calls
@@ -207,7 +206,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
             if (length(other_enc) > 0)
                 message(sprintf(" (Other possible options: %s)", paste(other_enc, collapse = ", ")))
         }
-        if (.debug_meta_read) show_timing("encoding detection")
     }
     file_text <- txt2utf8(file_text, from = encoding) ## convert from our detected encoding to utf-8
     ## get rid of the "Secondo tocco di  la" with encoding on the trailing a, which is part of the default dv-generated file structure
@@ -238,7 +236,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     if (is.null(out$messages)) out$messages <- data.frame(file_line_number=integer(), video_time=numeric(), message=character(), file_line=character(), stringsAsFactors=FALSE)
     ## match metadata
     if (missing(edited_meta)) {
-        if (.debug_meta_read) mark_timing("meta")
         if (!do_warn) {
             suppressWarnings(temp <- read_meta(file_text, surname_case, date_format = date_format))
         } else {
@@ -246,7 +243,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         }
         out$meta <- temp$meta
         out$meta$filename <- filename
-        if (.debug_meta_read) show_timing("meta")
     } else {
         out$meta <- edited_meta
     }
@@ -263,7 +259,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     if (metadata_only) return(out)
     this_main <- NULL
     thismsg <- NULL
-    if (.debug_meta_read) mark_timing("plays")
     tryCatch({
         ## try using the already-read file text first, because it has been read with the proper encoding
         try({
@@ -308,9 +303,7 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     if (is.null(this_main)) stop("could not read dv file (unspecified error)")
     ##if (!is.null(thismsg)) mymsgs <- bind_rows(mymsgs,thismsg)
     ## don't actually issue this warning, for now at least
-    if (.debug_meta_read) show_timing("plays")
 
-    if (.debug_meta_read) mark_timing("extra")
     ## count line numbers: where do codes start from?
     suppressWarnings(cln <- grep("[3SCOUT]",file_text,fixed=TRUE))
     if (length(cln)==1) {
@@ -623,11 +616,9 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     ## ensure column ordering
     cls <- c("match_id", "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id", "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type", "start_zone", "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout", "end_of_set", "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "custom_code", "file_line_number", paste0("home_p", 1:6), paste0("visiting_p", 1:6), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase", "start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y", paste0("home_player_id", 1:6), paste0("visiting_player_id", 1:6), "set_number", "team_touch_id", "home_team", "visiting_team", "home_team_id", "visiting_team_id", "team_id", "point_won_by", "winning_attack", "serving_team", "phase", "home_score_start_of_point", "visiting_score_start_of_point")
     out$plays <- out$plays[, c(intersect(cls, names(out$plays)), setdiff(names(out$plays), cls))]
-    if (.debug_meta_read) show_timing("extra")
 
     out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
     ## apply additional validation
-    if (.debug_meta_read) mark_timing("validation")
     if (extra_validation > 0) {
         moreval <- dv_validate(out, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) {
@@ -641,7 +632,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         out$messages <- out$messages[order(out$messages$file_line_number, na.last = FALSE),]
         row.names(out$messages) <- NULL
     }
-    if (.debug_meta_read) show_timing("validation")
 
     ## some final fixes
     ## VS-exported dvw's can have an incorrect end location on reception if serve does not have an end location, but the set has a location

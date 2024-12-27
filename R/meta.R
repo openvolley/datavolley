@@ -1,7 +1,5 @@
 ## functions for reading match metadata (top part of the dv file)
 
-.debug_meta_read <- FALSE ## only while testing/debugging the new read_semi_text2 method
-
 roles_int2str <- function(x) {
     out <- rep(NA_character_, length(x))
     out[x %eq% 1] <- "libero"
@@ -60,7 +58,6 @@ safe_as_char <- function(z) safe_as(z, as.character)
 
 read_semi_text2 <- function(txt, types = NULL, nms = NULL) {
     ## types can be "n" (numeric), "i" (integer), "l" (logical), "Cn" (conditional numeric: only convert if can be made non-NA numeric)
-    if (.debug_meta_read) mark_timing("  > read_semi_text2")
     temp <- bind_rows(lapply(stringi::stri_split(txt, regex = "[\r\n]+")[[1]], function(z) withNames(as.list(str_trim(stringi::stri_split(z, fixed = ";")[[1]])), nms = nms)))
     temp <- temp %>% mutate(across(everything(), mt2na))
     if (length(types) > 0) types <- types[names(types) %in% names(temp)]
@@ -72,13 +69,12 @@ read_semi_text2 <- function(txt, types = NULL, nms = NULL) {
         if (any(types == "i")) temp <- temp %>% mutate(across(all_of(names(types)[types == "i"]), safe_as_int))
         if (any(types == "c")) temp <- temp %>% mutate(across(all_of(names(types)[types == "c"]), safe_as_char))
     }
-    if (.debug_meta_read) show_timing("  > read_semi_text2")
     temp
 }
 
+## older, slower version that is only now used in read_video
 read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
-    if (.debug_meta_read) mark_timing("  > read_semi_text")
-    out <- suppressWarnings(tryCatch({
+    suppressWarnings(tryCatch({
         ## quote = "" because no text in the dvw should be fully quoted, but might have quotes within team names
         if (length(txt) == 1 && !grepl("\n", txt)) txt <- paste0(txt, "\n") ## to force read_delim to treat it as literal text
         suppressWarnings(suppressMessages(out <- readr::read_delim(I(txt), delim = sep, col_names = FALSE, quote = "", locale = readr::locale(encoding = "UTF-8"), progress = FALSE, ...)))
@@ -92,8 +88,6 @@ read_semi_text <- function(txt, sep = ";", fallback = "fread", ...) {
             read.table(text = txt, sep = sep, quote = "", stringsAsFactors = FALSE, header = FALSE)
         }
     }))
-    if (.debug_meta_read) show_timing("  > read_semi_text")
-    out
 }
 
 find_section_idx <- function(section, txt, required = TRUE) {
@@ -110,56 +104,6 @@ find_section_idx <- function(section, txt, required = TRUE) {
 read_match <- function(txt, date_format = NULL) {
     idx <- find_section_idx("[3MATCH]", txt)
     msgs <- list()
-    if (.debug_meta_read) {
-        tryCatch(p <- read_semi_text(txt[idx + 1], fallback = "read.table"), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-        names(p)[1] <- "date"
-        names(p)[2] <- "time"
-        names(p)[3] <- "season"
-        names(p)[4] <- "league"
-        names(p)[5] <- "phase"
-        names(p)[6] <- "home_away"
-        names(p)[7] <- "day_number"
-        names(p)[8] <- "match_number"
-        names(p)[9] <- "text_encoding"
-        names(p)[10] <- "regulation" ## 0 = indoor sideout, 1 = indoor rally point, 2 = beach rally point
-        names(p)[11] <- "zones_or_cones" ## C or Z, e.g. 12/08/2018;;;;;;;;1;1;Z;0;
-        ## readr will treat e.g. 001 as character not numeric
-        c2n <- function(z) if (is.character(z) && !is.na(z) && !is.na(suppressWarnings(as.numeric(z)))) as.numeric(z) else z
-        p <- process_dv_utf8(p, from = 13:15, to = c("league", "phase", "home_away")) ## use UTF8 columns if available
-        p <- p %>% mutate(day_number = c2n(.data$day_number), match_number = c2n(.data$match_number), league = str_trim(.data$league), season = str_trim(.data$season))
-        if (is.na(p$date)) {
-            msgs <- collect_messages(msgs, "Match information is missing the date", idx + 1, txt[idx + 1], severity = 2)
-            date_was_missing <- TRUE
-        } else {
-            ## date can be in various formats
-            temp <- manydates(p$date, preferred = date_format)
-            if (length(temp) < 1) {
-                ## no recognizable date
-                temp <- as.Date(NA)
-            } else if (length(temp) > 1) {
-                ## ambiguous date format
-                msgs <- collect_messages(msgs, "Ambiguous date, using DMY format", idx + 1, txt[idx + 1], severity = 2)
-                temp <- temp[1] ##** can we do better here?
-            }
-            p$date <- temp
-            if (is.na(p$date)) {
-                msgs <- collect_messages(msgs, "Cannot parse the date in the match information", idx + 1, txt[idx + 1], severity = 2)
-            }
-        }
-        suppressWarnings(p$time <- lubridate::hms(p$time)) ## don't warn on time, because the plays object has it anyway
-        if (p$regulation %eq% 0) {
-            p$regulation <- "indoor sideout"
-        } else if (p$regulation %eq% 1) {
-            p$regulation <- "indoor rally point"
-        } else if (p$regulation %eq% 2) {
-            p$regulation <- "beach rally point"
-        }
-        if (isTRUE(p$date < (as.Date(lubridate::now(tzone = "UTC")) - 365 * 10)) && !grepl("sideout", p$regulation)) {
-            ## date is more than ten years ago!
-            msgs <- collect_messages(msgs, paste0("The date of the match (", format(p$date), ") is more than 10 years ago, is it correct?"), idx + 1, txt[idx + 1], severity = 2)
-        }
-    }
-
     tryCatch(p2 <- read_semi_text2(txt[idx + 1], types = c(match_number = "Cn", day_number = "Cn", regulation = "n"), nms = c("date", "time", "season", "league", "phase", "home_away", "day_number", "match_number", "text_encoding", "regulation", "zones_or_cones")), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     ## arguably season, league, phase, and home_away might also be type "Cn" because previously they were left to readr and would have been type numeric if they were numbers
     p2 <- process_dv_utf8(p2, from = 13:15, to = c("league", "phase", "home_away")) ## use UTF8 columns if available
@@ -198,48 +142,18 @@ read_match <- function(txt, date_format = NULL) {
         ## date is more than ten years ago!
         msgs <- collect_messages(msgs, paste0("The date of the match (", format(p2$date), ") is more than 10 years ago, is it correct?"), idx + 1, txt[idx + 1], severity = 2)
     }
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
-
     list(match = p2, messages = msgs)
 }
 
 read_more <- function(txt) {
     idx <- find_section_idx("[3MORE]", txt)
-    if (.debug_meta_read) {
-        tryCatch(p <- read_semi_text(txt[idx+1], fallback = "read.table"), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-        for (k in c(1, 4:6)) p[[k]] <- as.character(p[[k]])
-        names(p)[1:6] <- c("referees", "spectators", "receipts", "city", "arena","scout")
-        p <- process_dv_utf8(p, from = 7:10, to = c("referees", "city", "arena", "scout")) ## use UTF8 columns if available
-        p <- p %>% mutate(across(all_of(c("referees", "city", "arena", "scout")), str_trim))
-    }
     tryCatch(p2 <- read_semi_text2(txt[idx + 1], types = c(spectators = "Cn", receipts = "Cn", referees = "c", city = "c", arena = "c", scout = "c"), nms = c("referees", "spectators", "receipts", "city", "arena", "scout")), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-    p2 <- process_dv_utf8(p2, from = 7:10, to = c("referees", "city", "arena", "scout"), na_is = NA_character_) ## use UTF8 columns if available
-
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
-    p2
+    process_dv_utf8(p2, from = 7:10, to = c("referees", "city", "arena", "scout"), na_is = NA_character_) ## use UTF8 columns if available
 }
 
 read_result <- function(txt) {
     find_section_idx("[3SET]", txt) ## just to check that it can be found
     txt <- text_chunk(txt, "[3SET]")
-    if (.debug_meta_read) {
-        tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-        names(p)[1] <- "played"
-        names(p)[2] <- "score_intermediate1"
-        names(p)[3] <- "score_intermediate2"
-        names(p)[4] <- "score_intermediate3"
-        names(p)[5] <- "score"
-        names(p)[6] <- "duration"
-        p$score_intermediate1 <- gsub("[[:space:]]+", "", p$score_intermediate1)
-        p$score_intermediate2 <- gsub("[[:space:]]+", "", p$score_intermediate2)
-        p$score_intermediate3 <- gsub("[[:space:]]+", "", p$score_intermediate3)
-        p$score <- gsub("\\s+","",p$score)
-        temp <- str_match(p$score,"(\\d+)\\-(\\d+)")
-        p$score_home_team <- suppressWarnings(as.numeric(temp[,2]))
-        p$score_visiting_team <- suppressWarnings(as.numeric(temp[,3]))
-        p <- p[p$score!="",]
-        p <- p[rowSums(is.na(p)) < ncol(p), ] ## discard all-NA rows
-    }
     tryCatch(p2 <- read_semi_text2(txt, types = c(played = "l", duration = "n"), nms = c("played", "score_intermediate1", "score_intermediate2", "score_intermediate3", "score", "duration")), error = function(e) stop("could not read the [3SET] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     p2 <- p2 %>% mutate(score_intermediate1 = gsub("[[:space:]]+", "", .data$score_intermediate1), score_intermediate2 = gsub("[[:space:]]+", "", .data$score_intermediate2), score_intermediate3 = gsub("[[:space:]]+", "", .data$score_intermediate3))
     p2$score <- gsub("\\s+","",p2$score)
@@ -247,9 +161,7 @@ read_result <- function(txt) {
     p2$score_home_team <- suppressWarnings(as.numeric(temp[, 2]))
     p2$score_visiting_team <- suppressWarnings(as.numeric(temp[, 3]))
     p2 <- p2[nzchar(p2$score) & !is.na(p2$score), ]
-    p2 <- p2[rowSums(is.na(p2)) < ncol(p2), ] ## discard all-NA rows
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
-    p2
+    p2[rowSums(is.na(p2)) < ncol(p2), ] ## discard all-NA rows
 }
 
 ## teams
@@ -258,40 +170,6 @@ read_teams <- function(txt) {
     txt0 <- txt
     txt <- text_chunk(txt, "[3TEAMS]")
     msgs <- list()
-    if (.debug_meta_read) {
-        tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-        names(p)[1] <- "team_id"
-        names(p)[2] <- "team"
-        names(p)[3] <- "sets_won"
-        names(p)[4] <- "coach"
-        names(p)[5] <- "assistant"
-        if (ncol(p) > 5) names(p)[6] <- "shirt_colour"
-        try(p$shirt_colour <- dv_int2rgb(p$shirt_colour), silent = TRUE)
-        p <- process_dv_utf8(p, from = 7:9, to = c("team", "coach", "assistant")) ## use UTF8 columns if available
-        p <- p %>% mutate(home_away_team = c("*","a"), team_id = str_trim(as.character(.data$team_id)), ## force to be char
-                          team = str_trim(.data$team), coach = str_trim(.data$coach), assistant = str_trim(.data$assistant))
-        suppressWarnings(p$sets_won <- as.integer(p$sets_won))
-        ## check for missing team names
-        if (is.na(p$team[1]) || !nzchar(p$team[1])) {
-            msgs <- collect_messages(msgs, "The home team name is missing", idx+1, txt0[idx + 1], severity = 1)
-            p$team[1] <- "Unknown team"
-        }
-        if (is.na(p$team[2]) || !nzchar(p$team[2])) {
-            msgs <- collect_messages(msgs, "The visiting team name is missing", idx+2, txt0[idx + 2], severity = 1)
-            p$team[2] <- "Unknown team"
-        }
-        ## check for identical team names
-        if (p$team[1] %eq% p$team[2]) {
-            msgs <- collect_messages(msgs, "The two team names are identical. They will be modified here but this may still cause problems", idx+1, txt0[idx+1], severity = 1)
-            p$team[1] <- paste0(p$team[1]," (home)")
-            p$team[2] <- paste0(p$team[2]," (visiting)")
-        }
-        if (p$team_id[1] %eq% p$team_id[2]) {
-            msgs <- collect_messages(msgs, "The two team IDs are identical. They will be modified here but this may still cause problems", idx+1, txt0[idx+1], severity = 1)
-            p$team_id[1] <- paste0(p$team_id[1]," (home)")
-            p$team_id[2] <- paste0(p$team_id[2]," (visiting)")
-        }
-    }
     tryCatch(p2 <- read_semi_text2(txt, types = c(sets_won = "i", shirt_colour = "i"), nms = c("team_id", "team", "sets_won", "coach", "assistant", "shirt_colour")), error = function(e) stop("could not read the [3TEAMS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     try(p2$shirt_colour <- dv_int2rgb(p2$shirt_colour), silent = TRUE)
     p2 <- process_dv_utf8(p2, from = 7:9, to = c("team", "coach", "assistant")) ## use UTF8 columns if available
@@ -316,7 +194,6 @@ read_teams <- function(txt) {
         p2$team_id[1] <- paste0(p2$team_id[1]," (home)")
         p2$team_id[2] <- paste0(p2$team_id[2]," (visiting)")
     }
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
     list(teams = p2, messages = msgs)
 }
 
@@ -327,44 +204,6 @@ read_players <- function(txt,team,surname_case) {
     chnkmarker <- if (tolower(team)=="home") "[3PLAYERS-H]" else "[3PLAYERS-V]"
     find_section_idx(chnkmarker, txt)
     txt <- text_chunk(txt, chnkmarker)
-    if (.debug_meta_read) {
-        tryCatch(p <- read_semi_text(txt), error = function(e) stop("could not read the ",chnkmarker," section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-        if (ncol(p) < 1) p <- as_tibble(setNames(as.data.frame(matrix(nrow = 0, ncol = 18)), paste0("X", 1:18)))
-        names(p)[c(2, 4:15)] <- c("number", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role", "foreign")
-        p <- process_dv_utf8(p, from = 18:20, to = c("lastname", "firstname", "nickname")) ## use UTF8 columns if available before manipulating names
-        if (is.character(surname_case)) {
-            p$lastname <- switch(tolower(surname_case),
-                                 upper = toupper(p$lastname),
-                                 lower = tolower(p$lastname),
-                                 title = str_to_title(p$lastname),
-                                 p$lastname)
-        } else if (is.function(surname_case)) {
-            p$lastname <- surname_case(p$lastname)
-        }
-        p$nickname <- str_trim(p$nickname)
-        p$nickname[is.na(p$nickname)] <- ""
-        p$firstname[is.na(p$firstname)] <- ""
-        p$lastname[is.na(p$lastname)] <- ""
-        p$firstname <- str_trim(p$firstname)
-        p$lastname <- str_trim(p$lastname)
-        p$name <- str_trim(paste(p$firstname, p$lastname, sep = " "))
-        ## fallback for un-named players
-        idx <- which(!nzchar(p$name))
-        if (length(idx) > 0) p$name[idx] <- paste0("Unnamed player ", seq_along(idx))
-        ##p$role <- plyr::mapvalues(p$role, from = 1:6, to = c("libero", "outside", "opposite", "middle", "setter", "unknown"), warn_missing = FALSE)
-        ##p$role[p$role %in% c("0")] <- NA_character_
-        p$role <- roles_int2str(p$role)
-        p$player_id <- str_trim(as.character(p$player_id))
-        p$starting_position_set1 <- str_trim(as.character(p$starting_position_set1))
-        p$starting_position_set2 <- str_trim(as.character(p$starting_position_set2))
-        p$starting_position_set3 <- str_trim(as.character(p$starting_position_set3))
-        p$starting_position_set4 <- str_trim(as.character(p$starting_position_set4))
-        p$starting_position_set5 <- str_trim(as.character(p$starting_position_set5))
-        p$foreign[is.na(p$foreign)] <- FALSE
-        p$number <- as.integer(p$number)
-        for (nm in names(p)[grepl("^X[[:digit:]]+", names(p))]) p[[nm]] <- as.character(p[[nm]]) ## to avoid problems when row-binding later
-    }
-
     tryCatch(p2 <- read_semi_text2(txt, types = c(foreign = "l", number = "i", starting_position_set1 = "c", starting_position_set2 = "c", starting_position_set3 = "c", starting_position_set4 = "c", starting_position_set5 = "c"), nms = c("X1", "number", "X3", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role", "foreign")), error = function(e) stop("could not read the ", chnkmarker, " section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     if (ncol(p2) < 2) {
         p2 <- as_tibble(setNames(as.data.frame(matrix(nrow = 0, ncol = 18)), paste0("X", 1:18)))
@@ -391,7 +230,6 @@ read_players <- function(txt,team,surname_case) {
     if (length(idx) > 0) p2$name[idx] <- paste0("Unnamed player ", seq_along(idx))
     p2$role <- roles_int2str(p2$role)
     p2$foreign[is.na(p2$foreign) | !nzchar(p2$foreign)] <- FALSE
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
     p2
 }
 
@@ -402,19 +240,6 @@ read_attacks <- function(txt) {
     if (!nzchar(str_trim(txt))) {
         list(attacks = NULL, messages = NULL)
     } else {
-        if (.debug_meta_read) {
-            tryCatch(p <- read_semi_text(txt, fallback = "read.table"), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-            ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
-            names(p)[1:9] <- c("code", "attacker_position", "side", "type", "description", "X6", "colour", "start_coordinate", "set_type")
-            p$description <- str_trim(p$description)
-            p <- dplyr::distinct(p)
-            if (any(duplicated(p$code))) {
-                msgs <- collect_messages(msgs, "At least one attack combination code in the [3ATTACKCOMBINATION] section is duplicated, ignoring duplicate entries", severity = 2)
-                p <- p[!duplicated(p$code), ]
-            }
-            p$start_coordinate <- as.integer(p$start_coordinate)
-            try(p$colour <- dv_int2rgb(p$colour))
-        }
         tryCatch(p2 <- read_semi_text2(txt, types = c(attacker_position = "n", start_coordinate = "i", colour = "i"), nms = c("code", "attacker_position", "side", "type", "description", "X6", "colour", "start_coordinate", "set_type")), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         p2 <- dplyr::distinct(p2)
@@ -423,8 +248,6 @@ read_attacks <- function(txt) {
             p2 <- p2[!duplicated(p2$code), ]
         }
         try(p2$colour <- dv_int2rgb(p2$colour))
-        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
-
         list(attacks = p2, messages = msgs)
     }
 }
@@ -435,20 +258,6 @@ read_setter_calls <- function(txt) {
     if (!nzchar(str_trim(txt))) {
         list(sets = NULL, messages = NULL)
     } else {
-        if (.debug_meta_read) {
-            ## with read_semi_text, need to force col 9 to be char (it's a comma-separated string of ints) else it gets parsed into a single number
-            tryCatch(p <- read_semi_text(txt, col_types = "c?c??iiic??"), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-            names(p)[1:10] <- c("code", "X2", "description", "X4", "colour", "start_coordinate", "mid_coordinate", "end_coordinate", "path", "path_colour")
-            p <- dplyr::distinct(p)
-            p$description <- str_trim(p$description)
-            if (any(duplicated(p$code))) {
-                msgs <- collect_messages(msgs, "At least one setter call code in the [3SETTERCALL] section is duplicated, ignoring duplicate entries", severity = 2)
-                p <- p[!duplicated(p$code), ]
-            }
-            ## 'path' column is a comma-separated list of indices that give a path
-            try(p$colour <- dv_int2rgb(p$colour))
-            try(p$path_colour <- dv_int2rgb(p$path_colour))
-        }
         tryCatch(p2 <- read_semi_text2(txt, types = c(code = "c", description = "c", path = "c", start_coordinate = "i", mid_coordinate = "i", end_coordinate = "i", path_colour = "i", colour = "i"), nms = c("code", "X2", "description", "X4", "colour", "start_coordinate", "mid_coordinate", "end_coordinate", "path", "path_colour")), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         p2 <- dplyr::distinct(p2)
         if (any(duplicated(p2$code))) {
@@ -458,8 +267,6 @@ read_setter_calls <- function(txt) {
         ## 'path' column is a comma-separated list of indices that give a path
         try(p2$colour <- dv_int2rgb(p2$colour))
         try(p2$path_colour <- dv_int2rgb(p2$path_colour))
-        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
-
         list(sets = p2, messages = msgs)
     }
 }
@@ -519,22 +326,12 @@ read_comments <- function(txt) {
     ## default to NA comments
     p2 <- setNames(as.data.frame(rep(list(NA_character_), 5)), paste0("comment_", 1:5))
     if (nzchar(str_trim(txt))) {
-        if (.debug_meta_read) {
-            p <- tryCatch(suppressWarnings({
-                tmp <- read_semi_text(txt, fallback = "read.table")
-                setNames(tmp, paste0("comment_", seq_len(ncol(tmp))))
-            }), error = function(e) {
-                warning("could not read the [3COMMENTS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?")
-            })
-        }
-
         p2 <- tryCatch(read_semi_text2(txt, nms = paste0("comment_", 1:10)), error = function(e) warning("could not read the [3COMMENTS] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         ## collapse multiple lines into single
         if (nrow(p2) > 1) {
             p2 <- p2 %>% dplyr::summarize(across(everything(), function(z) paste(Filter(Negate(is.na), z), collapse = "\n")))
         }
         p2[!nzchar(p2)] <- NA_character_
-        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
     }
     p2
 }
@@ -542,27 +339,16 @@ read_comments <- function(txt) {
 read_meta <- function(txt, surname_case, date_format = NULL) {
     out <- list()
     msgs <- list()
-    if (.debug_meta_read) mark_timing("  match")
     temp <- read_match(txt, date_format = date_format)
     out$match <- temp$match
-    if (.debug_meta_read) show_timing("  match")
     msgs <- join_messages(msgs, temp$messages)
-    if (.debug_meta_read) mark_timing("  more")
     out$more <- read_more(txt)
-    if (.debug_meta_read) show_timing("  more")
-    if (.debug_meta_read) mark_timing("  comments")
     out$comments <- read_comments(txt)
-    if (.debug_meta_read) show_timing("  comments")
-    if (.debug_meta_read) mark_timing("  result")
     tryCatch(out$result <- read_result(txt),
              error=function(e) warning("could not read the [3SET] section of the input file")) ## not fatal: summary method will fail if this is not parsed, but we will have issued a warning message
-    if (.debug_meta_read) show_timing("  result")
-    if (.debug_meta_read) mark_timing("  teams")
     tryCatch(tempteams <- read_teams(txt), error = function(e) stop("could not read the [3TEAMS] section of the input file")) ## fatal, because we need this info later
     out$teams <- tempteams$teams
     msgs <- join_messages(msgs, tempteams$messages)
-    if (.debug_meta_read) show_timing("  teams")
-    if (.debug_meta_read) mark_timing("  teams2")
     if (any(is.na(out$teams$sets_won))) {
         ## hmm, can we fill this in from the out$result section?
 
@@ -600,22 +386,15 @@ read_meta <- function(txt, surname_case, date_format = NULL) {
     } else {
         out$teams$won_match <- c(FALSE, TRUE)
     }
-    if (.debug_meta_read) show_timing("  teams2")
 
-    if (.debug_meta_read) mark_timing("  players")
     tryCatch(out$players_h <- read_players(txt, "home", surname_case), error = function(e) stop("could not read the [3PLAYERS-H] section of the input file")) ## fatal
     tryCatch(out$players_v <- read_players(txt, "visiting", surname_case), error = function(e) stop("could not read the [3PLAYERS-V] section of the input file")) ## fatal
-    if (.debug_meta_read) show_timing("  players")
-    if (.debug_meta_read) mark_timing("  attacks")
     tryCatch(temp <- read_attacks(txt), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file")) ## fatal
     out$attacks <- temp$attacks
     msgs <- join_messages(msgs, temp$messages)
-    if (.debug_meta_read) show_timing("  attacks")
-    if (.debug_meta_read) mark_timing("  sets")
     tryCatch(temp <- read_setter_calls(txt), error = function(e) stop("could not read the [3SETTERCALL] section of the input file")) ## fatal
     out$sets <- temp$sets
     msgs <- join_messages(msgs, temp$messages)
-    if (.debug_meta_read) show_timing("  sets")
     tryCatch(out$winning_symbols <- read_winning_symbols(txt), error = function(e) warning("could not read the [3WINNINGSYMBOLS] section of the input file")) ## not fatal
     out$match_id <- dv_create_meta_match_id(out)
     if (length(msgs) > 0) {
