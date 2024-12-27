@@ -36,32 +36,41 @@ withNames <- function(w, nms = c()) {
     if (length(nms) > length(w)) nms <- nms[seq_along(w)]
     setNames(w, nms)
 }
-mt2nachar <- function(z) { z[!nzchar(z)] <- NA_character_; z }
+mt2na <- function(z) {
+    z[!nzchar(z)] <- NA_character_
+    if (all(is.na(z))) as.logical(z) else z ## for backwards compatibility, all-NA columns to be of type logical
+}
 safe_as <- function(z, fun) tryCatch(suppressWarnings(fun(z)), error = function(e) z)
 safe_as_num <- function(z) safe_as(z, as.numeric)
 safe_as_condnum <- function(z) { ## conditional conversion to numeric
-    temp <- safe_as(z, as.numeric)
-    if (all(is.na(temp) == (is.na(z) | !nzchar(z)))) temp else z
+    if (all(is.na(z))) {
+        ## don't convert all-NAs
+        z
+    } else {
+        temp <- safe_as(z, as.numeric)
+        if (all(is.na(temp) == (is.na(z) | !nzchar(z)))) temp else z
+    }
 }
 ## safe_as_condnum(c(" 1", "a"))
 ## safe_as_condnum(c(" 1", "2"))
 ## safe_as_condnum(c(" 1", ""))
 safe_as_log <- function(z) safe_as(z, as.logical)
 safe_as_int <- function(z) safe_as(z, as.integer)
+safe_as_char <- function(z) safe_as(z, as.character)
 
 read_semi_text2 <- function(txt, types = NULL, nms = NULL) {
     ## types can be "n" (numeric), "i" (integer), "l" (logical), "Cn" (conditional numeric: only convert if can be made non-NA numeric)
     if (.debug_meta_read) mark_timing("  > read_semi_text2")
     temp <- bind_rows(lapply(stringi::stri_split(txt, regex = "[\r\n]+")[[1]], function(z) withNames(as.list(str_trim(stringi::stri_split(z, fixed = ";")[[1]])), nms = nms)))
-    temp <- temp %>% mutate(across(everything(), mt2nachar))
-    temp[!nzchar(temp)] <- NA_character_
+    temp <- temp %>% mutate(across(everything(), mt2na))
     if (length(types) > 0) types <- types[names(types) %in% names(temp)]
     if (length(types) > 0) {
-        if (!all(types %in% c("n", "l", "i", "Cn"))) stop("unexpected type(s): ", setdiff(types, c("n", "l", "i", "Cn")))
+        if (!all(types %in% c("n", "l", "i", "Cn", "c"))) stop("unexpected type(s): ", setdiff(types, c("n", "l", "i", "Cn", "c")))
         if (any(types == "n")) temp <- temp %>% mutate(across(all_of(names(types)[types == "n"]), safe_as_num))
         if (any(types == "Cn")) temp <- temp %>% mutate(across(all_of(names(types)[types == "Cn"]), safe_as_condnum))
         if (any(types == "l")) temp <- temp %>% mutate(across(all_of(names(types)[types == "l"]), safe_as_log))
         if (any(types == "i")) temp <- temp %>% mutate(across(all_of(names(types)[types == "i"]), safe_as_int))
+        if (any(types == "c")) temp <- temp %>% mutate(across(all_of(names(types)[types == "c"]), safe_as_char))
     }
     if (.debug_meta_read) show_timing("  > read_semi_text2")
     temp
@@ -102,56 +111,57 @@ read_match <- function(txt, date_format = NULL) {
     idx <- find_section_idx("[3MATCH]", txt)
     msgs <- list()
     if (.debug_meta_read) {
-    tryCatch(p <- read_semi_text(txt[idx + 1], fallback = "read.table"), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-    names(p)[1] <- "date"
-    names(p)[2] <- "time"
-    names(p)[3] <- "season"
-    names(p)[4] <- "league"
-    names(p)[5] <- "phase"
-    names(p)[6] <- "home_away"
-    names(p)[7] <- "day_number"
-    names(p)[8] <- "match_number"
-    names(p)[9] <- "text_encoding"
-    names(p)[10] <- "regulation" ## 0 = indoor sideout, 1 = indoor rally point, 2 = beach rally point
-    names(p)[11] <- "zones_or_cones" ## C or Z, e.g. 12/08/2018;;;;;;;;1;1;Z;0;
-    ## readr will treat e.g. 001 as character not numeric
-    c2n <- function(z) if (is.character(z) && !is.na(z) && !is.na(suppressWarnings(as.numeric(z)))) as.numeric(z) else z
-    p <- process_dv_utf8(p, from = 13:15, to = c("league", "phase", "home_away")) ## use UTF8 columns if available
-    p <- p %>% mutate(day_number = c2n(.data$day_number), match_number = c2n(.data$match_number), league = str_trim(.data$league), season = str_trim(.data$season))
-    if (is.na(p$date)) {
-        msgs <- collect_messages(msgs, "Match information is missing the date", idx + 1, txt[idx + 1], severity = 2)
-        date_was_missing <- TRUE
-    } else {
-        ## date can be in various formats
-        temp <- manydates(p$date, preferred = date_format)
-        if (length(temp) < 1) {
-            ## no recognizable date
-            temp <- as.Date(NA)
-        } else if (length(temp) > 1) {
-            ## ambiguous date format
-            msgs <- collect_messages(msgs, "Ambiguous date, using DMY format", idx + 1, txt[idx + 1], severity = 2)
-            temp <- temp[1] ##** can we do better here?
-        }
-        p$date <- temp
+        tryCatch(p <- read_semi_text(txt[idx + 1], fallback = "read.table"), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
+        names(p)[1] <- "date"
+        names(p)[2] <- "time"
+        names(p)[3] <- "season"
+        names(p)[4] <- "league"
+        names(p)[5] <- "phase"
+        names(p)[6] <- "home_away"
+        names(p)[7] <- "day_number"
+        names(p)[8] <- "match_number"
+        names(p)[9] <- "text_encoding"
+        names(p)[10] <- "regulation" ## 0 = indoor sideout, 1 = indoor rally point, 2 = beach rally point
+        names(p)[11] <- "zones_or_cones" ## C or Z, e.g. 12/08/2018;;;;;;;;1;1;Z;0;
+        ## readr will treat e.g. 001 as character not numeric
+        c2n <- function(z) if (is.character(z) && !is.na(z) && !is.na(suppressWarnings(as.numeric(z)))) as.numeric(z) else z
+        p <- process_dv_utf8(p, from = 13:15, to = c("league", "phase", "home_away")) ## use UTF8 columns if available
+        p <- p %>% mutate(day_number = c2n(.data$day_number), match_number = c2n(.data$match_number), league = str_trim(.data$league), season = str_trim(.data$season))
         if (is.na(p$date)) {
-            msgs <- collect_messages(msgs, "Cannot parse the date in the match information", idx + 1, txt[idx + 1], severity = 2)
+            msgs <- collect_messages(msgs, "Match information is missing the date", idx + 1, txt[idx + 1], severity = 2)
+            date_was_missing <- TRUE
+        } else {
+            ## date can be in various formats
+            temp <- manydates(p$date, preferred = date_format)
+            if (length(temp) < 1) {
+                ## no recognizable date
+                temp <- as.Date(NA)
+            } else if (length(temp) > 1) {
+                ## ambiguous date format
+                msgs <- collect_messages(msgs, "Ambiguous date, using DMY format", idx + 1, txt[idx + 1], severity = 2)
+                temp <- temp[1] ##** can we do better here?
+            }
+            p$date <- temp
+            if (is.na(p$date)) {
+                msgs <- collect_messages(msgs, "Cannot parse the date in the match information", idx + 1, txt[idx + 1], severity = 2)
+            }
         }
-    }
-    suppressWarnings(p$time <- lubridate::hms(p$time)) ## don't warn on time, because the plays object has it anyway
-    if (p$regulation %eq% 0) {
-        p$regulation <- "indoor sideout"
-    } else if (p$regulation %eq% 1) {
-        p$regulation <- "indoor rally point"
-    } else if (p$regulation %eq% 2) {
-        p$regulation <- "beach rally point"
-    }
-    if (isTRUE(p$date < (as.Date(lubridate::now(tzone = "UTC")) - 365 * 10)) && !grepl("sideout", p$regulation)) {
-        ## date is more than ten years ago!
-        msgs <- collect_messages(msgs, paste0("The date of the match (", format(p$date), ") is more than 10 years ago, is it correct?"), idx + 1, txt[idx + 1], severity = 2)
-    }
+        suppressWarnings(p$time <- lubridate::hms(p$time)) ## don't warn on time, because the plays object has it anyway
+        if (p$regulation %eq% 0) {
+            p$regulation <- "indoor sideout"
+        } else if (p$regulation %eq% 1) {
+            p$regulation <- "indoor rally point"
+        } else if (p$regulation %eq% 2) {
+            p$regulation <- "beach rally point"
+        }
+        if (isTRUE(p$date < (as.Date(lubridate::now(tzone = "UTC")) - 365 * 10)) && !grepl("sideout", p$regulation)) {
+            ## date is more than ten years ago!
+            msgs <- collect_messages(msgs, paste0("The date of the match (", format(p$date), ") is more than 10 years ago, is it correct?"), idx + 1, txt[idx + 1], severity = 2)
+        }
     }
 
     tryCatch(p2 <- read_semi_text2(txt[idx + 1], types = c(match_number = "Cn", day_number = "Cn", regulation = "n"), nms = c("date", "time", "season", "league", "phase", "home_away", "day_number", "match_number", "text_encoding", "regulation", "zones_or_cones")), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
+    ## arguably season, league, phase, and home_away might also be type "Cn" because previously they were left to readr and would have been type numeric if they were numbers
     p2 <- process_dv_utf8(p2, from = 13:15, to = c("league", "phase", "home_away")) ## use UTF8 columns if available
     ## backwards compatibility, text encoding was numeric if it was a number
     temp <- suppressWarnings(as.numeric(p2$text_encoding))
@@ -188,7 +198,7 @@ read_match <- function(txt, date_format = NULL) {
         ## date is more than ten years ago!
         msgs <- collect_messages(msgs, paste0("The date of the match (", format(p2$date), ") is more than 10 years ago, is it correct?"), idx + 1, txt[idx + 1], severity = 2)
     }
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
+    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
 
     list(match = p2, messages = msgs)
 }
@@ -202,10 +212,10 @@ read_more <- function(txt) {
         p <- process_dv_utf8(p, from = 7:10, to = c("referees", "city", "arena", "scout")) ## use UTF8 columns if available
         p <- p %>% mutate(across(all_of(c("referees", "city", "arena", "scout")), str_trim))
     }
-    tryCatch(p2 <- read_semi_text2(txt[idx + 1], types = c(spectators = "Cn", receipts = "Cn"), nms = c("referees", "spectators", "receipts", "city", "arena", "scout")), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
-    p2 <- process_dv_utf8(p2, from = 7:10, to = c("referees", "city", "arena", "scout")) ## use UTF8 columns if available
+    tryCatch(p2 <- read_semi_text2(txt[idx + 1], types = c(spectators = "Cn", receipts = "Cn", referees = "c", city = "c", arena = "c", scout = "c"), nms = c("referees", "spectators", "receipts", "city", "arena", "scout")), error = function(e) stop("could not read the [3MORE] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
+    p2 <- process_dv_utf8(p2, from = 7:10, to = c("referees", "city", "arena", "scout"), na_is = NA_character_) ## use UTF8 columns if available
 
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
+    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
     p2
 }
 
@@ -238,8 +248,7 @@ read_result <- function(txt) {
     p2$score_visiting_team <- suppressWarnings(as.numeric(temp[, 3]))
     p2 <- p2[nzchar(p2$score) & !is.na(p2$score), ]
     p2 <- p2[rowSums(is.na(p2)) < ncol(p2), ] ## discard all-NA rows
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p))], p2[, !grepl("^X[[:digit:]]+$", names(p2))]))) browser()
-    ##if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
+    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
     p2
 }
 
@@ -307,7 +316,7 @@ read_teams <- function(txt) {
         p2$team_id[1] <- paste0(p2$team_id[1]," (home)")
         p2$team_id[2] <- paste0(p2$team_id[2]," (visiting)")
     }
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
+    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
     list(teams = p2, messages = msgs)
 }
 
@@ -356,14 +365,14 @@ read_players <- function(txt,team,surname_case) {
         for (nm in names(p)[grepl("^X[[:digit:]]+", names(p))]) p[[nm]] <- as.character(p[[nm]]) ## to avoid problems when row-binding later
     }
 
-    tryCatch(p2 <- read_semi_text2(txt, types = c(foreign = "l", number = "i"), nms = c("X1", "number", "X3", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role", "foreign")), error = function(e) stop("could not read the ", chnkmarker, " section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
+    tryCatch(p2 <- read_semi_text2(txt, types = c(foreign = "l", number = "i", starting_position_set1 = "c", starting_position_set2 = "c", starting_position_set3 = "c", starting_position_set4 = "c", starting_position_set5 = "c"), nms = c("X1", "number", "X3", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role", "foreign")), error = function(e) stop("could not read the ", chnkmarker, " section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     if (ncol(p2) < 2) {
         p2 <- as_tibble(setNames(as.data.frame(matrix(nrow = 0, ncol = 18)), paste0("X", 1:18)))
         names(p2)[c(2, 4:15)] <- c("number", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role", "foreign")
         p2 <- p2 %>% mutate(p2, across(all_of(c("starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "player_id", "lastname", "firstname", "nickname", "special_role", "role")), as.character),
                             foreign = character())
     }
-    p2 <- process_dv_utf8(p2, from = 18:20, to = c("lastname", "firstname", "nickname")) ## use UTF8 columns if available before manipulating names
+    p2 <- process_dv_utf8(p2, from = 18:20, to = c("lastname", "firstname", "nickname"), na_is = NA_character_) ## use UTF8 columns if available before manipulating names
     if (is.character(surname_case)) {
         p2$lastname <- switch(tolower(surname_case),
                               upper = toupper(p2$lastname),
@@ -382,7 +391,7 @@ read_players <- function(txt,team,surname_case) {
     if (length(idx) > 0) p2$name[idx] <- paste0("Unnamed player ", seq_along(idx))
     p2$role <- roles_int2str(p2$role)
     p2$foreign[is.na(p2$foreign) | !nzchar(p2$foreign)] <- FALSE
-    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
+    if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
     p2
 }
 
@@ -414,7 +423,7 @@ read_attacks <- function(txt) {
             p2 <- p2[!duplicated(p2$code), ]
         }
         try(p2$colour <- dv_int2rgb(p2$colour))
-        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
+        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
 
         list(attacks = p2, messages = msgs)
     }
@@ -440,7 +449,7 @@ read_setter_calls <- function(txt) {
             try(p$colour <- dv_int2rgb(p$colour))
             try(p$path_colour <- dv_int2rgb(p$path_colour))
         }
-        tryCatch(p2 <- read_semi_text2(txt, types = c(start_coordinate = "i", mid_coordinate = "i", end_coordinate = "i", path_colour = "i", colour = "i"), nms = c("code", "X2", "description", "X4", "colour", "start_coordinate", "mid_coordinate", "end_coordinate", "path", "path_colour")), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
+        tryCatch(p2 <- read_semi_text2(txt, types = c(code = "c", description = "c", path = "c", start_coordinate = "i", mid_coordinate = "i", end_coordinate = "i", path_colour = "i", colour = "i"), nms = c("code", "X2", "description", "X4", "colour", "start_coordinate", "mid_coordinate", "end_coordinate", "path", "path_colour")), error = function(e) stop("could not read the [3SETTERCALL] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         p2 <- dplyr::distinct(p2)
         if (any(duplicated(p2$code))) {
             msgs <- collect_messages(msgs, "At least one setter call code in the [3SETTERCALL] section is duplicated, ignoring duplicate entries", severity = 2)
@@ -449,7 +458,7 @@ read_setter_calls <- function(txt) {
         ## 'path' column is a comma-separated list of indices that give a path
         try(p2$colour <- dv_int2rgb(p2$colour))
         try(p2$path_colour <- dv_int2rgb(p2$path_colour))
-        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
+        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
 
         list(sets = p2, messages = msgs)
     }
@@ -525,7 +534,7 @@ read_comments <- function(txt) {
             p2 <- p2 %>% dplyr::summarize(across(everything(), function(z) paste(Filter(Negate(is.na), z), collapse = "\n")))
         }
         p2[!nzchar(p2)] <- NA_character_
-        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+$", names(p)) & colSums(is.na(p)) < nrow(p)], p2[, !grepl("^X[[:digit:]]+$", names(p2)) & colSums(is.na(p2)) < nrow(p2)]))) browser()
+        if (.debug_meta_read) if (!isTRUE(all.equal(p[, !grepl("^X[[:digit:]]+", names(p))], p2[, !grepl("^X[[:digit:]]+", names(p2))]))) browser()
     }
     p2
 }
@@ -711,7 +720,7 @@ VB^High pipe between 6 and 1
 VP^High pipe
 VR^High pipe between 6 and 5
 V3^High to position 3
-P2^Secondo tocco di  lr
+P2^Secondo tocco di la
 PR^Rigore",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
 
     assert_that(is.logical(show_map))

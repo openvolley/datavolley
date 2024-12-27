@@ -1,3 +1,8 @@
+datavolley 1.9.0
+================
+- substantial refactoring of how text encoding is detected, which should be more reliable (particularly for DV4 files)
+- speed improvements to file reading
+
 datavolley 1.7.4
 ================
 - minor revisions to the `dv_sync_video` function

@@ -632,14 +632,14 @@ is_dv_utf8 <- function(z) grepl("^\u000f", z, useBytes = TRUE) ## one element pe
 any_dv_utf8 <- function(z) any(grepl("\u000f", z, useBytes = TRUE), na.rm = TRUE) ## TRUE if anything in z is encoded
 
 ## decode a vector of text
-decode_dv_utf8 <- function(z, warn = FALSE) {
+decode_dv_utf8 <- function(z, na_is = NA, warn = FALSE) {
     if (length(z) > 1) return(unname(sapply(z, decode_dv_utf8)))
     if (!is_dv_utf8(z)) {
         if (warn) warning("text is not UTF8-encoded")
         return(z)
     }
     ## string starts with \u000f then 2 or 4 for 2-byte or 4-byte encoding
-    if (nchar(z) < 3) return(NA_character_) ## empty string, but in general if we were reading from the delimited text this would be read as NA_character_, so return that here for consistency
+    if (nchar(z) < 3) return(na_is) ## empty string, but in general if we were reading from the delimited text this would be read as logical NA, so return that here for consistency. Can be overridden with the na_is parm
     nbytes <- as.numeric(substr(z, 2, 2))
     if (nbytes <= 1 || (nbytes %% 2 != 0)) {
         if (warn) warning("could not decode text")
@@ -657,7 +657,7 @@ sub_u_spaces <- function(z) {
 }
 
 ## replace un-encoded columns of data.frame p with their encoded copies
-process_dv_utf8 <- function(p, from, to) {
+process_dv_utf8 <- function(p, from, to, na_is = NA) {
     ## from and to are vectors of column numbers or names
     if (length(from) != length(to)) {
         warning("from and to are different lengths")
@@ -671,7 +671,7 @@ process_dv_utf8 <- function(p, from, to) {
     for (i in seq_along(from)) {
         if (!is.na(from[i]) && ncol(p) >= from[i] && any_dv_utf8(p[[from[i]]])) {
             try({
-                p[[to[i]]] <- decode_dv_utf8(p[[from[i]]])
+                p[[to[i]]] <- decode_dv_utf8(p[[from[i]]], na_is = na_is)
                 todrop[i] <- TRUE
             })
         }

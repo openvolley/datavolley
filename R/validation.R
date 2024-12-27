@@ -2,50 +2,48 @@
 #'
 #' This function is automatically run as part of \code{dv_read} if \code{extra_validation} is greater than zero.
 #' The current validation messages/checks are:
-#' \itemize{
-#'   \item message "The total of the home/visiting team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the home/visiting team in the plays data"
-#'   \item message "Home/Visiting team roster is empty": the home or visiting team roster has not been entered
-#'   \item message "Players xxx and yyy have the same player ID": player IDs should be unique, and so duplicated IDs will be flagged here
-#'   \item message "Players xxx and yyy have the same jersey number": players on the same team should not have the same jersey number
-#'   \item message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
-#'   \item message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
-#'   \item message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
-#'   \item message "Quick attack by non-middle player"
-#'   \item message "Middle player made a non-quick attack"
-#'   \item message "Block by a back-row player"
-#'   \item message "Winning serve not coded as an ace"
-#'   \item message "Non-winning serve was coded as an ace"
-#'   \item message "Serving player not in position 1"
-#'   \item message "Player designated as libero was recorded making a serve/attack/block"
-#'   \item message "Attack (which was blocked) does not have number of blockers recorded"
-#'   \item message "Attack (which was followed by a block) has 'No block' recorded for number of players"
-#   \item message "End zone of attack does not match the end zone implied by the end coordinate"
-#'   \item message "Repeated row with same skill and evaluation_code for the same player"
-#'   \item message "Consecutive actions by the same player"
-#'   \item message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
-#'   \item message "Point awarded to incorrect team (or winning play evaluation incorrect)"
-#'   \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
-#'   \item message "Visiting/Home team rotation has changed incorrectly"
-#'   \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
-#'   \item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
-#   \item message "End zone of serve does not match the end zone implied by the end coordinate"
-#'   \item message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
-#'   \item message "Reception start zone does not match serve start zone"
-#'   \item message "Reception end zone does not match serve end zone"
-#'   \item message "Reception end sub-zone does not match serve end sub-zone"
-#'   \item message "Attack type does not match set type": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
-#'   \item message "Block type does not match attack type": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
-#'   \item message "Dig type does not match attack type": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
-#'   \item message "Multiple serves in a single rally"
-#'   \item message "Multiple receptions in a single rally"
-#'   \item message "Serve (that was not an error) did not have an accompanying reception"
-#'   \item message "Rally had ball contacts but no serve"
-#'   \item message "Replacement of home/visiting setter: the team is in rotation X but the replacement setter is not in that position"
-#'   \item message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
-#'   \item message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
-#'   \item "Setter call on negative reception"
-#'   \item message "Set by the home/visiting team was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"
-#' }
+#'   * message "The total of the home/visiting team scores in the match result summary (x$meta$result) does not match the total number of points recorded for the home/visiting team in the plays data"
+#'   * message "Home/Visiting team roster is empty": the home or visiting team roster has not been entered
+#'   * message "Players xxx and yyy have the same player ID": player IDs should be unique, and so duplicated IDs will be flagged here
+#'   * message "Players xxx and yyy have the same jersey number": players on the same team should not have the same jersey number
+#'   * message "The listed player is not on court in this rotation": the player making the action is not part of the current rotation. Libero players are ignored for this check
+#'   * message "Back-row player made an attack from a front-row zone": an attack starting from zones 2-4 was made by a player in the back row of the current rotation
+#'   * message "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)": an attack starting from zones 1,5-9 was made by a player in the front row of the current rotation
+#'   * message "Quick attack by non-middle player"
+#'   * message "Middle player made a non-quick attack"
+#'   * message "Block by a back-row player"
+#'   * message "Winning serve not coded as an ace"
+#'   * message "Non-winning serve was coded as an ace"
+#'   * message "Serving player not in position 1"
+#'   * message "Player designated as libero was recorded making a serve/attack/block"
+#'   * message "Attack (which was blocked) does not have number of blockers recorded"
+#'   * message "Attack (which was followed by a block) has 'No block' recorded for number of players"
+#   * message "End zone of attack does not match the end zone implied by the end coordinate"
+#'   * message "Repeated row with same skill and evaluation_code for the same player"
+#'   * message "Consecutive actions by the same player"
+#'   * message "Point awarded to incorrect team following error (or \"error\" evaluation incorrect)"
+#'   * message "Point awarded to incorrect team (or winning play evaluation incorrect)"
+#'   * message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
+#'   * message "Visiting/Home team rotation has changed incorrectly"
+#'   * message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
+#'   * message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
+#   * message "End zone of serve does not match the end zone implied by the end coordinate"
+#'   * message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
+#'   * message "Reception start zone does not match serve start zone"
+#'   * message "Reception end zone does not match serve end zone"
+#'   * message "Reception end sub-zone does not match serve end sub-zone"
+#'   * message "Attack type does not match set type": the type of attack (e.g. "Head ball attack") does not match the set type (e.g. "High ball set")
+#'   * message "Block type does not match attack type": the type of block (e.g. "Head ball block") does not match the attack type (e.g. "High ball attack")
+#'   * message "Dig type does not match attack type": the type of dig (e.g. "Head ball dig") does not match the attack type (e.g. "High ball attack")
+#'   * message "Multiple serves in a single rally"
+#'   * message "Multiple receptions in a single rally"
+#'   * message "Serve (that was not an error) did not have an accompanying reception"
+#'   * message "Rally had ball contacts but no serve"
+#'   * message "Replacement of home/visiting setter: the team is in rotation X but the replacement setter is not in that position"
+#'   * message "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+#'   * message "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)"
+#'   * "Setter call on negative reception"
+#'   * message "Set by the home/visiting team was in between a dig/reception and attack by the other team (was the set assigned to the correct team?)"
 #'
 #' @param x datavolley: datavolley object as returned by \code{dv_read}
 #' @param validation_level numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes)

@@ -210,6 +210,8 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         if (.debug_meta_read) show_timing("encoding detection")
     }
     file_text <- txt2utf8(file_text, from = encoding) ## convert from our detected encoding to utf-8
+    ## get rid of the "Secondo tocco di  la" with encoding on the trailing a, which is part of the default dv-generated file structure
+    file_text <- sub("Secondo tocco di[[:space:]]+l.;", "Secondo tocco di la;", file_text)
 
     ## so we got to here, either by reading the file, or using the supplied file_text
     out$raw <- file_text
