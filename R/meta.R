@@ -240,7 +240,7 @@ read_attacks <- function(txt) {
     if (!nzchar(str_trim(txt))) {
         list(attacks = NULL, messages = NULL)
     } else {
-        tryCatch(p2 <- read_semi_text2(txt, types = c(attacker_position = "n", start_coordinate = "i", colour = "i"), nms = c("code", "attacker_position", "side", "type", "description", "X6", "colour", "start_coordinate", "set_type")), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
+        tryCatch(p2 <- read_semi_text2(txt, types = c(attacker_position = "n", start_coordinate = "i", colour = "i", X10 = "n"), nms = c("code", "attacker_position", "side", "type", "description", "X6", "colour", "start_coordinate", "set_type")), error = function(e) stop("could not read the [3ATTACKCOMBINATION] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
         ## X2;2;L;Q;veloce dietro;;65280;4868;C;;
         p2 <- dplyr::distinct(p2)
         if (any(duplicated(p2$code))) {
