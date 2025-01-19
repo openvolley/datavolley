@@ -321,12 +321,13 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             if ("player_number" %in% names(this)) this <- this %>% dplyr::rename(player = "player_number")
             if ("skill_type_code" %in% names(this)) this <- this %>% dplyr::rename(hit_type = "skill_type_code")
             temp[[pidi]] <- this
-            last_hts <- tail(this$home_team_score, 1)
-            last_vts <- tail(this$visiting_team_score, 1)
-            last_hsp <- tail(this$home_setter_position, 1)
-            last_hs <- tail(this[[paste0("home_p", last_hsp)]], 1)
-            last_vsp <- tail(this$visiting_setter_position, 1)
-            last_vs <- tail(this[[paste0("visiting_p", last_vsp)]], 1)
+            ## sometimes these entries can be NA. This seems to only happen with malformed files (e.g. an action that sits in a rally all of its own, without the usual details. If they are NA, just keep the previous value - which might be wrong, but we can't do much else other than throw an error
+            if (!is.na(tail(this$home_team_score, 1))) last_hts <- tail(this$home_team_score, 1)
+            if (!is.na(tail(this$visiting_team_score, 1))) last_vts <- tail(this$visiting_team_score, 1)
+            if (!is.na(tail(this$home_setter_position, 1))) last_hsp <- tail(this$home_setter_position, 1)
+            if (!is.na(last_hsp) && last_hsp > 0 && last_hsp <= length(pseq) && !is.na(tail(this[[paste0("home_p", last_hsp)]], 1))) last_hs <- tail(this[[paste0("home_p", last_hsp)]], 1)
+            if (!is.na(tail(this$visiting_setter_position, 1))) last_vsp <- tail(this$visiting_setter_position, 1)
+            if (!is.na(last_vsp) && last_vsp > 0 && last_vsp <= length(pseq) && !is.na(tail(this[[paste0("visiting_p", last_vsp)]], 1))) last_vs <- tail(this[[paste0("visiting_p", last_vsp)]], 1)
         }
         thisex <- bind_rows(temp)
         ## insert >LUp codes at start of set
