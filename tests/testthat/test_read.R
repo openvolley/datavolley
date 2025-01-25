@@ -16,6 +16,8 @@ test_that("supplying edited_meta works", {
     edited_meta <- x$meta
     edited_meta$players_h$player_id[1] <- "warglewarglewargle"
     x1 <- dv_read(dv_example_file(1), insert_technical_timeouts=FALSE, edited_meta=edited_meta)
+    x$messages <- x$messages[!grepl("The date of the match", x$messages$message), ] ## the date is not checked when uploading edited meta
+    row.names(x$messages) <- seq_len(nrow(x$messages))
     blah <- all.equal(x, x1)
     ## player 1 is a libero, so expect a difference in meta$players_h and plays$player_id only
     expect_equal(length(blah), 2)
