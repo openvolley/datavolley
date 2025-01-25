@@ -1,6 +1,6 @@
 Package: datavolley
 Title: Reading and Analyzing DataVolley Scout Files
-Version: 1.9.1
+Version: 1.9.2
 Authors@R: c(person("Ben", "Raymond", email = "ben@untan.gl", role = c("aut", "cre")),
              person("Adrien", "Ickowicz", role = "aut"),
              person("Tyler", "Widdison", role = "aut"),

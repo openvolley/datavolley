@@ -351,10 +351,11 @@ detect_encodings <- function(filename) {
     if (length(idx1) < 1 || is.na(idx1)) idx1 <- 10
     if (length(idx2) < 1 || is.na(idx2)) idx2 <- 90
     if (!isTRUE(idx2 > idx1)) { idx1 <- 10; idx2 <- 90; }
-    tst <- paste(file_text[idx1:idx2], collapse = "")
+    tst <- sub("\u000f.+", "", file_text[idx1:idx2], useBytes = TRUE) ## throw away the encoded utf8-strings, they can throw off stri_enc_detect?
+    tst <- paste(tst, collapse = "")
     enclist <- stri_enc_detect(tst)[[1]]
     enclist <- enclist$Encoding[enclist$Confidence > 0.8]
-    ## if shift-jist appears in the suggested list of encodings, add cp932 because sometimes the former is detected but not the latter, even though the latter is more likely to have been used in our context. TODO may even need to apply this before applying the 0.8 cutoff
+    ## if shift-jis appears in the suggested list of encodings, add cp932 because sometimes the former is detected but not the latter, even though the latter is more likely to have been used in our context. TODO may even need to apply this before applying the 0.8 cutoff
     enclist <- unlist(lapply(enclist, function(z) c(z, if (tolower(z) %in% c("shift-jis", "shift_jis")) "cp932")))
     ## extract the embedded text encoding as well
     embedded <- tryCatch({
@@ -424,8 +425,8 @@ enc_from_embedded_utf8 <- function(file_text, encodings_to_test) {
     badchars = c(1328:7499, utf8ToInt("\ub3\ua3\u008a\u008e\u009a\u00b3"), 960, ## armenian through to music, then some isolated ones
                  ## allow 1025:1327 - cyrillic
                  ## may need to consider removing penalty on armenian/arabic chars too
-                 ## 0x2000 to 0x206f (general punctuation) likely wrong, 0x01-0x07 are control characters we don't expect to see
-                 0x2000:0x206f, 0x00:0x07,
+                 ## selected elements from 0x2000 to 0x206f (general punctuation) likely wrong, 0x01-0x07 are control characters we don't expect to see
+                 0x2000:0x200f, 0x2016:0x2017, 0x2020:0x2031, 0x203b, 0x203d:0x2043, 0x2045:0x2046, 0x204a:0x206f, 0x00:0x07,
                  utf8ToInt("\u253c\ud7\u3ad"), ##?? \u44d\u42d
                  0x2500:0x25ff, ## box-drawing characters (seen with Japanese misidentified as Korean)
                  0x80:0xa0, utf8ToInt("\ua4\ua6\ua8\ub6\ua2"), ## various symbols from the 0x80-0xff block that are unlikely to be used legitimately
