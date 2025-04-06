@@ -622,10 +622,10 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
         rotleft <- function(x) if (is.data.frame(x)) { out <- cbind(x[, -1], x[, 1]); names(out) <- names(x); out} else c(x[-1], x[1])
         isrotleft <- function(x, y) all(as.numeric(rotleft(x)) == as.numeric(y)) ## is y a left-rotated version of x?
         plays_no_tt <- plays[!tolower(plays$skill) %eq% "technical timeout", ]
-        skill_idx <- which(!is.na(plays_no_tt$skill) & !plays_no_tt$skill %in% c("Timeout"))
+        out_of_block_idx <- which(plays_no_tt$skill %in% c("Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball") | plays_no_tt$end_of_set | grepl(">LUp", plays_no_tt$code, ignore.case = TRUE))
         ## we will ignore any change in an end-of-rally code block that contains a substitution, these are checked in the next section
         eor_sub_idx <- unlist(lapply(which(plays_no_tt$substitution), function(k) {
-            tryCatch(seq(tail(skill_idx[skill_idx < k], 1) + 1, head(skill_idx[skill_idx > k], 1) - 1), error = function(e) NULL)
+            tryCatch(seq(tail(out_of_block_idx[out_of_block_idx < k], 1) + 1, head(out_of_block_idx[out_of_block_idx > k], 1) - 1), error = function(e) NULL)
         })) ## so these are the rows that are part of end-of-rally code blocks with subs
         for (tm in c("*", "a")) {
             rot_cols <- if (tm == "a") paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
@@ -662,7 +662,7 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
             rot_cols <- if (grepl("^a",plays_no_tt$code[k])) paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
             ## take the rotation on the first skill row after the sub row
             by_block <- TRUE; block_start_idx <- NA_integer_; block_end_idx <- NA_integer_
-            block_end_idx <- head(skill_idx[skill_idx > k], 1) - 1L ## last row of code block before skill row
+            block_end_idx <- head(out_of_block_idx[out_of_block_idx > k], 1) - 1L ## last row of code block before skill row
             new_rot <- plays_no_tt[block_end_idx + 1L, rot_cols]
             if (nrow(new_rot) < 1 || any(is.na(new_rot))) {
                 ## that didn't work, fall back to the old method (which is likely to have false positives with VS files in particular)
@@ -671,7 +671,7 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                 if (any(is.na(new_rot))) new_rot <- plays_no_tt[k + 1, rot_cols]
             }
             if (any(is.na(new_rot))) next
-            block_start_idx <- tail(skill_idx[skill_idx < k], 1) + 1L ## first row of code block
+            block_start_idx <- tail(out_of_block_idx[out_of_block_idx < k], 1) + 1L ## first row of code block
             prev_rot <- plays_no_tt[block_start_idx - 1L, rot_cols]
             if (nrow(prev_rot) < 1 || any(is.na(prev_rot))) {
                 by_block <- FALSE
