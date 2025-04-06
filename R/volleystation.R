@@ -38,6 +38,7 @@ vs_reformat_players <- function(jx, which = "home") {
     p_h <- unlist1(jx$team$home$players)
     p_v <- unlist1(jx$team$away$players)
     lib <- unlist1(jt$libero)
+    cap <- unlist1(jt$captain)
     ply <- if (which == "home") p_h else p_v
     if (!"position" %in% names(ply)) ply$position <- NA_integer_
     px <- tibble(X1 = if (which == "home") 0L else 1L,
@@ -59,6 +60,7 @@ vs_reformat_players <- function(jx, which = "home") {
     px$name <- paste(px$firstname, px$lastname)
     px$role[is.na(px$role) & px$number %in% lib] <- "libero"
     px$special_role[px$role %in% "libero"] <- "L"
+    px$special_role[px$number %in% cap] <- paste0(px$special_role[px$number %in% cap], "C")
     px$special_role[!nzchar(px$special_role)] <- NA_character_
     ## starting positions
     sx <- unlist1(jx$scout$sets)$startingLineup[[if (which %in% "home") "home" else "away"]]
