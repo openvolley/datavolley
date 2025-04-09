@@ -26,7 +26,6 @@
 #'   * message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
 #'   * message "Visiting/Home team rotation has changed incorrectly"
 #'   * message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
-#'   * message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
 #   * message "End zone of serve does not match the end zone implied by the end coordinate"
 #'   * message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
 #'   * message "Reception start zone does not match serve start zone"
@@ -209,7 +208,6 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
         if (length(idx2)>0)
             out <- rbind(out, chk_df(plays[idx2, ], paste0("Reception type (", plays$skill_type[idx2], ") does not match serve type (", plays$skill_type[idx2-1], ")")))
         if (validation_level > 2) {
-            ## should this be validation level > 2??
             ##idx <- which(plays$skill %eq% "Serve" & !is.na(plays$end_zone) & !is.na(plays$end_coordinate))
             ##if (length(idx) > 0) {
             ##    zz <- dv_xy2zone(plays$end_coordinate[idx])
@@ -651,47 +649,61 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
 
         ## check that players changed correctly on substitution
         ## e.g. *c02:01 means player 2 replaced by player 1
-        ## this is much more unpleasant than it should be, because some files (looking at you, VS) don't record their substitutions correctly. They often change the players in the rotation columns on the line before the actual rotation code (e.g. if the preceding line is a setter position code). In a multiple-sub situation, all changes might be made before any actual sub codes are encountered. To be correct, the lineups should change on the same row as the corresponding sub code. BUT in order to reduce the number of warnings in the output, so long as the overall rotation ends up correct, we won't flag these as errors because they have little if any impact on analyses
+        ## this is much more unpleasant than it should be, because some files (looking at you, VS) don't record their substitutions correctly. They often change the players in the rotation columns on the line before the actual rotation code (e.g. if the preceding line is a setter position code). In a multiple-sub situation, all changes might be made before any actual sub codes are encountered. To be correct, the lineups should change on the same row as the corresponding sub code. BUT in order to reduce the number of warnings in the output, so long as the overall rotation ends up correct, we won't flag these as errors (at validation_level less than 3) because they have little if any impact on analyses
         ## To cope with VS's issues the best way seems to be to check blocks of codes together: any end-of-rally codes that include one or more subs is treated as a block and we check the rotation before that block against the one just after that block
+        rot_errors <- list()
         sub_code <- grepl("^.c[[:digit:]]+:[[:digit:]]+$", plays_no_tt$code)
         idx <- which(plays_no_tt$substitution & sub_code)
         idx <- idx[idx > 2 & idx < (nrow(plays_no_tt) - 1)] ## discard anything at the start or end of the file
         setter_pos_code <- grepl("^[a\\*]z[[:digit:]]+$", plays_no_tt$code)
-        rot_errors <- list()
         for (k in idx) {
-            rot_cols <- if (grepl("^a",plays_no_tt$code[k])) paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
-            ## take the rotation on the first skill row after the sub row
-            by_block <- TRUE; block_start_idx <- NA_integer_; block_end_idx <- NA_integer_
-            block_end_idx <- head(out_of_block_idx[out_of_block_idx > k], 1) - 1L ## last row of code block before skill row
-            new_rot <- plays_no_tt[block_end_idx + 1L, rot_cols]
-            if (nrow(new_rot) < 1 || any(is.na(new_rot))) {
-                ## that didn't work, fall back to the old method (which is likely to have false positives with VS files in particular)
-                by_block <- FALSE
-                new_rot <- plays_no_tt[k, rot_cols] ## the rotation on the sub line, which should reflect the new lineup
-                if (any(is.na(new_rot))) new_rot <- plays_no_tt[k + 1, rot_cols]
-            }
-            if (any(is.na(new_rot))) next
-            block_start_idx <- tail(out_of_block_idx[out_of_block_idx < k], 1) + 1L ## first row of code block
-            prev_rot <- plays_no_tt[block_start_idx - 1L, rot_cols]
-            if (nrow(prev_rot) < 1 || any(is.na(prev_rot))) {
-                by_block <- FALSE
-                prev_rot <- plays_no_tt[k - 1, rot_cols]
-                if (any(is.na(prev_rot)) || (all(new_rot == prev_rot) && setter_pos_code[k - 1])) {
-                    ## the second condition is for dvw files created by VS, which have a consistent error with subs as noted above. This method won't pick up all situations (multiple subs, or changes of setter are probably missed here, but that's why we use the block-based method if we can)
-                    prev_rot <- plays_no_tt[k - 2, rot_cols]
+            rot_cols <- if (grepl("^a", plays_no_tt$code[k])) paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
+            by_block <- FALSE
+            if (validation_level < 3) {
+                ## at levels 1 and 2, avoid flagging incorrectly-recorded substitutions so long as they don't end up as actual errors
+                by_block <- TRUE; block_start_idx <- NA_integer_; block_end_idx <- NA_integer_
+                block_end_idx <- head(out_of_block_idx[out_of_block_idx > k], 1) - 1L ## last row of code block before skill row
+                new_rot <- plays_no_tt[block_end_idx + 1L, rot_cols]
+                if (nrow(new_rot) < 1 || any(is.na(new_rot))) {
+                    ## that didn't work, fall back to the old method (which is likely to have false positives with VS files in particular)
+                    by_block <- FALSE
+                    new_rot <- plays_no_tt[k, rot_cols] ## the rotation on the sub line, which should reflect the new lineup
+                    if (any(is.na(new_rot))) new_rot <- plays_no_tt[k + 1, rot_cols]
+                } else {
+                    block_start_idx <- tail(out_of_block_idx[out_of_block_idx < k], 1) + 1L ## first row of code block
+                    prev_rot <- plays_no_tt[block_start_idx - 1L, rot_cols]
+                    if (nrow(prev_rot) < 1 || any(is.na(prev_rot))) {
+                        by_block <- FALSE
+                        prev_rot <- plays_no_tt[k - 1, rot_cols]
+                        if (any(is.na(prev_rot)) || (all(new_rot == prev_rot) && setter_pos_code[k - 1])) {
+                            ## the second condition is for dvw files created by VS, which have a consistent error with subs as noted above. This method won't pick up all situations (multiple subs, or changes of setter are probably missed here, but that's why we use the block-based method if we can)
+                            prev_rot <- plays_no_tt[k - 2, rot_cols]
+                        }
+                    }
                 }
             }
+            if (by_block && !isTRUE(block_start_idx <= block_end_idx)) {
+                ## indices are somehow wrong
+                by_block <- FALSE
+            }
+            if (!by_block) {
+                ## use the strict checking method that WILL flag VS substitutions as errors
+                ## TODO it would be better if these could distinguish genuine errors from incorrectly-recorded-but-otherwise-correct situations (mark the latter with a lower severity level)
+                prev_rot <- plays_no_tt[k - 1L, rot_cols]
+                if (any(is.na(prev_rot)) && k > 2L) prev_rot <- plays_no_tt[k-2, rot_cols]
+                new_rot <- plays_no_tt[k + 1L, rot_cols]
+                if (any(is.na(new_rot)) && k < (nrow(plays_no_tt) - 2L)) new_rot <- plays_no_tt[k + 2L, rot_cols]
+            }
+            if (any(is.na(new_rot))) next
             if (any(is.na(prev_rot))) next
             if (all(new_rot == prev_rot)) {
                 ## players did not change
-                rot_errors[[length(rot_errors) + 1L]] <- data.frame(file_line_number = plays_no_tt$file_line_number[k], video_time = video_time_from_raw(x$raw[plays_no_tt$file_line_number[k]]), message = paste0("Player lineup did not change after substitution: was the sub recorded incorrectly?"), file_line = mt2nachar(x$raw[plays_no_tt$file_line_number[k]]), severity = 3, stringsAsFactors = FALSE)
-            } else if (!grepl("^.c[[:digit:]]+:[[:digit:]]+$", plays_no_tt$code[k])) {
-                rot_errors[[length(rot_errors) + 1]] <- data.frame(file_line_number = plays_no_tt$file_line_number[k], video_time = video_time_from_raw(x$raw[plays_no_tt$file_line_number[k]]), message = paste0("The substitution code (", plays_no_tt$code[k], ") does not follow the expected format"), file_line = mt2nachar(x$raw[plays_no_tt$file_line_number[k]]), severity = 3, stringsAsFactors = FALSE)
+                rot_errors[[length(rot_errors) + 1L]] <- data.frame(file_line_number = plays_no_tt$file_line_number[k], video_time = video_time_from_raw(x$raw[plays_no_tt$file_line_number[k]]), message = "Player lineup did not change after substitution: was the sub recorded incorrectly?", file_line = mt2nachar(x$raw[plays_no_tt$file_line_number[k]]), severity = 3, stringsAsFactors = FALSE)
             } else {
-                if (by_block && isTRUE(block_start_idx <= block_end_idx)) {
+                expected_rot <- prev_rot ## start with this
+                tm <- substr(plays_no_tt$code[k], 1, 1) ## the team of the sub row
+                if (by_block) {
                     ## figure out what we expect the rotation to be at the end of this code block
-                    expected_rot <- prev_rot ## start with this
-                    tm <- substr(plays_no_tt$code[k], 1, 1) ## the team of the sub row
                     for (cd in plays_no_tt$code[block_start_idx:block_end_idx]) {
                         if (grepl("^[a\\*]c[[:digit:]]+", cd) && isTRUE(substr(cd, 1, 1) == tm)) {
                             ## this is a sub code for the same team as row k
@@ -701,18 +713,18 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                             if (!is.na(sub_out) && !is.na(sub_in)) expected_rot[expected_rot == sub_out] <- sub_in
                         }
                     }
-                    ## at this point, new_rot should be identical to expected_rot or a once-rotated-left version of it
-                    if (!(isTRUE(all(new_rot == expected_rot)) || isTRUE(isrotleft(expected_rot, new_rot)))) { ## new rot is same or left-rotated version of expected_rot
-                        ## report the rotation error as the end of the block, so it only gets reported once per block
-                        rot_errors[[length(rot_errors) + 1L]] <- data.frame(file_line_number = plays_no_tt$file_line_number[block_end_idx], video_time = video_time_from_raw(x$raw[plays_no_tt$file_line_number[block_end_idx]]), message = paste0(if (tm == "a") "Visiting" else "Home"," team rotation has changed incorrectly"), file_line = mt2nachar(x$raw[plays_no_tt$file_line_number[block_end_idx]]), severity = 3, stringsAsFactors = FALSE)
-                    }
                 } else {
+                    ## just the line in question, figure out what the lineup should be afterwards
                     subtxt <- strsplit(sub("^.c", "", plays_no_tt$code[k]), ":")[[1]]
                     suppressWarnings(sub_out <- as.numeric(subtxt[1])) ## outgoing player
                     suppressWarnings(sub_in <- as.numeric(subtxt[2])) ## incoming player
-                    if (!sub_out %in% prev_rot || !sub_in %in% new_rot || sub_in %in% prev_rot || sub_out %in% new_rot) {
-                        rot_errors[[length(rot_errors) + 1L]] <- data.frame(file_line_number=plays_no_tt$file_line_number[k],video_time=video_time_from_raw(x$raw[plays_no_tt$file_line_number[k]]),message=paste0("Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"),file_line=mt2nachar(x$raw[plays_no_tt$file_line_number[k]]),severity=3,stringsAsFactors=FALSE)
-                    }
+                    if (!is.na(sub_out) && !is.na(sub_in)) expected_rot[expected_rot == sub_out] <- sub_in
+                }
+                ## at this point, new_rot should be identical to expected_rot or a once-rotated-left version of it
+                if (!(isTRUE(all(new_rot == expected_rot)) || isTRUE(isrotleft(expected_rot, new_rot)))) { ## new rot isn't the same or a left-rotated version of expected_rot
+                    ## if by_block, report the rotation error as the end of the block, so it only gets reported once per block
+                    tempk <- if (by_block) block_end_idx else k
+                    rot_errors[[length(rot_errors) + 1L]] <- data.frame(file_line_number = plays_no_tt$file_line_number[tempk], video_time = video_time_from_raw(x$raw[plays_no_tt$file_line_number[tempk]]), message = paste0(if (tm == "a") "Visiting" else "Home"," team rotation has changed incorrectly"), file_line = mt2nachar(x$raw[plays_no_tt$file_line_number[tempk]]), severity = 3, stringsAsFactors = FALSE)
                 }
             }
         }

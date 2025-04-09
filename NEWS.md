@@ -1,3 +1,7 @@
+datavolley 1.10.0
+================
+- the validation step is now less strict when checking substitutions. Some files will change the players in the lineup on the line before (or in some cases, several lines before) the actual substitution code. By default these now won't be flagged, so long as everything comes out consistent before the next rally starts. Strict checking can be re-enabled via `dv_validate(..., validation_level = 3)` or `dv_read(..., extra_validation = 3)`
+
 datavolley 1.9.0
 ================
 - substantial refactoring of how text encoding is detected, which should be more reliable (particularly for DV4 files)

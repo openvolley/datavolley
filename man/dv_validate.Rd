@@ -51,7 +51,6 @@ The current validation messages/checks are:
 \item message "Scores do not follow proper sequence": one or both team scores change by more than one point at a time
 \item message "Visiting/Home team rotation has changed incorrectly"
 \item message "Player lineup did not change after substitution: was the sub recorded incorrectly?"
-\item message "Player lineup conflicts with recorded substitution: was the sub recorded incorrectly?"
 \item message "Reception type does not match serve type": the type of reception (e.g. "Jump-float serve reception" does not match the serve type (e.g. "Jump-float serve")
 \item message "Reception start zone does not match serve start zone"
 \item message "Reception end zone does not match serve end zone"
