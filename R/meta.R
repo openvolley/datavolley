@@ -303,7 +303,7 @@ winning_symbols_df <- function(txt) {
     if (!is.character(txt) || length(txt) != 1 || nchar(txt) != 56) stop("unexpected format for winning_symbols string")
     parts <- as.list(stringr::str_sub(txt, seq(1, 7*8, by = 8), seq(8, 7 * 8, by = 8)))
     names(parts) <- c("S", "R", "A", "B", "D", "E", "F")
-    f <- function(z, start, end) strsplit(gsub("~", "", substr(z, start, end), ""), "")[[1]]
+    f <- function(z, start, end) strsplit(gsub("~", "", substr(z, start, end)), "")[[1]]
     do.call(rbind, lapply(names(parts), function(nm) {
         l <- f(parts[[nm]], 1, 4)
         w <- f(parts[[nm]], 5, 8)
