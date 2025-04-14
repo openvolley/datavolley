@@ -98,13 +98,14 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "guess", "volleymetrics")) ## used as the 'style' parm to dv_decode_* and dv_default_*
 
     x <- list(raw = readLines(filename, warn = FALSE))
+    x$raw <- paste0(stringr::str_trim(x$raw), collapse = "") ## collapse multiline files so that we can re-split into _id blocks below. This isn't ideal because the "line_number" reported in the message won't be the actual line number in the input file TODO fix
     ## detect vm files imported into VS and saved as vsm the same way we do with dvw
     if (skill_evaluation_decode == "guess") {
         skill_evaluation_decode <- if (tryCatch(any(grepl("volleymetric", x$raw, ignore.case = TRUE)), error = function(e) FALSE)) "volleymetrics" else "default"
     }
     jx <- jsonlite::fromJSON(if (isTRUE(do_transliterate)) stri_trans_general(x$raw, "latin-ascii") else x$raw)
     x$raw <- str_split(str_replace_all(x$raw, fixed("{\"_id"), "\n{\"_id"), fixed("\n"))[[1]]
-    raw_id <- str_match(x$raw, "\"_id\":\"([^\"]+)\"")[, 2]
+    raw_id <- str_match(x$raw, "\"_id\":[[:space:]]*\"([^\"]+)\"")[, 2]
     idlnum <- setNames(as.list(seq_along(raw_id)), raw_id) ## line numbers, named by their corresponding _id
     ## there should not be duplicate IDs, but they will cause problems so make sure
     idlnum <- idlnum[!is.na(raw_id) & !raw_id %in% raw_id[duplicated(raw_id)]]
