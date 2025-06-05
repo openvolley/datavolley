@@ -588,7 +588,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
                                    TRUE ~ .data$start),
                  video_time = case_when(.data$skill %in% c("Serve", "Reception") ~ round(.data$start),
                                         TRUE ~ round((.data$start + .data$end) / 2)),
-                 ## noe adjust
+                 ## now adjust
                  video_time = case_when(.data$skill == "Reception" & lag(.data$skill) == "Serve" ~ lag(.data$video_time),
                                         .data$skill == "Block" & lag(.data$skill) == "Attack" ~ lag(.data$video_time),
                                         .data$skill == "Dig" & lag(.data$skill) == "Attack" & .data$video_time <= lag(.data$video_time) ~ lag(.data$video_time) + 1L,

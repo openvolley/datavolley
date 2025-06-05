@@ -141,18 +141,21 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     ah_idx <- px$skill_type %eq% "High ball attack"
 
     if (sum(s_idx) < 1) stop("could not find any serves in px")
-    ## difference of all serve clock times to the first serve clock time
+    ## difference of all serve clock times to the first serve clock time, i.e. time between serves
     clock_time_diff <- ref_times[s_idx] - ref_times[which(s_idx)[1]]
-    ## align each scouted serve time to this
-    vt[s_idx] <- first_serve_contact + clock_time_diff
+    ## align each scouted serve time to the first serve contact time
+    ## we have been given the first serve CONTACT time, so we need to adjust this backwards to the first serve toss time
+    s1_adj <- if (px$skill_type[which(s_idx)[1]] %eq% "Jump serve") contact_times$SQ else if (px$skill_type[which(s_idx)[1]] %eq% "Jump-float serve") contact_times$SM else contact_times$SO
+    vt[s_idx] <- first_serve_contact - s1_adj + clock_time_diff
     ## then adjust to serve contact time according to serve type
     vt[sq_idx] <- vt[sq_idx] + contact_times$SQ
     vt[sm_idx] <- vt[sm_idx] + contact_times$SM
     vt[s_idx & !sq_idx & !sm_idx] <- vt[s_idx & !sq_idx & !sm_idx] + contact_times$SO
+
     if (!is.na(freeball_dig_time_offset)) {
         ## align freeball digs by clock time relative to serve contact time
         clock_time_diff <- ref_times[fd_idx] - ref_times[which(s_idx)[1]] ## time difference relative to first serve contact clock time
-        vt[fd_idx] <- first_serve_contact + clock_time_diff + freeball_dig_time_offset
+        vt[fd_idx] <- first_serve_contact - s1_adj + clock_time_diff + freeball_dig_time_offset
     }
 
     ## serve - reception
@@ -378,15 +381,15 @@ dv_sync_contact_times <- function(...) {
                      SQ_R = 1, ## time between serve contact and reception contact (jump serves)
                      SM_R = 1.5, ## time between serve contact and reception contact (jump-float serves)
                      SO_R = 2, ## time between serve contact and reception contact (all other serves)
-                     R_E = 3, ## time between reception contact and set
+                     R_E = 2, ## time between reception contact and set
                      EQ_A = 1, ## time between set and attack for quick sets
                      EH_A = 2, ## time between set and attack for high sets
                      EO_A = 1.5, ## time between set and attack for all other sets
                      A_B = 0, ## time between attack and block
                      A_D = 1, ## time between attack and dig (no block touch)
                      A_B_D = 1, ## time between attack and dig (with block touch)
-                     D_E = 3, ## time between dig and set
-                     RDov = 3, ## reception or dig overpass to next touch by opposition
+                     D_E = 2, ## time between dig and set
+                     RDov = 2, ## reception or dig overpass to next touch by opposition
                      END = 3) ## last action to end-of-rally marker
     out <- list(...)
     non <- setdiff(names(out), names(defaults))
