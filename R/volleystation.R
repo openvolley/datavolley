@@ -158,7 +158,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     mx$result <- dv_create_meta_result(home_team_scores = jx$scout$sets$score$home, visiting_team_scores = jx$scout$sets$score$away) ## will be further populated by dv_update_meta below
 
     tx <- vs_reformat_teams(jx)
-    if (has_dvmsg(tx)) msgs <- collect_messages(msgs, get_dvmsg(tx), xraw = x$raw)
+    if (has_dvmsg(tx)) msgs <- collect_messages(msgs, get_dvmsg(tx), xraw = x$raw) ## (line numbers in msg are always NA here, so no need to convert)
     mx$teams <- clear_dvmsg(tx)
 
     mx$players_h <- vs_reformat_players(jx, "home")
@@ -342,6 +342,15 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
     }))
 
+    ## helper function to convert the line_number in dvmsg object (which is the line number of px, not the line number of the input file) to the line number of the input file
+    get_dvmsg_pxln <- function(...) {
+        this <- get_dvmsg(...)
+        if (!is.null(this) && nrow(this) > 0 && "line_number" %in% names(this)) {
+            this$line_number <- px_lnum(this$line_number)
+        }
+        this
+    }
+
     px <- mutate(px, substitution = case_when(is.na(.data$substitution) ~ FALSE, TRUE ~ .data$substitution),
                  timeout = case_when(is.na(.data$timeout) ~ FALSE, TRUE ~ .data$timeout),
                  point = case_when(is.na(.data$point) ~ FALSE, TRUE ~ .data$point),
@@ -431,7 +440,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     } else {
         temp <- dv_decode_skill_type(px$skill, px$hit_type, data_type = file_type, style = skill_evaluation_decode)
         if (has_dvmsg(temp)) {
-            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+            msgs <- collect_messages(msgs, get_dvmsg_pxln(temp), xraw = x$raw)
         }
         px$skill_type <- clear_dvmsg(temp)
     }
@@ -470,7 +479,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     } else {
         temp <- dv_decode_evaluation(px$skill, px$evaluation_code, data_type = file_type, style = skill_evaluation_decode)
         if (has_dvmsg(temp)) {
-            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+            msgs <- collect_messages(msgs, get_dvmsg_pxln(temp), xraw = x$raw)
         }
         px$evaluation <- clear_dvmsg(temp)
     }
@@ -506,7 +515,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     ## skill sub type ("TYPE OF HIT", p32)
     temp <- dv_decode_skill_subtype(px$skill, skill_subtype_code = px$skill_subtype_code, evaluation = px$evaluation, data_type = file_type, style = skill_evaluation_decode)
     if (has_dvmsg(temp)) {
-        msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+        msgs <- collect_messages(msgs, get_dvmsg_pxln(temp), xraw = x$raw)
     }
     px$skill_subtype <- clear_dvmsg(temp)
 
@@ -514,7 +523,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     px <- dplyr::rename(px, num_players_numeric = "players") %>% mutate(num_players_numeric = as.integer(.data$num_players_numeric))
     temp <- dv_decode_num_players(px$skill, num_players_code = px$num_players_numeric, data_type = file_type, style = skill_evaluation_decode)
     if (has_dvmsg(temp)) {
-        msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+        msgs <- collect_messages(msgs, get_dvmsg_pxln(temp), xraw = x$raw)
     }
     px$num_players <- clear_dvmsg(temp)
 
@@ -524,7 +533,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     } else {
         temp <- dv_decode_special_code(px$skill, special_code = px$special, evaluation = px$evaluation, data_type = file_type, style = skill_evaluation_decode)
         if (has_dvmsg(temp)) {
-            msgs <- collect_messages(msgs, get_dvmsg(temp), xraw = x$raw)
+            msgs <- collect_messages(msgs, get_dvmsg_pxln(temp), xraw = x$raw)
         }
         px$special_code <- clear_dvmsg(temp)
     }
