@@ -204,7 +204,7 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
 
         ## receive type must match serve type
         idx <- which(plays$skill %eq% "Reception" & lag(plays$skill) %eq% "Serve")
-        idx2 <- idx[plays$skill_type[idx] != paste0(plays$skill_type[idx-1], " reception") & (plays$skill_type[idx] != "Unknown serve reception type" & plays$skill_type[idx-1] != "Unknown serve type")]
+        idx2 <- idx[plays$skill_type[idx] != paste0(plays$skill_type[idx-1], " reception") & (!grepl("^Unknown ", plays$skill_type[idx]))]
         if (length(idx2)>0)
             out <- rbind(out, chk_df(plays[idx2, ], paste0("Reception type (", plays$skill_type[idx2], ") does not match serve type (", plays$skill_type[idx2-1], ")")))
         if (validation_level > 2) {
