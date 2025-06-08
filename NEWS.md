@@ -1,3 +1,9 @@
+datavolley 1.11.0
+================
+- the `dv_sync_video` function now does not apply offsets by default - see the function documentation for details. To restore the previous behaviour use `dv_sync_video(..., offsets = dv_sync_offsets())` but it is recommended to apply offsets in your video montage software, not during the sync process (hence the change to the default behaviour)
+- small changes to the default sync timings
+- fix an error in the line numbers returned by some validation checks
+
 datavolley 1.10.0
 ================
 - the validation step is now less strict when checking substitutions. Some files will change the players in the lineup on the line before (or in some cases, several lines before) the actual substitution code. By default these now won't be flagged, so long as everything comes out consistent before the next rally starts. Strict checking can be re-enabled via `dv_validate(..., validation_level = 3)` or `dv_read(..., extra_validation = 3)`

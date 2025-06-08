@@ -11,7 +11,7 @@ dv_sync_video(
   first_serve_contact,
   freeball_dig_time_offset = NA,
   contact_times = dv_sync_contact_times(),
-  offsets = dv_sync_offsets(),
+  offsets = NULL,
   times_from,
   enforce_order = TRUE
 )
@@ -52,7 +52,7 @@ Freeball digs can optionally be treated in the same way as serves, with their sc
 
 Note that synchronization from clock times relies on the serve clock times in the file being consistent, and so it will only work if the match has been scouted in a single sitting (either live, or from video playback but without pausing/rewinding/fast-forwarding the video). If your clock times are not consistent but the video time of each serve is correct, then you can use the video time of each serve as the reference time instead.
 
-The synchronization is a two-step process. In the first step, the video time of each scouted contact is estimated (i.e. the actual time that the player made contact with the ball). In the second step, skill-specific offsets are added to those contact times. (This is important if your video montage software uses the synchronized video times directly, because you will normally want a video clip to start some seconds before the actual contact of interest).
+The synchronization is a two-step process. In the first step, the video time of each scouted contact is estimated (i.e. the actual time that the player made contact with the ball). In the second step, skill-specific offsets are added to those contact times. This is important if your video montage software does not apply its own offsets, because you will normally want a video clip to start some seconds before the actual contact of interest. However, most video montage software - including the openvolley ovva package and Shiny app - provide their own offsets and so by default no offsets are applied here (this is a change: prior to June 2025 offsets were applied here by default).
 
 The \code{contact_times} object contains a set of times (in seconds), which you can adjust to suit your scouting style and level of play. If you have an already-synchronized dvw file, the \code{\link{dv_sync_summary}} function can provide some guidance as to what these values should be. The \code{contact_times} object contains the following entries:
 \itemize{
@@ -72,7 +72,7 @@ The \code{contact_times} object contains a set of times (in seconds), which you 
 \item END - the time between the last contact and end-of-rally marker
 }
 
-The \code{offsets} object defines the offset (in seconds) to be added to each contact time in the second pass of the synchronization process. It contains the entries "S" (serve), "R" (reception), "E" (set), "A" (attack), "D", (dig), "B" (block), and "F" (freeball).
+The \code{offsets} object defines the offset (in seconds) to be added to each contact time in the second pass of the synchronization process. It contains the entries "S" (serve), "R" (reception), "E" (set), "A" (attack), "D", (dig), "B" (block), and "F" (freeball). The \code{offsets} object can be constructed using the \code{dv_sync_offsets} function.
 
 Note that the entries in \code{contact_times} and \code{offsets} can be fractions. The actual video time entries in the returned file are required to be integers and so the final values will be rounded, but using fractional values (particularly for the \code{contact_times} entries) can give better accuracy in the intermediate calculations.
 }
@@ -82,7 +82,7 @@ x <- dv_read(dv_example_file())
 x <- dv_sync_video(x, first_serve_contact = 54)
 
 ## with a custom configuration
-my_contact_times <- dv_sync_contact_times(SQ = 3) ## override default entries as necessary
+my_contact_times <- dv_sync_contact_times(SQ = 2) ## override default entries as necessary
 ## first serve contact was at 3:35 in the video
 x <- dv_sync_video(x, first_serve_contact = "3:35", contact_times = my_contact_times)
 
