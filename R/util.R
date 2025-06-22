@@ -251,7 +251,7 @@ parse_d <- function(dstr, pfun, allow_future_dates = FALSE) {
     out
 }
 
-manydates <- function(z, preferred = NULL) {
+manydates <- function(z, preferred = NULL, official_date = NA) {
     z <- z[!is.na(z) & nzchar(z)]
     if (length(z) < 1) return(as.Date(integer(), origin = "1970-01-01"))
     suppressWarnings(
@@ -259,6 +259,13 @@ manydates <- function(z, preferred = NULL) {
                       dmy = unique(as.Date(na.omit(c(parse_d(z, lubridate::dmy), parse_dt(z, "dmY HMS"))))),
                       mdy = unique(as.Date(na.omit(c(parse_d(z, lubridate::mdy), parse_dt(z, "mdY HMS"))))))
     )
+    if (!is.na(official_date)) {
+        check <- sapply(tries, function(z) isTRUE(abs(as.numeric(z - official_date)) <= 1))
+        if (sum(check, na.rm = TRUE) == 1) {
+            ## we have one date within 1 day of the federation date, use that
+            return(tries[[which(check)]])
+        }
+    }
     if (!is.null(preferred)) {
         preferred <- tolower(preferred)
         for (pref in preferred) {

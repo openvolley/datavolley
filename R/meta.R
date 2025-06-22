@@ -101,9 +101,27 @@ find_section_idx <- function(section, txt, required = TRUE) {
     idx
 }
 ## match details
+## NOTE that the second line in the [3MATCH] section is only populated in official match templates, it isn't exposed to the usual user UI in DataVolley. It contains:
+## - fedMatchID, i.e. key (for official matches)
+## - competition ID (league, cup, LeagueCup, Playoffs, all have different IDs)
+## - date (days since 1-Jan-1900 minus 1 it seems)
+## - federation code
+## - federation ID
+## - something
+## - something, usually "L"
+## - something, usually "R"
+## This second line is currently ignored except that the date is used as a reference for the match date in the first line
 read_match <- function(txt, date_format = NULL) {
     idx <- find_section_idx("[3MATCH]", txt)
     msgs <- list()
+    ## first try reading the second line
+    od <- NA
+    if (!grepl("^\\[", txt[idx + 2])) {
+        temp <- read_semi_text2(txt[idx + 2], types = c(date = "n"), nms = c("fed_match_id", "competition_id", "date", "fed_code", "fed_id"))
+        if (!is.na(temp$date) && temp$date != 12345) { ## 12345 is used as a placeholder in some files, it isn't a valid date
+            od <- as.Date("1900-01-01") + temp$date - 1L
+        }
+    }
     tryCatch(p2 <- read_semi_text2(txt[idx + 1], types = c(match_number = "Cn", day_number = "Cn", regulation = "n"), nms = c("date", "time", "season", "league", "phase", "home_away", "day_number", "match_number", "text_encoding", "regulation", "zones_or_cones")), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     ## arguably season, league, phase, and home_away might also be type "Cn" because previously they were left to readr and would have been type numeric if they were numbers
     p2 <- process_dv_utf8(p2, from = 13:15, to = c("league", "phase", "home_away")) ## use UTF8 columns if available
@@ -116,7 +134,7 @@ read_match <- function(txt, date_format = NULL) {
         date_was_missing <- TRUE
     } else {
         ## date can be in various formats
-        temp <- manydates(p2$date, preferred = date_format)
+        temp <- manydates(p2$date, preferred = date_format, official_date = od)
         if (length(temp) < 1) {
             ## no recognizable date
             temp <- as.Date(NA)
