@@ -679,7 +679,11 @@ process_dv_utf8 <- function(p, from, to, na_is = NA) {
     for (i in seq_along(from)) {
         if (!is.na(from[i]) && ncol(p) >= from[i] && any_dv_utf8(p[[from[i]]])) {
             try({
-                p[[to[i]]] <- decode_dv_utf8(p[[from[i]]], na_is = na_is)
+                temp <- decode_dv_utf8(p[[from[i]]], na_is = na_is)
+                ## it's possible for one or more entries in a multi-entry input to have missing/invalid UTF8, in which case we should fall back to the plain text for those entries
+                idx <- which((is.na(temp) | !nzchar(temp)) & (!is.na(p[[to[i]]]) & nzchar(p[[to[i]]])))
+                temp[idx] <- p[[to[i]]][idx]
+                p[[to[i]]] <- temp
                 todrop[i] <- TRUE
             })
         }
