@@ -92,8 +92,8 @@ vs_reformat_players <- function(jx, which = "home") {
     px %>% dplyr::arrange(.data$number) %>% mutate(X3 = dplyr::row_number() + if (which %in% "home") 0L else nrow(p_h))
 }
 
-dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, do_transliterate = FALSE, extra_validation = 2, validation_options=list(), verbose = FALSE, ...) {
-    ## do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, metadata_only=FALSE, edited_meta
+dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, do_transliterate = FALSE, extra_validation = 2, validation_options = list(), metadata_only = FALSE, verbose = FALSE, ...) {
+    ## do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, edited_meta
     if (is.function(skill_evaluation_decode)) stop("providing a function to skill_evaluation_decode is not supported for vsm files")
     skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "guess", "volleymetrics")) ## used as the 'style' parm to dv_decode_* and dv_default_*
 
@@ -132,14 +132,16 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     if (!file_type %in% c("indoor", "beach")) stop("file type: ", file_type, " is not supported yet, please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")
     if (file_type == "beach") warning("beach files have not been tested yet")
     pseq <- seq_len(if (file_type == "beach") 2 else 6)
-    x$file_meta <- dv_create_file_meta(generator_day = as.POSIXct(NA), generator_idp = "DVW", generator_prg = "VolleyStation",
-                                      generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type)
+    x$file_meta <- dv_create_file_meta(generator_day = if (!is.null(jx$createdAt)) tryCatch(lubridate::ymd_hms(jx$createdAt), error = function(e) as.POSIXct(NA)) else as.POSIXct(NA),
+                                       generator_idp = "DVW", generator_prg = "VolleyStation",
+                                       generator_release = "", generator_version = NA_character_, generator_name = "", file_type = file_type)
 
     ## note that the vsm appears to include the startDate time as UTC, and so it can differ from the time in the same file exported to dvw
     mx <- list(match = dv_create_meta_match(date = lubridate::ymd_hms(jx$startDate),
                                             regulation = if (file_type == "indoor") "indoor rally point" else if (file_type == "beach") "beach rally point" else stop("unexpected game type: ", file_type),
-                                            zones_or_cones = "Z"), ## cones not supported in VS
-               more = dv_create_meta_more()) ## TODO surely the scout name at least is in the json
+                                            zones_or_cones = "Z", ## cones not supported in VS
+                                            match_number = jx$matchNumber),
+               more = dv_create_meta_more(city = jx$city, arena = jx$hall, spectators = jx$spectators)) ## TODO surely the scout name at least is in the json
     if ("comment" %in% names(jx)) {
         ## e.g. "---- summary ----\nno comments\n\n---- match description ----\n\n\n---- coach home ----\n\n\n---- coach away ----\n"
         cx <- strsplit(jx$comment, "\n\\-\\-\\-\\-[[:space:]]*")[[1]]
@@ -195,6 +197,13 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     mx$filename <- filename
     x$meta <- mx
     ## meta component done
+    if (isTRUE(metadata_only)) {
+        ## note that we have not (can not) run dv_update_meta(x), can't do that without plays having been processed
+        ## that would update the set durations, subs, etc in the metadata
+        ## TODO check what will be missing here because of this
+        class(x) <- c("datavolley", class(x))
+        return(x)
+    }
 
     ## plays
     temp_pid <- 0L
