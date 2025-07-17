@@ -40,7 +40,9 @@ vs_reformat_players <- function(jx, which = "home") {
     lib <- unlist1(jt$libero)
     cap <- unlist1(jt$captain)
     ply <- if (which == "home") p_h else p_v
-    if (!"position" %in% names(ply)) ply$position <- NA_integer_
+    ## enforce some columns. If e.g. a team roster is entered without any players being given firstName, that column will not exist in the VS json export
+    temp <- list(position = NA_integer_, firstName = "", lastName = "", shirtNumber = NA_integer_)
+    for (ii in names(temp)) { if (!ii %in% names(ply)) ply[[ii]] <- temp[[ii]] }
     px <- tibble(X1 = if (which == "home") 0L else 1L,
                  number = as.integer(ply$shirtNumber),
                  X3 = seq_len(nrow(ply)) + if (which %in% "home") 0L else nrow(p_h),
@@ -57,7 +59,7 @@ vs_reformat_players <- function(jx, which = "home") {
                  role = vs_int2role(ply$position),
                  foreign = FALSE,
                  X16 = NA)
-    px$name <- paste(px$firstname, px$lastname)
+    px$name <- stringr::str_trim(paste(px$firstname, px$lastname))
     px$role[is.na(px$role) & px$number %in% lib] <- "libero"
     px$special_role[px$role %in% "libero"] <- "L"
     px$special_role[px$number %in% cap] <- paste0(px$special_role[px$number %in% cap], "C")
