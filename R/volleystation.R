@@ -132,7 +132,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
 
     if (!file_type %in% c("indoor", "beach")) stop("file type: ", file_type, " is not supported yet, please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")
-    if (file_type == "beach") warning("beach files have not been tested yet")
     pseq <- seq_len(if (file_type == "beach") 2 else 6)
     x$file_meta <- dv_create_file_meta(generator_day = if (!is.null(jx$createdAt)) tryCatch(lubridate::ymd_hms(jx$createdAt), error = function(e) as.POSIXct(NA)) else as.POSIXct(NA),
                                        generator_idp = "DVW", generator_prg = "VolleyStation",
@@ -182,14 +181,26 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
     mx$attacks <- clear_dvmsg(ax)
 
-    sx <- dv_create_meta_setter_calls(code = jx$setterCalls$code, description = jx$setterCalls$name) ## jx$setterCalls$area seems to be zone and subzone of where the middle runs
-    if (has_dvmsg(sx)) {
-        idx <- head(grep("setterCalls", x$raw), 1)
-        if (length(idx) < 1) idx <- NA_integer_
-        msgs <- collect_messages(msgs, get_dvmsg(sx)$message, line_nums = idx + 1L, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx + 1L], severity = 3)
+    scok <- FALSE
+    if (!(is.null(jx$setterCalls) || !is.data.frame(jx$setterCalls) || (is.list(jx$setterCalls) && length(jx$setterCalls) < 1))) {
+        scok <- tryCatch({
+            sx <- dv_create_meta_setter_calls(code = jx$setterCalls$code, description = jx$setterCalls$name) ## jx$setterCalls$area seems to be zone and subzone of where the middle runs
+            if (has_dvmsg(sx)) {
+                idx <- head(grep("setterCalls", x$raw), 1)
+                if (length(idx) < 1) idx <- NA_integer_
+                msgs <- collect_messages(msgs, get_dvmsg(sx)$message, line_nums = idx + 1L, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx + 1L], severity = 3)
+            }
+            mx$sets <- clear_dvmsg(sx)
+            TRUE
+        }, error = function(e) {
+            warning("could not parse setter calls: ", conditionMessage(e))
+            FALSE
+        })
     }
-    mx$sets <- clear_dvmsg(sx)
-
+    if (!scok) {
+        ## no setter calls, e.g. beach file
+        mx$sets <- tibble(code = character(), X2 = logical(), description = character(), X4 = logical(), colour = character(), start_coordinate = integer(), mid_coordinate = integer(), end_coordinate = integer(), path = character(), path_colour = character(), X11 = logical())
+    }
     mx$winning_symbols <- dv_default_winning_symbols(data_type = file_type, style = skill_evaluation_decode) ## this can vary from vsm file to vsm file, but it's not saved anywhere
     mx$match_id <- dv_create_meta_match_id(mx)
 
@@ -301,18 +312,18 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         thisex <- left_join(thisex, this_pts %>% dplyr::select("point_id", "home_team_score", "visiting_team_score"), by = "point_id")
         ## setter positions
         this_htl <- tibble(home_setter_position = thisev$lineup$home$setterAt, point_id = this_point_ids)
+        if (file_type == "beach") this_htl$home_setter_position[this_htl$home_setter_position > 1] <- 2L ## VS encodes the beach positions as 1 and 5 !?
         thisex <- left_join(thisex, this_htl, by = "point_id")
         this_vtl <- tibble(visiting_setter_position = thisev$lineup$away$setterAt, point_id = this_point_ids)
+        if (file_type == "beach") this_vtl$visiting_setter_position[this_vtl$visiting_setter_position > 1] <- 2L
         thisex <- left_join(thisex, this_vtl, by = "point_id")
         ## home team lineup
-        this_htl <- thisev$lineup$home$positions %>% mutate(point_id = this_point_ids) %>%
-            dplyr::rename(home_p1 = "1", home_p2 = "2")
-        if (file_type == "indoor") this_htl <- this_htl %>% dplyr::rename(home_p3 = "3", home_p4 = "4", home_p5 = "5", home_p6 = "6")
+        this_htl <- setNames(thisev$lineup$home$positions, paste0("home_p", seq_len(ncol(thisev$lineup$home$positions)))) %>%
+            mutate(point_id = this_point_ids)
         thisex <- left_join(thisex, this_htl, by = "point_id")
         ## visiting team lineup
-        this_vtl <- thisev$lineup$away$positions %>% mutate(point_id = this_point_ids) %>%
-            dplyr::rename(visiting_p1 = "1", visiting_p2 = "2")
-        if (file_type == "indoor") this_vtl <- this_vtl %>% dplyr::rename(visiting_p3 = "3", visiting_p4 = "4", visiting_p5 = "5", visiting_p6 = "6")
+        this_vtl <- setNames(thisev$lineup$away$positions, paste0("visiting_p", seq_len(ncol(thisev$lineup$away$positions)))) %>%
+            mutate(point_id = this_point_ids)
         thisex <- left_join(thisex, this_vtl, by = "point_id")
         ## update each rally, deal with score adjustment, update setter positions, etc
         temp <- list()
