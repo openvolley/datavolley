@@ -173,7 +173,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                                        tempo = jx$attackCombinations$hitType,
                                        description = jx$attackCombinations$name,
                                        start_coordinate = datavolley::dv_xy2index(datavolley::dv_xy(zones = jx$attackCombinations$start$zone, subzones = jx$attackCombinations$start$subZone, end = "lower")),
-                                       target_attacker = jx$attackCombinations$targetAttacker)
+                                       target_attacker = if (is.null(jx$attackCombinations$targetAttacker)) rep(NA_character_, nrow(jx$attackCombination)) else jx$attackCombinations$targetAttacker)
     if (has_dvmsg(ax)) {
         idx <- head(grep("attackCombinations", x$raw), 1)
         if (length(idx) < 1) idx <- NA_integer_
