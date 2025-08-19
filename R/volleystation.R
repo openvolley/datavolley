@@ -223,7 +223,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     prev_time <- NA_real_
     px <- bind_rows(lapply(seq_along(jx$scout$sets$events), function(si) {
         thisev <- jx$scout$sets$events[[si]]
-        if (nrow(thisev) < 1) return(NULL)
+        if ((is.list(thisev) && length(thisev) < 1) || nrow(thisev) < 1) return(NULL)
         thisex <- thisev$exchange
         this_point_ids <- temp_pid + seq_len(nrow(thisex))
         temp_pid <<- max(this_point_ids)
@@ -364,6 +364,11 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
     }))
 
+    if (nrow(px) < 1) {
+        ## file with no plays it yet
+        px <- tibble(point_id = integer(), time = integer(), home_team_score = integer(), visiting_team_score = integer(), point_won_by = character(), set_number = integer(), home_setter_position = integer(), visiting_setter_position = integer(), home_p1 = integer(), home_p2 = integer(), home_p3 = integer(), home_p4 = integer(), home_p5 = integer(), home_p6 = integer(), visiting_p1 = integer(), visiting_p2 = integer(), visiting_p3 = integer(), visiting_p4 = integer(), visiting_p5 = integer(), visiting_p6 = integer(), code = character(), team = character(), skill = character(), timeout = logical(), substitution = logical(), `_id` = character(), player = character(), hit_type = character(), effect = character(), end_sub_zone = character(), end_zone = integer(), start_zone = integer(), point = logical(), start_coordinate_x = numeric(), start_coordinate_y = numeric(), end_coordinate_x = numeric(), end_coordinate_y = numeric(), combination = character(), start_sub_zone = character(), target_attacker = character(), skill_type = character(), players = integer(), end_of_set = logical())
+    }
+
     ## helper function to convert the line_number in dvmsg object (which is the line number of px, not the line number of the input file) to the line number of the input file
     get_dvmsg_pxln <- function(...) {
         this <- get_dvmsg(...)
@@ -384,7 +389,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                 start_coordinate_y = NA_real_, mid_coordinate_y = NA_real_, end_coordinate_y = NA_real_,
                 combination = NA_character_, players = NA_integer_,
                 start_zone = NA_integer_, end_zone = NA_integer_, end_sub_zone = NA_character_, start_sub_zone = NA_character_)
-    for (rc in names(req)) if (!rc %in% names(px)) { px[[rc]] <- req[[rc]] }
+    for (rc in names(req)) if (!rc %in% names(px)) { px[[rc]] <- rep(req[[rc]], nrow(px)) }
 
     ## check that all expected columns are present
 ##    expctd <- c("point_id", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number", "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq), "code", "team", "skill", "timeout", "player_in", "player_out", "substitution", "_id", "player", "hit_type", "effect", "target_attacker", "skill_type", "point", "end_of_set")
@@ -638,10 +643,12 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     tempid <- tibble(`_id` = names(idlnum), file_line_number = unname(unlist(idlnum)))
     px <- left_join(px, tempid, by = "_id")
     ## fill in gaps, because subs and TOs didn't have _ids attached so they won't have line numbers, and neither will green codes or point adjustments
-    try({
-        idx <- is.na(px$file_line_number)
-        px$file_line_number[idx] <- round(approx(which(!idx), px$file_line_number[!idx], which(idx))$y)
-    })
+    if (nrow(px) > 0) {
+        try({
+            idx <- is.na(px$file_line_number)
+            px$file_line_number[idx] <- round(approx(which(!idx), px$file_line_number[!idx], which(idx))$y)
+        })
+    }
     ## these interpolated file line numbers won't be exact, but close enough to be (hopefully) useful
 
     x$plays <- px %>% mutate(video_time = round(round(.data$time / 10)), ## must be integer
@@ -665,35 +672,37 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     class(x) <- c("datavolley", class(x))
 
     ## update the set durations, subs, etc in the metadata
-    x <- dv_update_meta(x)
+    if (nrow(x$plays) > 0) x <- dv_update_meta(x)
     msgs <- bind_rows(msgs)
     x$messages <- msgs[, setdiff(names(msgs), c("severity"))]
 
-    ## some fixes before validation
-    for (tm in c("home", "visiting")) {
-        ## find rows where the lineup changes on the line previous to the actual substitution code
-        lup <- function(i) apply(apply(x$plays[i, paste0(tm, "_p", pseq)], 1, sort), 2, paste, collapse = "|")
-        idx <- which(x$plays$substitution & x$plays$team == x$plays[[paste0(tm, "_team")]])
-        idx <- idx[idx > 3]
-        thiscols <- paste0(tm, c("_setter_position", paste0("_p", pseq), paste0("_player_id", pseq)))
-        for (j in idx) {
-            if (lup(j - 1) == lup(j) & lup(j - 1) != lup(j - 2)) {
-                x$plays[j - 1L, thiscols] <- x$plays[j - 2L, thiscols]
+    if (nrow(x$plays) > 0) {
+        ## some fixes before validation
+        for (tm in c("home", "visiting")) {
+            ## find rows where the lineup changes on the line previous to the actual substitution code
+            lup <- function(i) apply(apply(x$plays[i, paste0(tm, "_p", pseq)], 1, sort), 2, paste, collapse = "|")
+            idx <- which(x$plays$substitution & x$plays$team == x$plays[[paste0(tm, "_team")]])
+            idx <- idx[idx > 3]
+            thiscols <- paste0(tm, c("_setter_position", paste0("_p", pseq), paste0("_player_id", pseq)))
+            for (j in idx) {
+                if (lup(j - 1) == lup(j) & lup(j - 1) != lup(j - 2)) {
+                    x$plays[j - 1L, thiscols] <- x$plays[j - 2L, thiscols]
+                }
             }
         }
-    }
 
-    ## apply additional validation
-    if (extra_validation > 0) {
-        moreval <- dv_validate(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
-        if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
-    }
-    if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = integer(), message = character(), file_line = character())
-    if (nrow(x$messages) > 0) {
-        x$messages$file_line_number <- as.integer(x$messages$file_line_number)
-        x$messages$video_time <- as.integer(x$messages$video_time)
-        x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE), ]
-        row.names(x$messages) <- NULL
+        ## apply additional validation
+        if (extra_validation > 0) {
+            moreval <- dv_validate(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
+            if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
+        }
+        if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = integer(), message = character(), file_line = character())
+        if (nrow(x$messages) > 0) {
+            x$messages$file_line_number <- as.integer(x$messages$file_line_number)
+            x$messages$video_time <- as.integer(x$messages$video_time)
+            x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE), ]
+            row.names(x$messages) <- NULL
+        }
     }
     x
 }
