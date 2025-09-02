@@ -158,7 +158,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     } else {
         mx$comments = dv_create_meta_comments()
     }
-    mx$result <- dv_create_meta_result(home_team_scores = jx$scout$sets$score$home, visiting_team_scores = jx$scout$sets$score$away) ## will be further populated by dv_update_meta below
+    mx$result <- dv_create_meta_result(home_team_scores = if (length(jx$scout$sets$score$home) > 0) jx$scout$sets$score$home else NA_integer_, visiting_team_scores = if (length(jx$scout$sets$score$away) > 0) jx$scout$sets$score$away else NA_integer_) ## will be further populated by dv_update_meta below
 
     tx <- vs_reformat_teams(jx)
     if (has_dvmsg(tx)) msgs <- collect_messages(msgs, get_dvmsg(tx), xraw = x$raw) ## (line numbers in msg are always NA here, so no need to convert)
@@ -223,7 +223,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     prev_time <- NA_real_
     px <- bind_rows(lapply(seq_along(jx$scout$sets$events), function(si) {
         thisev <- jx$scout$sets$events[[si]]
-        if ((is.list(thisev) && length(thisev) < 1) || nrow(thisev) < 1) return(NULL)
+        if ((is.list(thisev) && length(thisev) < 1) || (is.data.frame(thisev) && nrow(thisev) < 1)) return(NULL)
         thisex <- thisev$exchange
         this_point_ids <- temp_pid + seq_len(nrow(thisex))
         temp_pid <<- max(this_point_ids)
