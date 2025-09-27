@@ -32,6 +32,7 @@ Suggests:
     testthat,
     ggplot2,
     knitr,
+    MASS,
     raster,
     rmarkdown,
     covr
