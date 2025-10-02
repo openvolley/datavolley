@@ -187,9 +187,11 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         }
         if (length(enclist) < 1) enclist <- "windows-1251" ## absolute fallback
         ## so now we have a list of possible encodings
-        ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then CP, then just whatever was first
+        ## in order of preference: a windows encoding, then UTF-8, then US-ASCII, then CP, then just whatever was first. Except if the file is a VM file and utf-8 is in the list, use that
         other_enc <- enclist
-        if (any(grepl("^windows",tolower(enclist)))) {
+        if (tryCatch(any(grepl("volleymetric", dvlines, ignore.case = TRUE)), error = function(e) FALSE) && any(grepl("^utf\\-?8", tolower(enclist)))) {
+            encoding <- enclist[grepl("^utf\\-?8",tolower(enclist))][1]
+        } else if (any(grepl("^windows",tolower(enclist)))) {
             encoding <- enclist[grepl("^windows",tolower(enclist))][1]
         } else if (any(tolower(enclist) %in% c("utf-8", "utf8"))) {
             encoding <- enclist[tolower(enclist) %in% c("utf-8", "utf8")][1]
