@@ -163,7 +163,7 @@ dvw_set <- function(x, text_encoding) {
     ## note that input might have unplayed sets, e.g.
     ## True;;;;;;
     ## as extra lines, but these have been stripped during dv_read
-    c(tmp, rep("True;;;;;;", 6-length(tmp)))
+    c(tmp, if (length(tmp) < 6) rep("True;;;;;;", 6 - length(tmp)))
 }
 
 dvw_comments <- function(x, text_encoding) sect2txt(x$meta$comments, "meta$comments", "[3COMMENTS]")
