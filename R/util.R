@@ -122,6 +122,7 @@ text_chunk <- function(txt, token1, token2) {
     } else {
         idx2 <- grep(token2, txt, fixed = TRUE)
     }
+    if (length(idx2) < 1 || all(is.na(idx2))) idx2 <- length(txt) + 1 ## txt is a char vector with multiple entries
     if (idx2 == (idx1 + 1)) {
         ""
     } else {
@@ -700,4 +701,15 @@ mark_timing <- function(label) {
 }
 show_timing <- function(label) {
     message(label, " execution time: ", round((proc.time() - getOption("dvtiming")[[label]])[3] * 1000), " ms")
+}
+
+empty_plays_df <- function(vs = TRUE) {
+    ## vs = TRUE for the volleystation reader, which starts with slightly different columns and adds others in its own code. If vs = FALSE, just populate all the final columns
+    out <- tibble(point_id = integer(), time = integer(), home_team_score = integer(), visiting_team_score = integer(), point_won_by = character(), set_number = integer(), home_setter_position = integer(), visiting_setter_position = integer(), home_p1 = integer(), home_p2 = integer(), home_p3 = integer(), home_p4 = integer(), home_p5 = integer(), home_p6 = integer(), visiting_p1 = integer(), visiting_p2 = integer(), visiting_p3 = integer(), visiting_p4 = integer(), visiting_p5 = integer(), visiting_p6 = integer(), code = character(), team = character(), skill = character(), timeout = logical(), substitution = logical(), `_id` = character(), player = character(), hit_type = character(), effect = character(), end_sub_zone = character(), end_zone = integer(), start_zone = integer(), point = logical(), start_coordinate_x = numeric(), start_coordinate_y = numeric(), end_coordinate_x = numeric(), end_coordinate_y = numeric(), combination = character(), start_sub_zone = character(), target_attacker = character(), skill_type = character(), players = integer(), end_of_set = logical())
+    if (!vs) {
+        out <- bind_cols(out[, setdiff(names(out), c("_id", "player", "hit_type", "effect", "end_sub_zone", "combination", "start_sub_zone", "target_attacker", "players"))],
+            tibble(match_id = character(), video_file_number = logical(), video_time = logical(), player_number = integer(), player_name = character(), player_id = character(), evaluation_code = character(), evaluation = character(), attack_code = character(), attack_description = character(), set_code = character(), set_description = character(), set_type = character(), end_subzone = character(), end_cone = integer(), skill_subtype = character(), num_players = character(), num_players_numeric = numeric(), special_code = character(), custom_code = character(), file_line_number = integer(), start_coordinate = numeric(), mid_coordinate = numeric(), end_coordinate = numeric(), point_phase = character(), attack_phase = character(), mid_coordinate_x = numeric(), mid_coordinate_y = numeric(), home_player_id1 = character(), home_player_id2 = character(), home_player_id3 = character(), home_player_id4 = character(), home_player_id5 = character(), home_player_id6 = character(), visiting_player_id1 = character(), visiting_player_id2 = character(), visiting_player_id3 = character(), visiting_player_id4 = character(), visiting_player_id5 = character(), visiting_player_id6 = character(), team_touch_id = numeric(), home_team = character(), visiting_team = character(), home_team_id = character(), visiting_team_id = character(), team_id = character(), winning_attack = logical(), serving_team = character())
+        )
+    }
+    out
 }

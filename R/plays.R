@@ -401,7 +401,10 @@ read_main <- function(filename, file_text) {
     x <- tryCatch({ if (!missing(file_text)) read_with_readr(file_text = file_text) else read_with_readr(filename = filename) },
                   error = function(e) stop("could not read the [3SCOUT] section of the file, the error message was: ", conditionMessage(e)))
 
-    if (is.null(x)) stop("could not read the [3SCOUT] section of the file")
+    if (is.null(x)) {
+        ## previously this was an error, but from v1.14.0 we return an empty plays dataframe
+        return(empty_plays_df(vs = FALSE))
+    }
     if (nrow(x) == 1 && ncol(x) == 1) {
         ## this happens if file has no scout data!
         stop("file has no scouted data (the [3SCOUT] section of the file is empty)")

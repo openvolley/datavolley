@@ -110,10 +110,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         length(grep("[3TEAMS]", file_text, useBytes = TRUE, fixed = TRUE)) == 1 && !any(grepl("[3DATAVOLLEYSCOUT]", file_text, useBytes = TRUE, fixed = TRUE))) {
         file_text[1] <- "[3DATAVOLLEYSCOUT]"
     }
-    ## also check to see if the [3SCOUT] entry is the last one, if it is then we can't read the file anyway, it has no play-by-play data
-    if (length(file_text) > 0 && grepl("[3SCOUT]", file_text[length(file_text)], fixed = TRUE, useBytes = TRUE) && !isTRUE(metadata_only)) {
-        stop("file cannot be read, the [3SCOUT] section is empty (no plays have been scouted)")
-    }
     if (length(encoding) < 1) encoding <- "guess"
     assert_that(is.character(encoding))
     are_guessing_encoding <- identical(tolower(encoding), "guess")
@@ -272,6 +268,9 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
                 } else {
                     this_main <- read_main(file_text = tmp)
                 }
+            } else if (length(idx) < 1) {
+                ## no [3SCOUT] section, i.e. no plays component
+                this_main <- empty_plays_df(vs = FALSE)
             }
         }, silent = TRUE)
         if (is.null(this_main)) {
@@ -307,296 +306,302 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     ## don't actually issue this warning, for now at least
 
     ## count line numbers: where do codes start from?
-    suppressWarnings(cln <- grep("[3SCOUT]",file_text,fixed=TRUE))
-    if (length(cln)==1) {
-        cln <- (cln+1):length(file_text)
-        ## file_text may have empty lines at end, which won't show up in codes from read_main
-        cln <- cln[1:min(length(cln),length(this_main$code))]
-    } else {
-        cln <- NULL
-    }
-    temp <- parse_code(code = this_main$code, meta = out$meta, evaluation_decoder = skill_evaluation_decode, code_line_num = cln, full_lines = if (is.null(cln)) NULL else file_text[cln], file_type = file_type)
-    out$plays <- temp$plays
-    if (!is.null(temp$messages) && nrow(temp$messages)>0) {
-        temp$messages$file_line <- as.character(temp$messages$file_line)
-        out$messages <- bind_rows(out$messages, temp$messages)
-    }
-    ## post-process plays data
-    ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
-    team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
-    out$plays <- cbind(this_main[, c("time", "video_file_number", "video_time")], out$plays, this_main[, c(paste0("home_p", team_player_num), paste0("visiting_p", team_player_num), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase")])
-    ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
-    cxy <- dv_index2xy() ## grid of coords in our ggcourt space
-    temp <- out$plays$start_coordinate
-    ##temp[temp %in% c("-1-1", "")] <- NA_real_
-    temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_ ## missing is usually "-1-1", but in some cases (DV bug?) can be e.g. "80-1", so turf out anything with "-" (or empty string)
-    temp <- as.numeric(temp)
-    temp[temp<1] <- NA_real_
-    out$plays$start_coordinate <- temp
-    out$plays$start_coordinate_x <- cxy[out$plays$start_coordinate, 1]
-    out$plays$start_coordinate_y <- cxy[out$plays$start_coordinate, 2]
-    temp <- out$plays$mid_coordinate
-    temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_
-    temp <- as.numeric(temp)
-    temp[temp<1] <- NA_real_
-    out$plays$mid_coordinate <- temp
-    out$plays$mid_coordinate_x <- cxy[out$plays$mid_coordinate, 1]
-    out$plays$mid_coordinate_y <- cxy[out$plays$mid_coordinate, 2]
-    temp <- out$plays$end_coordinate
-    temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_
-    temp <- as.numeric(temp)
-    temp[temp<1] <- NA_real_
-    out$plays$end_coordinate <- temp
-    out$plays$end_coordinate_x <- cxy[out$plays$end_coordinate, 1]
-    out$plays$end_coordinate_y <- cxy[out$plays$end_coordinate, 2]
-    ## add player_id values for home_p1 etc
-    for (thisp in team_player_num)
-        out$plays[,paste0("home_player_id",thisp)] <- get_player_id(rep("*",nrow(out$plays)),out$plays[,paste0("home_p",thisp)],out$meta)
-    for (thisp in team_player_num)
-        out$plays[,paste0("visiting_player_id",thisp)] <- get_player_id(rep("a",nrow(out$plays)),out$plays[,paste0("visiting_p",thisp)],out$meta)
-
-    ## add set number
-    if (!any(out$plays$end_of_set)) {
-        out$messages <- bind_rows(out$messages, data.frame(file_line_number = NA_integer_, video_time = NA_real_, message = "Could not find any end-of-set markers (e.g. \"**1set\") in the input file", file_line = NA_character_, stringsAsFactors = FALSE))
-        out$plays$set_number <- 1L
-    } else {
-        temp <- c(0L, which(out$plays$end_of_set))
-        out$plays$set_number <- sapply(seq_len(nrow(out$plays)), function(z) sum(z >= temp))
-        ## now fix the last **Xset entry in the file
-        if (tail(temp, 1) == nrow(out$plays)) out$plays$set_number[nrow(out$plays)] <- out$plays$set_number[nrow(out$plays)] - 1L
-        out$plays$home_team_score[which(out$plays$end_of_set)] <- NA_integer_
-        out$plays$visiting_team_score[which(out$plays$end_of_set)] <- NA_integer_
-    }
-
-    ## technical timeouts
-    if (is.flag(insert_technical_timeouts)) {
-        if (insert_technical_timeouts) {
-            insert_technical_timeouts <- if (grepl("beach", file_type)) list(function(s1, s2) (s1 + s2) == 21, NULL) else list(c(8,16),NULL)
+    if (isTRUE(nrow(this_main) > 0)) {
+        suppressWarnings(cln <- grep("[3SCOUT]",file_text,fixed=TRUE))
+        if (length(cln)==1) {
+            cln <- (cln+1):length(file_text)
+            ## file_text may have empty lines at end, which won't show up in codes from read_main
+            cln <- cln[1:min(length(cln),length(this_main$code))]
         } else {
-            insert_technical_timeouts <- list(NULL,NULL)
+            cln <- NULL
         }
-    }
-    set_sets <- if (grepl("beach", file_type)) list(1:2, 3) else list(1:4, 5)
-    for (si in 1:2) {
-        if (!is.null(insert_technical_timeouts[[si]])) {
-            if (is.numeric(insert_technical_timeouts[[si]])) {
-                ## find technical timeouts at e.g. points 8 and 16 in sets 1-4
-                for (this_set in set_sets[[si]]) {
-                    for (thisp in insert_technical_timeouts[[si]]) {
-                        idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
+        temp <- parse_code(code = this_main$code, meta = out$meta, evaluation_decoder = skill_evaluation_decode, code_line_num = cln, full_lines = if (is.null(cln)) NULL else file_text[cln], file_type = file_type)
+        out$plays <- temp$plays
+        if (!is.null(temp$messages) && nrow(temp$messages)>0) {
+            temp$messages$file_line <- as.character(temp$messages$file_line)
+            out$messages <- bind_rows(out$messages, temp$messages)
+        }
+        ## post-process plays data
+        ##add the recognised columns from main to plays (note that we are discarding a few columns from main here)
+        team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
+        out$plays <- cbind(this_main[, c("time", "video_file_number", "video_time")], out$plays, this_main[, c(paste0("home_p", team_player_num), paste0("visiting_p", team_player_num), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase")])
+        ## tidy up coordinates, and rescale to match zones and our ggcourt dimensions
+        cxy <- dv_index2xy() ## grid of coords in our ggcourt space
+        temp <- out$plays$start_coordinate
+        ##temp[temp %in% c("-1-1", "")] <- NA_real_
+        temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_ ## missing is usually "-1-1", but in some cases (DV bug?) can be e.g. "80-1", so turf out anything with "-" (or empty string)
+        temp <- as.numeric(temp)
+        temp[temp<1] <- NA_real_
+        out$plays$start_coordinate <- temp
+        out$plays$start_coordinate_x <- cxy[out$plays$start_coordinate, 1]
+        out$plays$start_coordinate_y <- cxy[out$plays$start_coordinate, 2]
+        temp <- out$plays$mid_coordinate
+        temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_
+        temp <- as.numeric(temp)
+        temp[temp<1] <- NA_real_
+        out$plays$mid_coordinate <- temp
+        out$plays$mid_coordinate_x <- cxy[out$plays$mid_coordinate, 1]
+        out$plays$mid_coordinate_y <- cxy[out$plays$mid_coordinate, 2]
+        temp <- out$plays$end_coordinate
+        temp[grepl("-", temp, fixed = TRUE) | !nzchar(temp)] <- NA_real_
+        temp <- as.numeric(temp)
+        temp[temp<1] <- NA_real_
+        out$plays$end_coordinate <- temp
+        out$plays$end_coordinate_x <- cxy[out$plays$end_coordinate, 1]
+        out$plays$end_coordinate_y <- cxy[out$plays$end_coordinate, 2]
+        ## add player_id values for home_p1 etc
+        for (thisp in team_player_num) out$plays[,paste0("home_player_id",thisp)] <- get_player_id(rep("*",nrow(out$plays)),out$plays[,paste0("home_p",thisp)],out$meta)
+        for (thisp in team_player_num) out$plays[,paste0("visiting_player_id",thisp)] <- get_player_id(rep("a",nrow(out$plays)),out$plays[,paste0("visiting_p",thisp)],out$meta)
+
+        ## add set number
+        if (!any(out$plays$end_of_set)) {
+            out$messages <- bind_rows(out$messages, data.frame(file_line_number = NA_integer_, video_time = NA_real_, message = "Could not find any end-of-set markers (e.g. \"**1set\") in the input file", file_line = NA_character_, stringsAsFactors = FALSE))
+            out$plays$set_number <- 1L
+        } else {
+            temp <- c(0L, which(out$plays$end_of_set))
+            out$plays$set_number <- sapply(seq_len(nrow(out$plays)), function(z) sum(z >= temp))
+            ## now fix the last **Xset entry in the file
+            if (tail(temp, 1) == nrow(out$plays)) out$plays$set_number[nrow(out$plays)] <- out$plays$set_number[nrow(out$plays)] - 1L
+            out$plays$home_team_score[which(out$plays$end_of_set)] <- NA_integer_
+            out$plays$visiting_team_score[which(out$plays$end_of_set)] <- NA_integer_
+        }
+
+        ## technical timeouts
+        if (is.flag(insert_technical_timeouts)) {
+            if (insert_technical_timeouts) {
+                insert_technical_timeouts <- if (grepl("beach", file_type)) list(function(s1, s2) (s1 + s2) == 21, NULL) else list(c(8,16),NULL)
+            } else {
+                insert_technical_timeouts <- list(NULL,NULL)
+            }
+        }
+        set_sets <- if (grepl("beach", file_type)) list(1:2, 3) else list(1:4, 5)
+        for (si in 1:2) {
+            if (!is.null(insert_technical_timeouts[[si]])) {
+                if (is.numeric(insert_technical_timeouts[[si]])) {
+                    ## find technical timeouts at e.g. points 8 and 16 in sets 1-4
+                    for (this_set in set_sets[[si]]) {
+                        for (thisp in insert_technical_timeouts[[si]]) {
+                            idx <- which((out$plays$home_team_score==thisp | out$plays$visiting_team_score==thisp) & out$plays$set_number==this_set)
+                            if (length(idx) > 0) {
+                                idx <- idx[1]
+                                out$plays <- bind_rows(out$plays[seq_len(idx), ],
+                                    data.frame(skill = "Technical timeout", custom_code = "", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
+                                    out$plays[(idx+1):nrow(out$plays), ])
+                            }
+                        }
+                    }
+                } else if (is.function(insert_technical_timeouts[[si]])) {
+                    ## function that is TRUE when a TTO should occur
+                    ## note this only allows one such TTO per set
+                    for (this_set in set_sets[[si]]) {
+                        idx <- which(insert_technical_timeouts[[si]](out$plays$home_team_score, out$plays$visiting_team_score) & out$plays$set_number==this_set)
                         if (length(idx) > 0) {
                             idx <- idx[1]
                             out$plays <- bind_rows(out$plays[seq_len(idx), ],
-                                                   data.frame(skill = "Technical timeout", custom_code = "", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
-                                                   out$plays[(idx+1):nrow(out$plays), ])
+                                data.frame(skill = "Technical timeout", custom_code = "", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
+                                out$plays[(idx+1):nrow(out$plays), ])
                         }
                     }
                 }
-            } else if (is.function(insert_technical_timeouts[[si]])) {
-                ## function that is TRUE when a TTO should occur
-                ## note this only allows one such TTO per set
-                for (this_set in set_sets[[si]]) {
-                    idx <- which(insert_technical_timeouts[[si]](out$plays$home_team_score, out$plays$visiting_team_score) & out$plays$set_number==this_set)
-                    if (length(idx) > 0) {
-                        idx <- idx[1]
-                        out$plays <- bind_rows(out$plays[seq_len(idx), ],
-                                               data.frame(skill = "Technical timeout", custom_code = "", timeout = TRUE, set_number = this_set, point = FALSE, end_of_set = FALSE, substitution = FALSE),
-                                               out$plays[(idx+1):nrow(out$plays), ])
-                    }
+            }
+        }
+
+        ## add match_id
+        out$plays$match_id <- out$meta$match_id
+
+        ## turn plays times (character) into POSIXct
+        temp <- paste(format(as.Date(out$meta$match$date)),out$plays$time,sep=" ")
+        temp[out$plays$time=="" | is.na(out$plays$time)] <- NA
+        suppressWarnings(out$plays$time <- lubridate::ymd_hms(temp))
+        ##if (all(is.na(out$plays$time))) {
+        ##    ## maybe match date failed to parse? try
+        ##    suppressWarnings(out$plays$time <- lubridate::hms(temp))
+        ## except this gives objects of class period, not POSIXct - hold off on this for now
+        ##}
+
+        ## add point_id - an identifier of each point. One point may consist of multiple attacks or other actions. Timeouts get assigned to their own "point", but other non-play rows may get assigned as part of a point.
+        pid <- 0
+        temp_point_id <- rep(NA, nrow(out$plays))
+        temp_point_id[1] <- pid
+        temp_point <- out$plays$point
+        temp_timeout <- out$plays$timeout
+        temp_setterpos <- grepl("^[a\\*]z", out$plays$code)
+        temp_end_of_set <- grepl("^\\*\\*[[:digit:]]set", out$plays$code, ignore.case = TRUE)
+        sideout_scoring <- grepl("sideout", out$meta$match$regulation)
+        for (k in seq_len(nrow(out$plays))[-1]) {
+            if (isTRUE(temp_point[k-1] || temp_timeout[k] || temp_timeout[k-1])) { ## timeout[k-1] otherwise the following play does not start with a new point_id
+                pid <- pid + 1
+            } else if (isTRUE(sideout_scoring && temp_setterpos[k])) {
+                ## in sideout scoring, we won't see points assigned unless the team is serving, but we still see the *z or az code
+                pid <- pid + 1
+            }
+            temp_point_id[k] <- pid
+        }
+        out$plays$point_id <- temp_point_id
+        ## fill in setter position
+        temp_eos <- out$plays$end_of_set
+        eos_idx <- which(temp_eos)
+        out$plays$home_setter_position[eos_idx] <- NA_integer_
+        out$plays$visiting_setter_position[eos_idx] <- NA_integer_
+        temp_home_setter_position <- out$plays$home_setter_position
+        temp_visiting_setter_position <- out$plays$visiting_setter_position
+        hsp <- temp_home_setter_position[1]
+        vsp <- temp_visiting_setter_position[1]
+        for (k in 2:nrow(out$plays)) {
+            if (isTRUE(temp_eos[k])) {
+                ## start of new set, don't let current setter positions flow from last set
+                hsp <- NA_integer_
+                vsp <- NA_integer_
+            }
+            if (!is.na(temp_home_setter_position[k]))
+            hsp <- temp_home_setter_position[k]
+            temp_home_setter_position[k] <- hsp
+            if (!is.na(temp_visiting_setter_position[k]))
+            vsp <- temp_visiting_setter_position[k]
+            temp_visiting_setter_position[k] <- vsp
+        }
+        out$plays$home_setter_position <- temp_home_setter_position
+        out$plays$visiting_setter_position <- temp_visiting_setter_position
+
+        ## add team_touch_id - an identifier of consecutive touches by same team in same point - e.g. a dig-set-attack sequence by one team is a "team touch"
+        tid <- 0
+        temp_ttid <- rep(NA, nrow(out$plays))
+        temp_ttid[1] <- tid
+        temp_team <- out$plays$team
+        temp_ptid <- out$plays$point_id
+        temp_skill <- out$plays$skill
+        ## keep track of attacks - if a file has been scouted with only attacks, we need to account for that
+        had_attack <- length(temp_skill) > 0 && temp_skill[1] %eq% "Attack" ## had_attack = had an attack already in this touch sequence
+        for (k in seq_len(nrow(out$plays))[-1]) {
+            if (!identical(temp_team[k], temp_team[k-1]) || !identical(temp_ptid[k], temp_ptid[k-1]) || (temp_skill[k] %eq% "Attack" && had_attack))  {
+                tid <- tid+1
+            }
+            temp_ttid[k] <- tid
+            had_attack <- temp_skill[k] %eq% "Attack"
+        }
+        out$plays$team_touch_id <- temp_ttid
+
+        ## team name and ID
+        idx <- out$meta$teams$home_away_team %eq% "*"
+        home_team <- out$meta$teams$team[idx]
+        home_team_id <- out$meta$teams$team_id[idx]
+        idx <- out$meta$teams$home_away_team %eq% "a"
+        visiting_team <- out$meta$teams$team[idx]
+        visiting_team_id <- out$meta$teams$team_id[idx]
+        ## replace * and a with team name
+        temp <- temp_id <- rep(NA_character_, nrow(out$plays))
+        idx <- out$plays$team %eq% "*"
+        temp[idx] <- home_team
+        temp_id[idx] <- home_team_id
+        idx <- out$plays$team %eq% "a"
+        temp[idx] <- visiting_team
+        temp_id[idx] <- visiting_team_id
+        out$plays$home_team <- home_team
+        out$plays$visiting_team <- visiting_team
+        out$plays$home_team_id <- home_team_id
+        out$plays$visiting_team_id <- visiting_team_id
+        out$plays$team <- temp
+        out$plays$team_id <- temp_id
+
+        ## keep track of who won each point
+        temp <- as.data.frame(setNames(unique(out$plays[which(out$plays$point), c("point_id", "team")]), c("point_id", "point_won_by")))
+        out$plays <- left_join(out$plays, temp, by = "point_id")
+        if (grepl("sideout", out$meta$match$regulation)) {
+            ## points aren't assigned when the winning team was receiving, so $point can't be used like it is with rally point scoring
+            exactly_1 <- function(z) if (length(z) != 1) as(NA, class(z)) else z
+            temp_ws <- out$meta$winning_symbols %>% mutate(skill = case_when(.data$skill == "S" ~ "Serve",
+                .data$skill == "R" ~ "Reception",
+                .data$skill == "A" ~ "Attack",
+                .data$skill == "B" ~ "Block",
+                .data$skill == "D" ~ "Dig",
+                .data$skill == "E" ~ "Set",
+                .data$skill == "F" ~ "Freeball"))
+            out$plays <- out$plays %>% mutate(other_team = case_when(.data$team == .data$home_team ~ .data$visiting_team,
+                .data$team == .data$visiting_team ~ .data$home_team)) %>%
+                left_join(temp_ws, by = c("skill", evaluation_code = "code")) %>%
+                group_by(.data$point_id) %>% mutate(point_won_by = case_when(!is.na(.data$point_won_by[1]) ~ .data$point_won_by[1],
+                    any(.data$code %in% c("*$$&H#", "a$$&H=")) ~ .data$home_team[1],
+                    any(.data$code %in% c("a$$&H#", "*$$&H=")) ~ .data$visiting_team[1],
+                    sum(.data$win_lose == "W", na.rm = TRUE) == 1 ~ exactly_1(.data$team[which(.data$win_lose == "W")]),
+                    sum(.data$win_lose == "L", na.rm = TRUE) == 1 ~ exactly_1(.data$team[which(.data$win_lose == "L")])
+                )) %>% ungroup %>%
+                dplyr::select(-"win_lose", -"other_team") %>% as.data.frame
+        }
+        ## catch any that we missed
+        ##dud_point_id <- unique(out$plays$point_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
+        ##for (dpi in dud_point_id) {
+        ##    tail(na.omit(out$plays[out$plays$point_id<dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
+        ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
+        ##}
+        #### not sure how to deal with these!
+
+        ## winning attacks
+        ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
+        temp1 <- out$plays[-nrow(out$plays),]
+        temp2 <- out$plays[-1,]
+        out$plays$winning_attack <- FALSE
+        out$plays$winning_attack[1:(nrow(out$plays)-1)] <- temp1$skill=="Attack" & (temp1$evaluation=="Winning attack" | ((temp2$skill=="Dig" | temp2$skill=="Block") & temp2$evaluation=="Error"))
+        ## note the block error is not actually needed there, since such attacks are recorded as winning ones anyway
+        out$plays$winning_attack[is.na(out$plays$winning_attack)] <- FALSE
+        ## fill in scores, so that all lines have a score
+        scores <- unique(na.omit(out$plays[, c("point_id", "home_team_score", "visiting_team_score")]))
+        scores <- left_join(out$plays[, "point_id", drop = FALSE], scores, by = "point_id")
+        ## double-check
+        if (any(na.omit(out$plays$home_team_score-scores$home_team_score) != 0) | any(na.omit(out$plays$visiting_team_score-scores$visiting_team_score) != 0)) stop("error in scores")
+
+        temp_home_team_score <- scores$home_team_score
+        temp_visiting_team_score <- scores$visiting_team_score
+        ## will still have NA scores for timeouts and technical timeouts, patch NAs where we can
+        temp_pt <- out$plays$point
+        for (k in seq_len(nrow(out$plays))[-1]) {
+            if (grepl("^\\*\\*[[:digit:]]set", out$plays$code[k], ignore.case = TRUE)) {
+                ## make end-of-set row have the same as the preceding scores
+                if (is.na(temp_home_team_score[k])) temp_home_team_score[k] <- temp_home_team_score[k-1]
+                if (is.na(temp_visiting_team_score[k])) temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
+            } else {
+                if (is.na(temp_home_team_score[k]) & !temp_pt[k]) {
+                    temp_home_team_score[k] <- temp_home_team_score[k-1]
+                }
+                if (is.na(temp_visiting_team_score[k]) & !temp_pt[k]) {
+                    temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
                 }
             }
         }
-    }
+        out$plays$home_team_score <- temp_home_team_score
+        out$plays$visiting_team_score <- temp_visiting_team_score
 
-    ## add match_id
-    out$plays$match_id <- out$meta$match_id
+        ##out$plays$home_team_score <- scores$home_team_score
+        ##out$plays$visiting_team_score <- scores$visiting_team_score
+        #### will still have NA scores for timeouts and technical timeouts, patch NAs where we can
+        ##for (k in 2:nrow(out$plays)) {
+        ##    if (is.na(out$plays$home_team_score[k]) & !out$plays$point[k]) {
+        ##        out$plays$home_team_score[k] <- out$plays$home_team_score[k-1]
+        ##    }
+        ##    if (is.na(out$plays$visiting_team_score[k]) & !out$plays$point[k]) {
+        ##        out$plays$visiting_team_score[k] <- out$plays$visiting_team_score[k-1]
+        ##    }
+        ##}
 
-    ## turn plays times (character) into POSIXct
-    temp <- paste(format(as.Date(out$meta$match$date)),out$plays$time,sep=" ")
-    temp[out$plays$time=="" | is.na(out$plays$time)] <- NA
-    suppressWarnings(out$plays$time <- lubridate::ymd_hms(temp))
-    ##if (all(is.na(out$plays$time))) {
-    ##    ## maybe match date failed to parse? try
-    ##    suppressWarnings(out$plays$time <- lubridate::hms(temp))
-    ## except this gives objects of class period, not POSIXct - hold off on this for now
-    ##}
+        ##^^^ CHECK
+        ## enforce some columns to be integer
+        ints <- intersect(names(out$plays), c("player_number", "start_zone", "end_zone", "end_cone", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "set_number"))
+        for (i in ints) out$plays[, i] <- as.integer(out$plays[, i])
 
-    ## add point_id - an identifier of each point. One point may consist of multiple attacks or other actions. Timeouts get assigned to their own "point", but other non-play rows may get assigned as part of a point.
-    pid <- 0
-    temp_point_id <- rep(NA, nrow(out$plays))
-    temp_point_id[1] <- pid
-    temp_point <- out$plays$point
-    temp_timeout <- out$plays$timeout
-    temp_setterpos <- grepl("^[a\\*]z", out$plays$code)
-    temp_end_of_set <- grepl("^\\*\\*[[:digit:]]set", out$plays$code, ignore.case = TRUE)
-    sideout_scoring <- grepl("sideout", out$meta$match$regulation)
-    for (k in seq_len(nrow(out$plays))[-1]) {
-        if (isTRUE(temp_point[k-1] || temp_timeout[k] || temp_timeout[k-1])) { ## timeout[k-1] otherwise the following play does not start with a new point_id
-            pid <- pid + 1
-        } else if (isTRUE(sideout_scoring && temp_setterpos[k])) {
-            ## in sideout scoring, we won't see points assigned unless the team is serving, but we still see the *z or az code
-            pid <- pid + 1
+        ## add serving_team info
+        who_served <- unique(out$plays[out$plays$skill %eq% "Serve", c("match_id", "point_id", "team")])
+        who_served <- setNames(as.data.frame(who_served[!duplicated(who_served$point_id), ]), c("match_id", "point_id", "serving_team"))
+
+        out$plays <- left_join(out$plays, dplyr::distinct(who_served, .data$match_id, .data$point_id, .keep_all = TRUE), by = c("match_id", "point_id"))
+        out$plays$serving_team <- as.character(out$plays$serving_team) ## to be sure is not factor
+    } else {
+        if (grepl("beach", file_type)) {
+            this_main <- this_main[, setdiff(names(this_main), c(paste0("home_p", 3:6), paste0("visiting_p", 3:6), paste0("home_player_id", 3:6), paste0("visiting_player_id", 3:6)))]
         }
-        temp_point_id[k] <- pid
+        out$plays <- this_main
     }
-    out$plays$point_id <- temp_point_id
-    ## fill in setter position
-    temp_eos <- out$plays$end_of_set
-    eos_idx <- which(temp_eos)
-    out$plays$home_setter_position[eos_idx] <- NA_integer_
-    out$plays$visiting_setter_position[eos_idx] <- NA_integer_
-    temp_home_setter_position <- out$plays$home_setter_position
-    temp_visiting_setter_position <- out$plays$visiting_setter_position
-    hsp <- temp_home_setter_position[1]
-    vsp <- temp_visiting_setter_position[1]
-    for (k in 2:nrow(out$plays)) {
-        if (isTRUE(temp_eos[k])) {
-            ## start of new set, don't let current setter positions flow from last set
-            hsp <- NA_integer_
-            vsp <- NA_integer_
-        }
-        if (!is.na(temp_home_setter_position[k]))
-            hsp <- temp_home_setter_position[k]
-        temp_home_setter_position[k] <- hsp
-        if (!is.na(temp_visiting_setter_position[k]))
-            vsp <- temp_visiting_setter_position[k]
-        temp_visiting_setter_position[k] <- vsp
-    }
-    out$plays$home_setter_position <- temp_home_setter_position
-    out$plays$visiting_setter_position <- temp_visiting_setter_position
 
-    ## add team_touch_id - an identifier of consecutive touches by same team in same point - e.g. a dig-set-attack sequence by one team is a "team touch"
-    tid <- 0
-    temp_ttid <- rep(NA, nrow(out$plays))
-    temp_ttid[1] <- tid
-    temp_team <- out$plays$team
-    temp_ptid <- out$plays$point_id
-    temp_skill <- out$plays$skill
-    ## keep track of attacks - if a file has been scouted with only attacks, we need to account for that
-    had_attack <- length(temp_skill) > 0 && temp_skill[1] %eq% "Attack" ## had_attack = had an attack already in this touch sequence
-    for (k in seq_len(nrow(out$plays))[-1]) {
-        if (!identical(temp_team[k], temp_team[k-1]) || !identical(temp_ptid[k], temp_ptid[k-1]) || (temp_skill[k] %eq% "Attack" && had_attack))  {
-            tid <- tid+1
-        }
-        temp_ttid[k] <- tid
-        had_attack <- temp_skill[k] %eq% "Attack"
-    }
-    out$plays$team_touch_id <- temp_ttid
-
-    ## team name and ID
-    idx <- out$meta$teams$home_away_team %eq% "*"
-    home_team <- out$meta$teams$team[idx]
-    home_team_id <- out$meta$teams$team_id[idx]
-    idx <- out$meta$teams$home_away_team %eq% "a"
-    visiting_team <- out$meta$teams$team[idx]
-    visiting_team_id <- out$meta$teams$team_id[idx]
-    ## replace * and a with team name
-    temp <- temp_id <- rep(NA_character_, nrow(out$plays))
-    idx <- out$plays$team %eq% "*"
-    temp[idx] <- home_team
-    temp_id[idx] <- home_team_id
-    idx <- out$plays$team %eq% "a"
-    temp[idx] <- visiting_team
-    temp_id[idx] <- visiting_team_id
-    out$plays$home_team <- home_team
-    out$plays$visiting_team <- visiting_team
-    out$plays$home_team_id <- home_team_id
-    out$plays$visiting_team_id <- visiting_team_id
-    out$plays$team <- temp
-    out$plays$team_id <- temp_id
-
-    ## keep track of who won each point
-    temp <- as.data.frame(setNames(unique(out$plays[which(out$plays$point), c("point_id", "team")]), c("point_id", "point_won_by")))
-    out$plays <- left_join(out$plays, temp, by = "point_id")
-    if (grepl("sideout", out$meta$match$regulation)) {
-        ## points aren't assigned when the winning team was receiving, so $point can't be used like it is with rally point scoring
-        exactly_1 <- function(z) if (length(z) != 1) as(NA, class(z)) else z
-        temp_ws <- out$meta$winning_symbols %>% mutate(skill = case_when(.data$skill == "S" ~ "Serve",
-                                                                         .data$skill == "R" ~ "Reception",
-                                                                         .data$skill == "A" ~ "Attack",
-                                                                         .data$skill == "B" ~ "Block",
-                                                                         .data$skill == "D" ~ "Dig",
-                                                                         .data$skill == "E" ~ "Set",
-                                                                         .data$skill == "F" ~ "Freeball"))
-        out$plays <- out$plays %>% mutate(other_team = case_when(.data$team == .data$home_team ~ .data$visiting_team,
-                                                            .data$team == .data$visiting_team ~ .data$home_team)) %>%
-            left_join(temp_ws, by = c("skill", evaluation_code = "code")) %>%
-            group_by(.data$point_id) %>% mutate(point_won_by = case_when(!is.na(.data$point_won_by[1]) ~ .data$point_won_by[1],
-                                                                         any(.data$code %in% c("*$$&H#", "a$$&H=")) ~ .data$home_team[1],
-                                                                         any(.data$code %in% c("a$$&H#", "*$$&H=")) ~ .data$visiting_team[1],
-                                                                         sum(.data$win_lose == "W", na.rm = TRUE) == 1 ~ exactly_1(.data$team[which(.data$win_lose == "W")]),
-                                                                         sum(.data$win_lose == "L", na.rm = TRUE) == 1 ~ exactly_1(.data$team[which(.data$win_lose == "L")])
-                                                                         )) %>% ungroup %>%
-            dplyr::select(-"win_lose", -"other_team") %>% as.data.frame
-    }
-    ## catch any that we missed
-    ##dud_point_id <- unique(out$plays$point_id[is.na(out$plays$point_won_by) & !out$plays$skill %in% c(NA,"Timeout","Technical timeout")])
-    ##for (dpi in dud_point_id) {
-    ##    tail(na.omit(out$plays[out$plays$point_id<dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
-    ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
-    ##}
-#### not sure how to deal with these!
-
-    ## winning attacks
-    ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
-    temp1 <- out$plays[-nrow(out$plays),]
-    temp2 <- out$plays[-1,]
-    out$plays$winning_attack <- FALSE
-    out$plays$winning_attack[1:(nrow(out$plays)-1)] <- temp1$skill=="Attack" & (temp1$evaluation=="Winning attack" | ((temp2$skill=="Dig" | temp2$skill=="Block") & temp2$evaluation=="Error"))
-    ## note the block error is not actually needed there, since such attacks are recorded as winning ones anyway
-    out$plays$winning_attack[is.na(out$plays$winning_attack)] <- FALSE
-    ## fill in scores, so that all lines have a score
-    scores <- unique(na.omit(out$plays[, c("point_id", "home_team_score", "visiting_team_score")]))
-    scores <- left_join(out$plays[, "point_id", drop = FALSE], scores, by = "point_id")
-    ## double-check
-    if (any(na.omit(out$plays$home_team_score-scores$home_team_score) != 0) | any(na.omit(out$plays$visiting_team_score-scores$visiting_team_score) != 0)) stop("error in scores")
-
-    temp_home_team_score <- scores$home_team_score
-    temp_visiting_team_score <- scores$visiting_team_score
-    ## will still have NA scores for timeouts and technical timeouts, patch NAs where we can
-    temp_pt <- out$plays$point
-    for (k in seq_len(nrow(out$plays))[-1]) {
-        if (grepl("^\\*\\*[[:digit:]]set", out$plays$code[k], ignore.case = TRUE)) {
-            ## make end-of-set row have the same as the preceding scores
-            if (is.na(temp_home_team_score[k])) temp_home_team_score[k] <- temp_home_team_score[k-1]
-            if (is.na(temp_visiting_team_score[k])) temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
-        } else {
-            if (is.na(temp_home_team_score[k]) & !temp_pt[k]) {
-                temp_home_team_score[k] <- temp_home_team_score[k-1]
-            }
-            if (is.na(temp_visiting_team_score[k]) & !temp_pt[k]) {
-                temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
-            }
-        }
-    }
-    out$plays$home_team_score <- temp_home_team_score
-    out$plays$visiting_team_score <- temp_visiting_team_score
-
-    ##out$plays$home_team_score <- scores$home_team_score
-    ##out$plays$visiting_team_score <- scores$visiting_team_score
-    #### will still have NA scores for timeouts and technical timeouts, patch NAs where we can
-    ##for (k in 2:nrow(out$plays)) {
-    ##    if (is.na(out$plays$home_team_score[k]) & !out$plays$point[k]) {
-    ##        out$plays$home_team_score[k] <- out$plays$home_team_score[k-1]
-    ##    }
-    ##    if (is.na(out$plays$visiting_team_score[k]) & !out$plays$point[k]) {
-    ##        out$plays$visiting_team_score[k] <- out$plays$visiting_team_score[k-1]
-    ##    }
-    ##}
-
-    ## enforce some columns to be integer
-    ints <- intersect(names(out$plays), c("player_number", "start_zone", "end_zone", "end_cone", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "set_number"))
-    for (i in ints) out$plays[,i] <- as.integer(out$plays[,i])
-
-    ## add serving_team info
-    who_served <- unique(out$plays[out$plays$skill %eq% "Serve", c("match_id", "point_id", "team")])
-    who_served <- setNames(as.data.frame(who_served[!duplicated(who_served$point_id), ]), c("match_id", "point_id", "serving_team"))
-
-    out$plays <- left_join(out$plays, dplyr::distinct(who_served, .data$match_id, .data$point_id, .keep_all = TRUE), by = c("match_id", "point_id"))
-    out$plays$serving_team <- as.character(out$plays$serving_team) ## to be sure is not factor
-
-    class(out) <- c("datavolley",class(out))
-    class(out$plays) <- c("datavolleyplays",class(out$plays))
+    class(out) <- c("datavolley", class(out))
+    class(out$plays) <- c("datavolleyplays", class(out$plays))
 
     ## add play phase
     out$plays$phase <- play_phase(out$plays)
@@ -618,8 +623,7 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     ## ensure column ordering
     cls <- c("match_id", "point_id", "time", "video_file_number", "video_time", "code", "team", "player_number", "player_name", "player_id", "skill", "skill_type", "evaluation_code", "evaluation", "attack_code", "attack_description", "set_code", "set_description", "set_type", "start_zone", "end_zone", "end_subzone", "end_cone", "skill_subtype", "num_players", "num_players_numeric", "special_code", "timeout", "end_of_set", "substitution", "point", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "custom_code", "file_line_number", paste0("home_p", 1:6), paste0("visiting_p", 1:6), "start_coordinate", "mid_coordinate", "end_coordinate", "point_phase", "attack_phase", "start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y", paste0("home_player_id", 1:6), paste0("visiting_player_id", 1:6), "set_number", "team_touch_id", "home_team", "visiting_team", "home_team_id", "visiting_team_id", "team_id", "point_won_by", "winning_attack", "serving_team", "phase", "home_score_start_of_point", "visiting_score_start_of_point")
     out$plays <- out$plays[, c(intersect(cls, names(out$plays)), setdiff(names(out$plays), cls))]
-
-    out$messages <- out$messages[,setdiff(names(out$messages),"severity")]
+    out$messages <- out$messages[, setdiff(names(out$messages), "severity")]
     ## apply additional validation
     if (extra_validation > 0) {
         moreval <- dv_validate(out, validation_level = extra_validation, options = validation_options, file_type = file_type)

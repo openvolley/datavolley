@@ -366,7 +366,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     if (nrow(px) < 1) {
         ## file with no plays it yet
-        px <- tibble(point_id = integer(), time = integer(), home_team_score = integer(), visiting_team_score = integer(), point_won_by = character(), set_number = integer(), home_setter_position = integer(), visiting_setter_position = integer(), home_p1 = integer(), home_p2 = integer(), home_p3 = integer(), home_p4 = integer(), home_p5 = integer(), home_p6 = integer(), visiting_p1 = integer(), visiting_p2 = integer(), visiting_p3 = integer(), visiting_p4 = integer(), visiting_p5 = integer(), visiting_p6 = integer(), code = character(), team = character(), skill = character(), timeout = logical(), substitution = logical(), `_id` = character(), player = character(), hit_type = character(), effect = character(), end_sub_zone = character(), end_zone = integer(), start_zone = integer(), point = logical(), start_coordinate_x = numeric(), start_coordinate_y = numeric(), end_coordinate_x = numeric(), end_coordinate_y = numeric(), combination = character(), start_sub_zone = character(), target_attacker = character(), skill_type = character(), players = integer(), end_of_set = logical())
+        px <- empty_plays_df()
     }
 
     ## helper function to convert the line_number in dvmsg object (which is the line number of px, not the line number of the input file) to the line number of the input file
@@ -672,7 +672,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     class(x) <- c("datavolley", class(x))
 
     ## update the set durations, subs, etc in the metadata
-    if (nrow(x$plays) > 0) x <- dv_update_meta(x)
+    if (nrow(x$plays) > 0) try(x <- dv_update_meta(x))
     msgs <- bind_rows(msgs)
     x$messages <- msgs[, setdiff(names(msgs), c("severity"))]
 
