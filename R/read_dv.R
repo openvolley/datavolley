@@ -607,8 +607,9 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     out$plays$phase <- play_phase(out$plays)
 
     ## add scores at START of point
-    out$plays$home_score_start_of_point <- pmax(ifelse(out$plays$point_won_by %eq% out$plays$home_team, as.integer(out$plays$home_team_score - 1L), as.integer(out$plays$home_team_score)), 0L)
-    out$plays$visiting_score_start_of_point <- pmax(ifelse(out$plays$point_won_by %eq% out$plays$visiting_team, as.integer(out$plays$visiting_team_score - 1L), as.integer(out$plays$visiting_team_score)), 0L)
+    ## previously we just subtracted 1 from the appropriate score (home or visiting) but that does not give the correct result for matches played with non-standard regulations (e.g. AVSL 2 points in power plays)
+    temp <- out$plays %>% group_by(.data$point_id) %>% slice(1L) %>% group_by(.data$set_number) %>% mutate(home_score_start_of_point = lag(.data$home_team_score, default = 0L), visiting_score_start_of_point = lag(.data$visiting_team_score, default = 0L)) %>% ungroup %>% dplyr::select("point_id", "home_score_start_of_point", "visiting_score_start_of_point")
+    out$plays <- left_join(out$plays, temp, by = "point_id")
 
     ## now call custom code parser, if it was provided
     if (!missing(custom_code_parser) && !is.null(custom_code_parser)) {
