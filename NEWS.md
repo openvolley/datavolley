@@ -1,3 +1,19 @@
+datavolley 1.14.0
+================
+- reading a dvw file with no play-by-play data will now return a datavolley object with zero-row `plays` component, rather than throwing an error. This is consistent with the behaviour when reading a vsmm file with no play-by-play data
+- various improvements for reading vsm files
+- small improvements to text encoding detection, calculating home_score_start_of_point and visiting_score_start_of_point
+- fix issue in dv_write for matches > 5 sets
+- check for entirely missing sets in validation
+
+datavolley 1.13.0
+================
+- various improvements for reading vsm files
+
+datavolley 1.12.0
+================
+- if the dvw file being read has been populated with official match template data (i.e. an official federation match), use the match date information there to resolve the match data in the metadata section if it's ambiguous
+
 datavolley 1.11.0
 ================
 - the `dv_sync_video` function now does not apply offsets by default - see the function documentation for details. To restore the previous behaviour use `dv_sync_video(..., offsets = dv_sync_offsets())` but it is recommended to apply offsets in your video montage software, not during the sync process (hence the change to the default behaviour)
