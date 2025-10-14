@@ -613,7 +613,15 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
         chk <- which((temp[, 1] > 1 | temp[, 2] > 1) | ((temp[, 1] < 0 | temp[, 2] < 0) & !(is.na(temp[, 3]) | temp[, 3] != 0)))
         if (length(chk) > 0) {
             chk <- chk + 1L
-           out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Scores do not follow proper sequence (note that the error may be in the point before this one)", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
+            out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Scores do not follow proper sequence (note that the error may be in the point before this one)", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
+        }
+
+        ## check that we aren't missing any sets
+        sets_actual <- na.omit(unique(plays$set_number))
+        sets_expected <- seq_len(max(plays$set_number, na.rm = TRUE))
+        temp_plural <- length(setdiff(sets_expected, sets_actual)) > 1
+        if (!setequal(sets_actual, sets_expected)) {
+            out <- rbind(out, data.frame(file_line_number = NA, video_time = NA, message = paste0("Set", if (temp_plural) "s", " ", paste(setdiff(sets_expected, sets_actual), collapse = "/"), " was not scouted, the file only contains data for set", if (length(sets_actual) > 1) "s " else " ", paste(sets_actual, collapse = "/")), file_line = NA, severity = 3, stringsAsFactors = FALSE))
         }
 
         ## check for incorrect rotation changes
