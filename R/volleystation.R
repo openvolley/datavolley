@@ -167,19 +167,27 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     mx$players_h <- vs_reformat_players(jx, "home")
     mx$players_v <- vs_reformat_players(jx, "visiting")
 
-    ax <- dv_create_meta_attack_combos(code = jx$attackCombinations$code,
-                                       start_zone = jx$attackCombinations$start$zone,
-                                       side = NA_character_, ## R,L,C,
-                                       tempo = jx$attackCombinations$hitType,
-                                       description = jx$attackCombinations$name,
-                                       start_coordinate = datavolley::dv_xy2index(datavolley::dv_xy(zones = jx$attackCombinations$start$zone, subzones = jx$attackCombinations$start$subZone, end = "lower")),
-                                       target_attacker = if (is.null(jx$attackCombinations$targetAttacker)) rep(NA_character_, nrow(jx$attackCombination)) else jx$attackCombinations$targetAttacker)
-    if (has_dvmsg(ax)) {
+    atx <- tryCatch({
+        ax <- dv_create_meta_attack_combos(code = jx$attackCombinations$code,
+                                           start_zone = jx$attackCombinations$start$zone,
+                                           side = NA_character_, ## R,L,C,
+                                           tempo = jx$attackCombinations$hitType,
+                                           description = jx$attackCombinations$name,
+                                           start_coordinate = datavolley::dv_xy2index(datavolley::dv_xy(zones = jx$attackCombinations$start$zone, subzones = jx$attackCombinations$start$subZone, end = "lower")),
+                                           target_attacker = if (is.null(jx$attackCombinations$targetAttacker)) rep(NA_character_, nrow(jx$attackCombination)) else jx$attackCombinations$targetAttacker)
+        if (has_dvmsg(ax)) {
+            idx <- head(grep("attackCombinations", x$raw), 1)
+            if (length(idx) < 1) idx <- NA_integer_
+            msgs <- collect_messages(msgs, get_dvmsg(ax)$message, line_nums = idx, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx], severity = 3)
+        }
+        ax
+    }, error = function(e) {
         idx <- head(grep("attackCombinations", x$raw), 1)
         if (length(idx) < 1) idx <- NA_integer_
-        msgs <- collect_messages(msgs, get_dvmsg(ax)$message, line_nums = idx + 1L, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx + 1L], severity = 3)
-    }
-    mx$attacks <- clear_dvmsg(ax)
+        msgs <<- collect_messages(msgs, "Attack combinations table could not be read, ignoring", line_nums = idx, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx], severity = 2)
+        tibble(code = character(), attacker_position = integer(), side = character(), type = character(), description = character(), X6 = logical(), colour = character(), start_coordinate = integer(), set_type = character(), X10 = logical(), X11 = logical())
+    })
+    mx$attacks <- clear_dvmsg(atx)
 
     scok <- FALSE
     if (!(is.null(jx$setterCalls) || !is.data.frame(jx$setterCalls) || (is.list(jx$setterCalls) && length(jx$setterCalls) < 1))) {
