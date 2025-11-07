@@ -178,7 +178,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         if (has_dvmsg(ax)) {
             idx <- head(grep("attackCombinations", x$raw), 1)
             if (length(idx) < 1) idx <- NA_integer_
-            msgs <- collect_messages(msgs, get_dvmsg(ax)$message, line_nums = idx, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx], severity = 3)
+            msgs <- collect_messages(msgs, get_dvmsg(ax)$message, line_nums = idx + 1L, raw_lines = if (is.na(idx)) NA_character_ else x$raw[idx + 1L], severity = 3)
         }
         ax
     }, error = function(e) {
@@ -589,8 +589,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     }
 
     ## add scores at START of point
-    px$home_score_start_of_point <- ifelse(px$point_won_by %eq% "*", as.integer(px$home_team_score - 1L), as.integer(px$home_team_score))
-    px$visiting_score_start_of_point <- ifelse(px$point_won_by %eq% "a", as.integer(px$visiting_team_score - 1L), as.integer(px$visiting_team_score))
+    temp <- px %>% group_by(.data$point_id) %>% slice(1L) %>% group_by(.data$set_number) %>% mutate(home_score_start_of_point = lag(.data$home_team_score, default = 0L), visiting_score_start_of_point = lag(.data$visiting_team_score, default = 0L)) %>% ungroup %>% dplyr::select("point_id", "home_score_start_of_point", "visiting_score_start_of_point")
+    px <- left_join(px, temp, by = "point_id")
 
     ## technical timeouts
     if (isTRUE(insert_technical_timeouts)) px <- dv_insert_technical_timeouts(px, data_type = file_type)
