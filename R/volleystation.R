@@ -392,7 +392,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                  end_of_set = case_when(is.na(.data$end_of_set) ~ FALSE, TRUE ~ .data$end_of_set))
 
     ## ensure some columns are present, these are known to be missing in some files
-    req <- list(special = NA_character_, custom = NA_character_,
+    req <- list(special = NA_character_, custom = NA_character_, skill_type = NA_character_,
                 start_coordinate_x = NA_real_, mid_coordinate_x = NA_real_, end_coordinate_x = NA_real_,
                 start_coordinate_y = NA_real_, mid_coordinate_y = NA_real_, end_coordinate_y = NA_real_,
                 combination = NA_character_, players = NA_integer_,
@@ -655,7 +655,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         try({
             idx <- is.na(px$file_line_number)
             px$file_line_number[idx] <- round(approx(which(!idx), px$file_line_number[!idx], which(idx))$y)
-        })
+        }, silent = TRUE)
     }
     ## these interpolated file line numbers won't be exact, but close enough to be (hopefully) useful
 
