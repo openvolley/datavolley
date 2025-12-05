@@ -597,6 +597,8 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         if (grepl("beach", file_type)) {
             this_main <- this_main[, setdiff(names(this_main), c(paste0("home_p", 3:6), paste0("visiting_p", 3:6), paste0("home_player_id", 3:6), paste0("visiting_player_id", 3:6)))]
         }
+        ## enforce time to be POSIXct
+        try(this_main$time <- as.POSIXct(this_main$time))
         out$plays <- this_main
     }
 

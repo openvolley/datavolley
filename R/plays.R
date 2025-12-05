@@ -401,13 +401,9 @@ read_main <- function(filename, file_text) {
     x <- tryCatch({ if (!missing(file_text)) read_with_readr(file_text = file_text) else read_with_readr(filename = filename) },
                   error = function(e) stop("could not read the [3SCOUT] section of the file, the error message was: ", conditionMessage(e)))
 
-    if (is.null(x)) {
+    if (is.null(x) || (nrow(x) == 1 && ncol(x) == 1)) {
         ## previously this was an error, but from v1.14.0 we return an empty plays dataframe
         return(empty_plays_df(vs = FALSE))
-    }
-    if (nrow(x) == 1 && ncol(x) == 1) {
-        ## this happens if file has no scout data!
-        stop("file has no scouted data (the [3SCOUT] section of the file is empty)")
     }
     names(x)[1] <- "code"
     ## nonstandard chars in the custom chars can cause problems
@@ -851,7 +847,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
                 }
             } else if (skill=="R") {
                 if (!any(num_players==1:9)) {
-                    msgs <- collect_messages(msgs,paste0("Unexpected number of players: ",num_players),code_line_num[ci],full_lines[ci],severity=2)
+                    msgs <- collect_messages(msgs, paste0("Unexpected number of players: ", num_players), code_line_num[ci], full_lines[ci], severity = 2)
                 }
                 out_num_players[ci] <- switch(num_players,
                                               "1"="Two players receiving, the player on left receives",
@@ -865,7 +861,7 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
                                               "9"="Four players receiving, the player on right receives",
                                               paste0("Unexpected ",num_players))
             } else {
-                out_num_players[ci] <- paste0("Unexpected ",num_players)
+                out_num_players[ci] <- paste0("Unexpected ", num_players)
             }
         }
         ## special ("SPECIAL CODES", p33)
