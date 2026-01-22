@@ -34,20 +34,26 @@ find_duplicate_player_ids <- function(x) {
 #' @export
 dv_repair <- function(x) {
     msgs <- c()
+    ## first look for rows that are identical except for the "Xn" or "Vn" columns
+    for (this_hv in c("home", "visiting")) {
+        this_roster <- if (this_hv == "home") x$meta$players_h else x$meta$players_v
+        ros <- this_roster[, !grepl("^[XV][[:digit:]]+$", names(this_roster))]
+        this_roster <- this_roster[!duplicated(ros), ]
+        ## don't apply this fix if it removes all players!
+        if (nrow(this_roster) > 0) {
+            if (this_hv == "home") {
+                x$meta$players_h <- this_roster
+            } else {
+                x$meta$players_v <- this_roster
+            }
+        }
+    }
     ## duplicated jersey numbers (team-specific)
     pnums <- find_duplicate_player_numbers(x)
     if (!is.null(pnums) && nrow(pnums) > 0) {
         for (j in seq_len(nrow(pnums))) {
             this_hv <- pnums$hv[j]
-            if (this_hv == "home") {
-                #this_team <- home_team(x)
-                #this_team_id <- home_team_id(x)
-                this_roster <- x$meta$players_h
-            } else {
-                #this_team <- visiting_team(x)
-                #this_team_id <- visiting_team_id(x)
-                this_roster <- x$meta$players_v
-            }
+            this_roster <- if (this_hv == "home") x$meta$players_h else x$meta$players_v
             possible_rows <- which(this_roster$number %eq% pnums$number[j])
             if (length(possible_rows) > 0) {
                 can_remove <- vapply(possible_rows, function(rn) {
