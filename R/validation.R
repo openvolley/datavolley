@@ -698,9 +698,10 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                 ## use the strict checking method that WILL flag VS substitutions as errors
                 ## TODO it would be better if these could distinguish genuine errors from incorrectly-recorded-but-otherwise-correct situations (mark the latter with a lower severity level)
                 prev_rot <- plays_no_tt[k - 1L, rot_cols]
-                if (any(is.na(prev_rot)) && k > 2L) prev_rot <- plays_no_tt[k-2, rot_cols]
-                new_rot <- plays_no_tt[k + 1L, rot_cols]
-                if (any(is.na(new_rot)) && k < (nrow(plays_no_tt) - 2L)) new_rot <- plays_no_tt[k + 2L, rot_cols]
+                if (any(is.na(prev_rot)) && k > 2L) prev_rot <- plays_no_tt[k - 2L, rot_cols]
+                new_rot <- plays_no_tt[k, rot_cols]
+                if (any(is.na(new_rot)) && k < nrow(plays_no_tt)) new_rot <- plays_no_tt[k + 1L, rot_cols]
+                if (any(is.na(new_rot)) && k < (nrow(plays_no_tt) - 1L)) new_rot <- plays_no_tt[k + 2L, rot_cols]
             }
             if (any(is.na(new_rot))) next
             if (any(is.na(prev_rot))) next
