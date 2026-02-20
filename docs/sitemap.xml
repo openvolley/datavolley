@@ -28,11 +28,14 @@
 <url><loc>/reference/dv_heatmap.html</loc></url>
 <url><loc>/reference/dv_index2xy.html</loc></url>
 <url><loc>/reference/dv_int2rgb.html</loc></url>
+<url><loc>/reference/dv_meta_attack_codes.html</loc></url>
+<url><loc>/reference/dv_meta_setter_calls.html</loc></url>
 <url><loc>/reference/dv_meta_video.html</loc></url>
 <url><loc>/reference/dv_plot_new.html</loc></url>
 <url><loc>/reference/dv_point_phase.html</loc></url>
 <url><loc>/reference/dv_read.html</loc></url>
 <url><loc>/reference/dv_read_sq.html</loc></url>
+<url><loc>/reference/dv_remap_attack_codes.html</loc></url>
 <url><loc>/reference/dv_repair.html</loc></url>
 <url><loc>/reference/dv_sync_summary.html</loc></url>
 <url><loc>/reference/dv_sync_video.html</loc></url>

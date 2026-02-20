@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">datavolley</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.14.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.15.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,15 @@
       <small>Source: <a href="https://github.com/openvolley/datavolley/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.15.0" id="datavolley-1150">datavolley 1.15.0<a class="anchor" aria-label="anchor" href="#datavolley-1150"></a></h2>
+<ul><li>added <code>dv_remap_attack_codes</code> function for remapping or deleting attack combination codes</li>
+<li>added <code>dv_meta_attack_codes</code> and <code>dv_meta_setter_calls</code> functions for accessing the attack combination codes table and settter calls table in a datavolley object</li>
+<li>removed some deprecated ggplot2 usages</li>
+<li>minor improvements to rotation/substitution check, checks for duplicate players</li>
+<li>enforce time col to be POSIXct even if it’s all NA</li>
+<li>minor improvements to vsm file reader</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.14.0" id="datavolley-1140">datavolley 1.14.0<a class="anchor" aria-label="anchor" href="#datavolley-1140"></a></h2>
 <ul><li>reading a dvw file with no play-by-play data will now return a datavolley object with zero-row <code>plays</code> component, rather than throwing an error. This is consistent with the behaviour when reading a vsmm file with no play-by-play data</li>

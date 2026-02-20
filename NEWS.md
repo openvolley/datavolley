@@ -1,3 +1,12 @@
+datavolley 1.15.0
+================
+- added `dv_remap_attack_codes` function for remapping or deleting attack combination codes
+- added `dv_meta_attack_codes` and `dv_meta_setter_calls` functions for accessing the attack combination codes table and settter calls table in a datavolley object
+- removed some deprecated ggplot2 usages
+- minor improvements to rotation/substitution check, checks for duplicate players
+- enforce time col to be POSIXct even if it's all NA
+- minor improvements to vsm file reader
+
 datavolley 1.14.0
 ================
 - reading a dvw file with no play-by-play data will now return a datavolley object with zero-row `plays` component, rather than throwing an error. This is consistent with the behaviour when reading a vsmm file with no play-by-play data
