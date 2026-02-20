@@ -1,5 +1,5 @@
 #' ggplot volleyball court
-#' 
+#'
 #' Volleyball court schematic suitable for adding to a ggplot
 #'
 #' The datavolley package uses the following dimensions and coordinates for plotting:
@@ -74,13 +74,13 @@
 #'
 #' library(ggplot2)
 #' library(dplyr)
-#' 
+#'
 #' ## Example 1: attack frequency by zone, per team
-#' 
+#'
 #' attack_rate <- plays(x) %>% dplyr::filter(skill == "Attack") %>%
 #'   group_by(team, start_zone) %>% dplyr::summarize(n_attacks=n()) %>%
 #'   mutate(rate=n_attacks/sum(n_attacks)) %>% ungroup
-#' 
+#'
 #' ## add columns "x" and "y" for the x,y coordinates associated with the zones
 #' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end = "lower"))
 #'
@@ -97,7 +97,7 @@
 #' ## use the background_only and foreground_only parameters to control the
 #' ##   order of layers in a plot
 #'
-#' ggplot(attack_rate, aes(x, y, fill=rate)) +
+#' ggplot(attack_rate, aes(x, y, fill = rate)) +
 #'   ## add the background court colours
 #'   ggcourt(court_colour = "indoor", background_only = TRUE) +
 #'   ## now the heatmap
@@ -134,12 +134,12 @@
 #'     p <- p + geom_path(data = data.frame(x = c(attack_rate$sx[n], attack_rate$ex[n]),
 #'                                          y = c(attack_rate$sy[n], attack_rate$ey[n]),
 #'                                          rate = attack_rate$rate[n]),
-#'                        aes(size = rate), lineend = "round",
+#'                        aes(linewidth = rate), lineend = "round",
 #'                        arrow = arrow(length = unit(2, "mm"), type = "closed",
 #'                                      angle = 20, ends = "last"))
-#' p + scale_colour_gradient(name = "Attack rate") + guides(size = "none")
+#' p + scale_colour_gradient(name = "Attack rate") + guides(linewidth = "none")
 #' }
-#' 
+#'
 #' @export
 ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team", "Receiving team"), as_for_serve = FALSE, show_zone_lines = TRUE, show_minor_zones = FALSE, show_3m_line = TRUE, grid_colour = "black", zone_colour = "grey70", minor_zone_colour = "grey80", fixed_aspect_ratio = TRUE, zone_font_size = 10, label_font_size = 12, label_colour = "black", court_colour = NULL, figure_colour = NULL, background_only = FALSE, foreground_only = FALSE, line_width = 0.5, xlim, ylim, ...) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
@@ -195,7 +195,7 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
                  lower = hl[hl$y < 4, ],
                  upper = hl[hl$y > 3, ],
                  hl)
-    hl <- ggplot2::geom_path(data = hl, ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = grid_colour, size = line_width, inherit.aes = FALSE)
+    hl <- ggplot2::geom_path(data = hl, ggplot2::aes(x = .data$x, y = .data$y, group = .data$id), colour = grid_colour, linewidth = line_width, inherit.aes = FALSE)
     if (show_3m_line) {
         hlz <- data.frame(x = c(0.5, 3.5), y = c(1.5, 1.5, 5.5, 5.5), id = c(6, 6, 7, 7))
     } else {
@@ -206,20 +206,20 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
                  lower = hlz[hlz$y < 4, ],
                  upper = hlz[hlz$y > 3, ],
                  hlz)
-    hlz <- ggplot2::geom_path(data = hlz, ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = zone_colour, size = line_width, inherit.aes = FALSE)
+    hlz <- ggplot2::geom_path(data = hlz, ggplot2::aes(x = .data$x, y = .data$y, group = .data$id), colour = zone_colour, linewidth = line_width, inherit.aes = FALSE)
     ## vertical grid lines
     vl <- data.frame(y = c(0.5, 6.5), x = c(0.5, 0.5, 3.5, 3.5), id = c(1, 1, 2, 2))
     vl$y <- switch(court,
                    lower = mapvalues(vl$y, 6.5, 3.5),
                    upper = mapvalues(vl$y, 0.5, 3.5),
                    vl$y)
-    vl <- ggplot2::geom_path(data = vl, ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = grid_colour, size = line_width, inherit.aes = FALSE)
+    vl <- ggplot2::geom_path(data = vl, ggplot2::aes(x = .data$x, y = .data$y, group = .data$id), colour = grid_colour, linewidth = line_width, inherit.aes = FALSE)
     vlz <- data.frame(y = c(0.5, 6.5), x = c(1.5, 1.5, 2.5, 2.5), id = c(3, 3, 4, 4))
     vlz$y <- switch(court,
                    lower = mapvalues(vlz$y, 6.5, 3.5),
                    upper = mapvalues(vlz$y, 0.5, 3.5),
                    vlz$y)
-    vlz <- ggplot2::geom_path(data = vlz,ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = zone_colour, size = line_width, inherit.aes = FALSE)
+    vlz <- ggplot2::geom_path(data = vlz, ggplot2::aes(x = .data$x, y = .data$y, group = .data$id), colour = zone_colour, linewidth = line_width, inherit.aes = FALSE)
     ## minor grid lines
     if (show_minor_zones) {
         hlm <- data.frame(x = c(0.5, 3.5),
@@ -229,15 +229,15 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
                       lower = hlm[hlm$y < 4,],
                       upper = hlm[hlm$y > 3,],
                       hlm)
-        hlm <- ggplot2::geom_path(data = hlm,ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = minor_zone_colour, size = line_width, inherit.aes = FALSE)
+        hlm <- ggplot2::geom_path(data = hlm, ggplot2::aes(x = .data$x, y = .data$y, group = .data$id), colour = minor_zone_colour, linewidth = line_width, inherit.aes = FALSE)
         vlm <- data.frame(y = c(0.5, 6.5), x = c(1, 1, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3), id = c(1, 1, 2, 2, 3, 3, 4, 4, 5, 5))
         vlm$y <- switch(court,
                         lower = mapvalues(vlm$y, 6.5, 3.5),
                         upper = mapvalues(vlm$y, 0.5, 3.5),
                         vlm$y)
-        vlm <- ggplot2::geom_path(data = vlm, ggplot2::aes_string(x = "x", y = "y", group = "id"), colour = minor_zone_colour, size = line_width, inherit.aes = FALSE)
+        vlm <- ggplot2::geom_path(data = vlm, ggplot2::aes(x = .data$x, y = .data$y, group = .data$id), colour = minor_zone_colour, linewidth = line_width, inherit.aes = FALSE)
     }
-    net <- ggplot2::geom_path(data = data.frame(x = c(0.25, 3.75), y = c(3.5, 3.5)), ggplot2::aes_string(x = "x", y = "y"), colour = grid_colour, size = 4 * line_width, inherit.aes = FALSE) ## net
+    net <- ggplot2::geom_path(data = data.frame(x = c(0.25, 3.75), y = c(3.5, 3.5)), ggplot2::aes(x = .data$x, y = .data$y), colour = grid_colour, linewidth = 4 * line_width, inherit.aes = FALSE) ## net
     thm <- ggplot2::theme_classic(...)
     thm2 <- ggplot2::theme(axis.line = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(), axis.text.y = ggplot2::element_blank(), axis.ticks = ggplot2::element_blank(), axis.title.x = ggplot2::element_blank(), axis.title.y = ggplot2::element_blank())
     thm3 <- if (!tolower(figure_colour) %eq% "none") ggplot2::theme(panel.background = ggplot2::element_rect(fill = figure_colour)) else NULL
@@ -560,13 +560,13 @@ dv_cone2xy <- function(start_zones, end_cones, end = "upper", xynames = c("ex", 
 #' ## plot in reverse order so largest arrows are on the bottom
 #' attack_rate <- attack_rate %>% dplyr::arrange(desc(rate))
 #'
-#' p <- ggplot(attack_rate,aes(x,y,col = rate)) + ggcourt(labels = c(teams(x)[1],""))
+#' p <- ggplot(attack_rate, aes(x, y, col = rate)) + ggcourt(labels = c(teams(x)[1],""))
 #' for (n in 1:nrow(attack_rate))
 #'     p <- p + geom_path(data = data.frame(x = c(attack_rate$sx[n], attack_rate$ex[n]),
 #'                                        y = c(attack_rate$sy[n],attack_rate$ey[n]),
 #'                                        rate = attack_rate$rate[n]),
-#'         aes(size = rate), lineend = "round", arrow = arrow(ends = "last", type = "closed"))
-#' p + scale_fill_gradient(name = "Attack rate") + guides(size = "none")
+#'         aes(linewidth = rate), lineend = "round", arrow = arrow(ends = "last", type = "closed"))
+#' p + scale_fill_gradient(name = "Attack rate") + guides(linewidth = "none")
 #' }
 #' @export
 dv_xy <- function(zones, end = "lower", xynames = c("x", "y"), as_for_serve = FALSE, subzones) {
@@ -989,9 +989,3 @@ xy2subzone <- function(x, y) {
     y <- pmax(1, pmin(12, ceiling((y-0.5)/0.5)))
     szm[(y - 1)*6 + x]
 }
-
-
-##library(dplyr)
-##cxy <- bind_rows(lapply(c("L", "M", "R"), function(z) dv_cone_polygons(z) %>% mutate(end = "upper", zone = z))) %>%
-##    bind_rows(bind_rows(lapply(c("L", "M", "R"), function(z) dv_cone_polygons(z, end = "lower") %>% mutate(end = "lower", zone = z))))
-##ggplot(cxy, aes(x, y, group = cone_number, fill = as.factor(cone_number))) + geom_polygon() + ggcourt() + facet_wrap(~end + zone)

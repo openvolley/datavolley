@@ -80,13 +80,13 @@ attack_rate <- cbind(attack_rate,
 ## plot in reverse order so largest arrows are on the bottom
 attack_rate <- attack_rate \%>\% dplyr::arrange(desc(rate))
 
-p <- ggplot(attack_rate,aes(x,y,col = rate)) + ggcourt(labels = c(teams(x)[1],""))
+p <- ggplot(attack_rate, aes(x, y, col = rate)) + ggcourt(labels = c(teams(x)[1],""))
 for (n in 1:nrow(attack_rate))
     p <- p + geom_path(data = data.frame(x = c(attack_rate$sx[n], attack_rate$ex[n]),
                                        y = c(attack_rate$sy[n],attack_rate$ey[n]),
                                        rate = attack_rate$rate[n]),
-        aes(size = rate), lineend = "round", arrow = arrow(ends = "last", type = "closed"))
-p + scale_fill_gradient(name = "Attack rate") + guides(size = "none")
+        aes(linewidth = rate), lineend = "round", arrow = arrow(ends = "last", type = "closed"))
+p + scale_fill_gradient(name = "Attack rate") + guides(linewidth = "none")
 }
 }
 \seealso{

@@ -30,7 +30,7 @@ Imports:
     xml2
 Suggests:
     testthat,
-    ggplot2,
+    ggplot2 (>= 3.5.0),
     knitr,
     MASS,
     raster,

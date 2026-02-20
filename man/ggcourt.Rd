@@ -149,7 +149,7 @@ ggplot(attack_rate, aes(x, y, fill = rate)) + geom_tile() + ggcourt(labels = tea
 ## use the background_only and foreground_only parameters to control the
 ##   order of layers in a plot
 
-ggplot(attack_rate, aes(x, y, fill=rate)) +
+ggplot(attack_rate, aes(x, y, fill = rate)) +
   ## add the background court colours
   ggcourt(court_colour = "indoor", background_only = TRUE) +
   ## now the heatmap
@@ -186,10 +186,10 @@ for (n in 1:nrow(attack_rate))
     p <- p + geom_path(data = data.frame(x = c(attack_rate$sx[n], attack_rate$ex[n]),
                                          y = c(attack_rate$sy[n], attack_rate$ey[n]),
                                          rate = attack_rate$rate[n]),
-                       aes(size = rate), lineend = "round",
+                       aes(linewidth = rate), lineend = "round",
                        arrow = arrow(length = unit(2, "mm"), type = "closed",
                                      angle = 20, ends = "last"))
-p + scale_colour_gradient(name = "Attack rate") + guides(size = "none")
+p + scale_colour_gradient(name = "Attack rate") + guides(linewidth = "none")
 }
 
 }
