@@ -18,6 +18,6 @@ vector, each entry is the value in y that is next-largest to each corresponding 
 Find each entry in y that follows each entry in x
 }
 \examples{
-findnext(c(1,5,10),c(1,2,3,7,8,9))
+findnext(c(1, 5, 10), c(1, 2, 3, 7, 8, 9))
 
 }

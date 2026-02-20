@@ -140,14 +140,14 @@ single_value_or <- function(x, or = as(NA, class(x))) if (length(x) == 1) x else
 
 #' Find each entry in y that follows each entry in x
 #'
-#' @param x numeric: vector 
-#' @param y numeric: vector 
+#' @param x numeric: vector
+#' @param y numeric: vector
 #'
 #' @return vector, each entry is the value in y that is next-largest to each corresponding entry in x
 #'
 #' @examples
-#' findnext(c(1,5,10),c(1,2,3,7,8,9))
-#' 
+#' findnext(c(1, 5, 10), c(1, 2, 3, 7, 8, 9))
+#'
 #' @export
 findnext <- function(x,y) {
     ## return the number in y that comes after each of x
@@ -176,14 +176,14 @@ findnext <- function(x,y) {
 
 #' Find each entry in y that precedes each entry in x
 #'
-#' @param x numeric: vector 
-#' @param y numeric: vector 
+#' @param x numeric: vector
+#' @param y numeric: vector
 #'
 #' @return vector, each entry is the value in y that is next-smallest to each corresponding entry in x
 #'
 #' @examples
-#' findprev(c(1,5,10),c(1,2,3,7,8,9))
-#' 
+#' findprev(c(1, 5, 10), c(1, 2, 3, 7, 8, 9))
+#'
 #' @export
 findprev <- function(x,y) {
     ## return the number in y that comes before each of x

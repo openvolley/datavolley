@@ -294,7 +294,7 @@ ggcourt <- function(court = "full", show_zones = TRUE, labels = c("Serving team"
 #' Grid index to x,y coordinate and vice-versa
 #'
 #' DataVolley uses a grid to represent positions on court (values in columns "start_coordinate", "mid_coordinate", and "end_coordinate" in the play-by-play data frame). These functions convert grid index values to x, y coordinates suitable for plotting, and vice-versa. For a description of the court dimensons and coordinates see \code{\link{ggcourt}}.
-#' 
+#'
 #' @param index integer: vector of grid indices. If missing, the entire grid will be returned. The row numbers match the grid indices
 #' @param x numeric: x-coordinate. For \code{dv_index2xy} this can be a two-column matrix or data.frame containing x and y
 #' @param y numeric: y-coordinate

@@ -18,6 +18,6 @@ vector, each entry is the value in y that is next-smallest to each corresponding
 Find each entry in y that precedes each entry in x
 }
 \examples{
-findprev(c(1,5,10),c(1,2,3,7,8,9))
+findprev(c(1, 5, 10), c(1, 2, 3, 7, 8, 9))
 
 }

@@ -668,28 +668,28 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         ##num_players <- substr(code,11,11)
         ##special_code <- substr(code,12,12)
         some_codes <- str_sub(code,start=c(4,6,7,8,9,10,11,12),end=c(5,6,7,8,9,10,11,12))
-        attack_code <- some_codes[1]##substr(code,4,5)
+        attack_code <- some_codes[1] ## substr(code,4,5), the attack combo code or setter call
         if (not_tilde(attack_code)) {
-            if (skill=="A") {
+            if (skill == "A") {
                 out_attack_code[ci] <- attack_code
-                if (!any(attack_code==meta$attacks$code)) {
-                    msgs <- collect_messages(msgs,paste0("Unmatched attack code: ",attack_code),code_line_num[ci],full_lines[ci],severity=1)
+                if (!any(attack_code == meta$attacks$code)) {
+                    msgs <- collect_messages(msgs, paste0("Unmatched attack code: ", attack_code), code_line_num[ci], full_lines[ci], severity = 1)
                     descr <- "unknown attack code"
                 } else {
-                    descr <- meta$attacks$description[meta$attacks$code==attack_code]
+                    descr <- meta$attacks$description[meta$attacks$code == attack_code]
                 }
                 out_attack_description[ci] <- descr
-            } else if (skill=="E") {
+            } else if (skill == "E") {
                 out_set_code[ci] <- attack_code
-                if (!any(attack_code==meta$sets$code)) {
-                    msgs <- collect_messages(msgs,paste0("Unmatched set code: ",attack_code),code_line_num[ci],full_lines[ci],severity=1)
+                if (!any(attack_code == meta$sets$code)) {
+                    msgs <- collect_messages(msgs, paste0("Unmatched set code: ", attack_code), code_line_num[ci], full_lines[ci], severity = 1)
                     descr <- "unknown set code"
                 } else {
-                    descr <- meta$sets$description[meta$sets$code==attack_code]
+                    descr <- meta$sets$description[meta$sets$code == attack_code]
                 }
                 out_set_description[ci] <- descr
             } else {
-                msgs <- collect_messages(msgs,paste0("Unexpected non-null attack code: ",attack_code," in non-attack code"),code_line_num[ci],full_lines[ci],severity=1)
+                msgs <- collect_messages(msgs, paste0("Unexpected non-null attack code: ", attack_code, " in non-attack code"), code_line_num[ci], full_lines[ci], severity = 1)
             }
         }
         set_type <- some_codes[2]##substr(code,6,6)
