@@ -42,28 +42,30 @@ test_that("dv_remap_attack_codes works", {
     x3 <- dv_remap_attack_codes(x2, from_codes = "V5", to_codes = "", allow_remove = TRUE)
     ## should be no warning
     ## but if we remap it, we get a warning
-    expect_warning(x3 <- dv_remap_attack_codes(x2, from_codes = "V5", to_codes = "QQ", allow_remove = TRUE))
+    expect_warning(x3 <- dv_remap_attack_codes(x2, from_codes = "V5", to_codes = "ZZ", allow_remove = TRUE), "is not defined in the metadata")
 
     ## remove an attack code that does not appear at all
-    x2 <- dv_remap_attack_codes(x, from_codes = "QQ", to_codes = "", allow_remove = TRUE)
+    x2 <- dv_remap_attack_codes(x, from_codes = "ZZ", to_codes = "", allow_remove = TRUE)
     ## should be no warning, but also should have no effect
     expect_identical(x, x2)
 
     ## provide a non-two-character string input code
-    expect_error(x2 <- dv_remap_attack_codes(x, from_codes = "V55", to_codes = "", allow_remove = TRUE))
+    expect_error(x2 <- dv_remap_attack_codes(x, from_codes = "V55", to_codes = "", allow_remove = TRUE), "two-character string")
 
     ## provide a non-two-character string replacement code
-    expect_error(x2 <- dv_remap_attack_codes(x, from_codes = "V5", to_codes = "QQQ", allow_remove = TRUE))
-    expect_error(x2 <- dv_remap_attack_codes(x, from_codes = "V5", to_codes = 66, allow_remove = TRUE))
+    expect_error(x2 <- dv_remap_attack_codes(x, from_codes = "V5", to_codes = "ZZZ", allow_remove = TRUE), "two-character string")
+    expect_error(x2 <- dv_remap_attack_codes(x, from_codes = "V5", to_codes = 66, allow_remove = TRUE), "not a character vector")
 
     ## check that the scout code changes
     c1a <- sum(plays(x)$attack_code == "V5", na.rm = TRUE)
     c1b <- length(grep("^......V5", plays(x)$code))
     expect_equal(c1a, c1b)
-    expect_equal(length(grep("^......QQ", plays(x)$code)), 0)
-    x2 <- dv_remap_attack_codes(x, from_codes = "V5", to_codes = "QQ")
-    expect_equal(length(grep("^......QQ", plays(x2)$code)), c1b)
+    expect_equal(length(grep("^......ZZ", plays(x)$code)), 0)
+    x2 <- dv_remap_attack_codes(x, from_codes = "V5", to_codes = "ZZ")
+    expect_equal(length(grep("^......ZZ", plays(x2)$code)), c1b)
     expect_equal(sum(plays(x2)$attack_code == "V5", na.rm = TRUE), 0)
-    expect_equal(sum(plays(x2)$attack_code == "QQ", na.rm = TRUE), c1a)
+    expect_equal(sum(plays(x2)$attack_code == "ZZ", na.rm = TRUE), c1a)
 
+    ## provide an invalid replacement code
+    expect_warning(x2 <- dv_remap_attack_codes(x2, from_codes = "V5", to_codes = "QQ"), "must start with")
 })

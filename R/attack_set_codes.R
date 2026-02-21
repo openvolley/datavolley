@@ -95,6 +95,13 @@ dv_remap_attack_codes <- function(x, from_codes, to_codes, allow_remove = FALSE)
         warning("one or more to_codes entries is NA or an empty string: the `allow_remove` parameter must be set to TRUE to allow attack codes to be removed")
     }
 
+    ## attack codes can only start with CGIJLPVWXYZ
+    allowed <- c("C", "G", "I", "J", "L", "P", "V", "W", "X", "Y", "Z")
+    idx <- which(!(substr(to_codes, 1, 1) %in% allowed | is.na(to_codes) | !nzchar(to_codes)))
+    if (length(idx) > 0) {
+        warning("attack combination codes must start with ", paste(allowed, collapse = ", "), "\n",
+                "  Your codes: ", paste(unique(to_codes[idx]), collapse = ", "), " might not work correctly in later analyses")
+    }
     for (ii in seq_along(from_codes)) {
         if ((is.na(to_codes[ii]) || !nzchar(to_codes[ii])) && !isTRUE(allow_remove)) {
             next
