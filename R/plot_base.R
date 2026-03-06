@@ -261,7 +261,7 @@ check_raster_available <- function() if (!requireNamespace("raster", quietly = T
 #' Plot a court heatmap, using base graphics
 #'
 #' See \code{link{ggcourt}} for a \code{ggplot2}-based court diagram, which can be used to plot heatmaps with e.g. \code{ggplot2::geom_tile}.
-#' 
+#'
 #' Data can be provided either as separate \code{x}, \code{y}, and \code{z} objects, or as a single \code{RasterLayer} or \code{data.frame} object. If a \code{data.frame}, the first three columns are used (and assumed to be in the order \code{x}, \code{y}, \code{z}).
 #'
 #' @param x numeric, RasterLayer or data.frame: x-coordinates of the data to plot, or a \code{RasterLayer} layer or \code{data.frame} containing the data (x, y, and z together)
@@ -291,15 +291,16 @@ check_raster_available <- function() if (!requireNamespace("raster", quietly = T
 #' ## Example: attack frequency by zone, per team
 #'
 #' attack_rate <- plays(x) %>% dplyr::filter(skill == "Attack") %>%
-#'   group_by(team, start_zone) %>% dplyr::summarize(n_attacks = n()) %>%
-#'   mutate(rate = n_attacks/sum(n_attacks)) %>% ungroup
+#'   group_by(team, start_zone) %>%
+#'   dplyr::summarize(n_attacks = n(), .groups = "drop_last") %>%
+#'   mutate(rate = n_attacks / sum(n_attacks)) %>% ungroup
 #'
 #' ## add columns "x" and "y" for the x,y coordinates associated with the zones
 #' attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end = "lower"))
 #'
 #' ## for team 2, these need to be on the top half of the diagram
 #' tm2 <- attack_rate$team == teams(x)[2]
-#' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
+#' attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end = "upper")[tm2, ]
 #'
 #' ## plot it
 #' dv_heatmap(attack_rate[, c("x", "y", "rate")], legend_title = "Attack rate")
@@ -314,11 +315,13 @@ check_raster_available <- function() if (!requireNamespace("raster", quietly = T
 #' ## set up a plot with 10% bottom/top margins and 20% left/right margins
 #' ## showing the lower half of the court only
 #' dv_plot_new(margins = c(0.05, 0.1, 0.05, 0.1), court = "lower")
+#'
 #' ## add the heatmap
 #' dv_heatmap(attack_rate[1:6, c("x", "y", "rate")], add = TRUE)
+#'
 #' ## and the court diagram
 #' dv_court(court = "lower")
-#' 
+#'
 #' }
 #'
 #' @export

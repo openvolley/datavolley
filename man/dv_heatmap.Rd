@@ -62,15 +62,16 @@ library(dplyr)
 ## Example: attack frequency by zone, per team
 
 attack_rate <- plays(x) \%>\% dplyr::filter(skill == "Attack") \%>\%
-  group_by(team, start_zone) \%>\% dplyr::summarize(n_attacks = n()) \%>\%
-  mutate(rate = n_attacks/sum(n_attacks)) \%>\% ungroup
+  group_by(team, start_zone) \%>\%
+  dplyr::summarize(n_attacks = n(), .groups = "drop_last") \%>\%
+  mutate(rate = n_attacks / sum(n_attacks)) \%>\% ungroup
 
 ## add columns "x" and "y" for the x,y coordinates associated with the zones
 attack_rate <- cbind(attack_rate, dv_xy(attack_rate$start_zone, end = "lower"))
 
 ## for team 2, these need to be on the top half of the diagram
 tm2 <- attack_rate$team == teams(x)[2]
-attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end="upper")[tm2, ]
+attack_rate[tm2, c("x", "y")] <- dv_xy(attack_rate$start_zone, end = "upper")[tm2, ]
 
 ## plot it
 dv_heatmap(attack_rate[, c("x", "y", "rate")], legend_title = "Attack rate")
@@ -85,8 +86,10 @@ dv_court(labels = teams(x))
 ## set up a plot with 10\% bottom/top margins and 20\% left/right margins
 ## showing the lower half of the court only
 dv_plot_new(margins = c(0.05, 0.1, 0.05, 0.1), court = "lower")
+
 ## add the heatmap
 dv_heatmap(attack_rate[1:6, c("x", "y", "rate")], add = TRUE)
+
 ## and the court diagram
 dv_court(court = "lower")
 
