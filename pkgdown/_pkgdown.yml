@@ -8,3 +8,4 @@ template:
     fg: "#151515"
     bg: "#FFFFFF"
     primary: "#010F66"
+llm-docs: false

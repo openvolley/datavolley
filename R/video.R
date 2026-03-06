@@ -195,7 +195,8 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     vt[which(this & ah_idx)] <- vt[which(this & ah_idx) - 1L] + contact_times$EH_A
     vt[which(this & !aq_idx & !ah_idx)] <- vt[which(this & !aq_idx & !ah_idx) - 1L] + contact_times$EO_A
 
-    trans_sync <- function(vt) {
+    trans_sync <- function(vt, patch_level = 0) {
+        ## set patch_level to 1 or 2 to be more liberal in assumptions (allowing for e.g. unscouted touches that might have been left out when live-scouting)
         ## set preceding attack
         this <- is.na(vt) & e_idx & lead(a_idx) & px$team == lead(px$team)
         vt[which(this & lead(aq_idx))] <- vt[which(this & lead(aq_idx))] - contact_times$EQ_A
@@ -243,9 +244,32 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
         ## blocks
         this <- which(is.na(vt) & b_idx & lag(a_idx))
         vt[this] <- vt[this - 1] + contact_times$A_B
+
+        if (patch_level > 0) {
+            ## an unsynced touch preceded by an attack from the same team: assume it's a blocked/recycled attack or an attack that was dug straight back over the net
+            ## attack -> dig
+            this <- which(is.na(vt) & d_idx & lag(a_idx) & px$team == lag(px$team) & px$point_id == lag(px$point_id))
+            vt[this] <- vt[this - 1] + contact_times$A_D
+            ## attack -> set, assume there was a dig but it wasn't scouted
+            this <- which(is.na(vt) & e_idx & lag(a_idx) & px$team == lag(px$team) & px$point_id == lag(px$point_id))
+            vt[this] <- vt[this - 1] + contact_times$A_D + contact_times$D_E
+            ## attack -> attack, assume there was a dig and set that weren't scouted
+            this <- which(is.na(vt) & e_idx & lag(a_idx) & px$team == lag(px$team) & px$point_id == lag(px$point_id))
+            vt[this] <- vt[this - 1] + contact_times$A_D + contact_times$D_E + contact_times$EO_A
+
+            ## any un-synced touch following an opposition touch
+            this <- which(is.na(vt) & skill_idx & lag(skill_idx) & px$team != lag(px$team) & px$point_id == lag(px$point_id))
+            vt[this] <- vt[this - 1] + contact_times$A_D
+
+            if (patch_level > 1) {
+                ## any un-synced touch following a touch from the same team
+                this <- which(is.na(vt) & skill_idx & lag(skill_idx) & px$team == lag(px$team) & px$point_id == lag(px$point_id))
+                vt[this] <- vt[this - 1] + (contact_times$R_E + contact_times$EO_A) / 2
+            }
+        }
         vt
     }
-    for (loop in 1:10) vt <- trans_sync(vt)
+    for (loop in 1:20) vt <- trans_sync(vt)
 
     ## attack to counter-attack by opposition
     last_attack_time <- NA_real_
@@ -265,19 +289,27 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
 
     ## at this point we should have most of the ball contacts synced. Anything left over should be things that don't fit our expected patterns above
     ## so just do our best to patch them up
-
-    ## any un-synced touch following an opposition touch
-    this <- which(is.na(vt) & skill_idx & lag(skill_idx) & px$team != lag(px$team) & px$point_id == lag(px$point_id))
-    vt[this] <- vt[this - 1] + contact_times$A_D
-    for (loop in 1:5) vt <- trans_sync(vt)
+    for (loop in 1:20) vt <- trans_sync(vt, patch_level = 1)
+    for (loop in 1:20) vt <- trans_sync(vt, patch_level = 2)
 
     ## interpolate all remaining skill times
     s_synced <- !is.na(vt) & skill_idx
     s_unsynced <- is.na(vt) & skill_idx
     for (pid in na.omit(unique(px$point_id[which(s_unsynced)]))) {
-        ridx <- px$point_id == pid
+        ridx <- px$point_id == pid ## rows for this rally
         ridx_synced <- which(ridx & s_synced)
-        if (length(ridx_synced) > 0) vt[which(ridx)] <- approx(ridx_synced, vt[ridx_synced], which(ridx))$y
+        if (length(ridx_synced) > 0) {
+            try(vt[which(ridx)] <- approx(ridx_synced, vt[ridx_synced], which(ridx))$y, silent = TRUE)
+        }
+    }
+
+    ## and anything left now we just assign the last skill time of the rally
+    s_synced <- !is.na(vt) & skill_idx
+    s_unsynced <- is.na(vt) & skill_idx
+    for (pid in na.omit(unique(px$point_id[which(s_unsynced)]))) {
+        ridx <- px$point_id == pid ## rows for this rally
+        ridx_synced <- which(ridx & s_synced)
+        if (length(ridx_synced) > 0) vt[which(ridx & s_unsynced)] <- max(vt[ridx_synced], na.rm = TRUE)
     }
 
     ## find timeouts
