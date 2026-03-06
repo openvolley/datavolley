@@ -96,7 +96,7 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
     }
 
     ref_times <- px[[time_col]]
-    if (any(is.na(ref_times))) {
+    if (any(is.na(ref_times[s_idx]))) {
         warning("the plays component of `x` is missing at least one `", time_col, "` entry on serves")
     }
 
