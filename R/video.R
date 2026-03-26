@@ -267,7 +267,9 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
                 vt[this] <- vt[this - 1] + (contact_times$R_E + contact_times$EO_A) / 2
             }
         }
-        vt
+
+        ## enforce time order. It's presumably possible that we've added some time to v[t-1] to create v[t], and put it ahead of the (existing) value of v[t+1]
+        enforce_time_order(vt)
     }
     for (loop in 1:20) vt <- trans_sync(vt)
 
@@ -389,19 +391,24 @@ dv_sync_video <- function(x, first_serve_contact, freeball_dig_time_offset = NA,
         last_point_id <- px$point_id[i]
     }
 
-    if (isTRUE(enforce_order)) {
-        last_vt <- -1
-        for (i in seq_along(vt)) {
-            if (!is.na(vt[i])) {
-                if (vt[i] < last_vt) vt[i] <- last_vt
-                last_vt <- vt[i]
-            }
-        }
-    }
+    if (isTRUE(enforce_order)) vt <- enforce_time_order(vt)
 
     px$video_time <- round(vt) ## video times have to be integer
     plays(x) <- px[, setdiff(names(px), c(".FREEBALL_OVER"))]
     x
+}
+
+enforce_time_order <- function(t) {
+    last_t <- -1
+    for (i in seq_along(t)) {
+        if (!is.na(t[i])) {
+            if (t[i] < last_t) {
+                t[i] <- last_t
+            }
+            last_t <- t[i]
+        }
+    }
+    t
 }
 
 #' @rdname dv_sync_video
