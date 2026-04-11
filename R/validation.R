@@ -48,7 +48,8 @@
 #' @param validation_level numeric: how strictly to check? If 0, perform no checking; if 1, only identify major errors; if 2, also return any issues that are likely to lead to misinterpretation of data; if 3, return all issues (including minor issues such as those that might have resulted from selective post-processing of compound codes)
 #' @param options list: named list of options that control optional validation behaviour. Valid entries are:
 #' \itemize{
-#'   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP","XY"))}
+#'   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options = list(setter_tip_codes = c("PP", "XY"))}
+#'   \item ignore_sub_misalignment logical: when a player is substituted, the player lineups (in the \code{plays} component of \code{x}) should change on the same row as the substitution code. However, in some dvw files the player lineups are changed immediately after the final action of the rally, but the actual substitution code(s) appear on subsequent lines. Hence the lineups are recorded incorrectly on one or more lines, but will be correct by the time the next rally starts. The error in lineups in this situation is relatively minor and unlikely to cause analysis problems. If \code{ignore_sub_misalignment = TRUE} these errors will not be reported (unless they are associated with a genuine substitution error). If \code{ignore_sub_misalignment = FALSE} (the default), they will be reported but only at \code{validation_level = 3}
 #' }
 #' @param file_type string: "indoor" or "beach". If not provided, will be taken from the \code{x$file_meta$file_format} entry
 #'
@@ -255,9 +256,7 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
             ## front-row attacking player isn't actually in front row
             ## find front-row players for each attack
             ignore_codes <- options$setter_tip_codes
-            if (!is.null(ignore_codes)) {
-                if (!is.character(ignore_codes)) ignore_codes <- NULL
-            }
+            if (!is.null(ignore_codes) && !is.character(ignore_codes)) ignore_codes <- NULL
             if (!is.null(ignore_codes)) ignore_codes <- na.omit(ignore_codes)
             attacks <- plays[plays$skill %eq% "Attack", ]
             if (nrow(attacks) > 0) {
@@ -266,12 +265,11 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                 attacks[idx, paste0("attacker_", 1:6)] <- attacks[idx, paste0("home_p", 1:6)]
                 attacks[!idx, paste0("attacker_", 1:6)] <- attacks[!idx, paste0("visiting_p", 1:6)]
                 chk <- attacks[which(attacks$start_zone %in% c(2, 3, 4) & (!attacks$attack_code %in% ignore_codes) & (attacks$player_number == attacks$attacker_1 | attacks$player_number == attacks$attacker_5 | attacks$player_number == attacks$attacker_6)), ]
-                if (nrow(chk)>0) out <- rbind(out,chk_df(chk,"Back-row player made an attack from a front-row zone",severity=3))
+                if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Back-row player made an attack from a front-row zone", severity = 3))
 
                 ## and vice-versa: attack starting from back row by a front-row player
                 chk <- attacks[which(attacks$start_zone %in% c(5, 6, 7, 8, 9, 1) & (attacks$player_number == attacks$attacker_2 | attacks$player_number == attacks$attacker_3 | attacks$player_number == attacks$attacker_4)), ]
-                if (nrow(chk)>0)
-                    out <- rbind(out,chk_df(chk,"Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)",severity=2))
+                if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)", severity = 2))
                 ## those are probably less of an issue than a back-row player making a front row attack. A front-row player making a back row attack is not illegal, just inconsistent
 
                 ## quick attacks by non-middles
@@ -667,8 +665,8 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
         for (k in idx) {
             rot_cols <- if (grepl("^a", plays_no_tt$code[k])) paste0("visiting_p", team_player_num) else paste0("home_p", team_player_num)
             by_block <- FALSE
-            if (validation_level < 3) {
-                ## at levels 1 and 2, avoid flagging incorrectly-recorded substitutions so long as they don't end up as actual errors
+            if (validation_level < 3 || isTRUE(options$ignore_sub_misalignment)) {
+                ## at levels 1 and 2, or if we are purposefully ignoring VS sub errors, avoid flagging incorrectly-recorded substitutions so long as they don't end up as actual errors
                 by_block <- TRUE; block_start_idx <- NA_integer_; block_end_idx <- NA_integer_
                 block_end_idx <- head(out_of_block_idx[out_of_block_idx > k], 1) - 1L ## last row of code block before skill row
                 new_rot <- plays_no_tt[block_end_idx + 1L, rot_cols]

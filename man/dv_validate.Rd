@@ -16,7 +16,8 @@ validate_dv(x, validation_level = 2, options = list(), file_type)
 
 \item{options}{list: named list of options that control optional validation behaviour. Valid entries are:
 \itemize{
-\item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options=list(setter_tip_codes=c("PP","XY"))}
+\item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options = list(setter_tip_codes = c("PP", "XY"))}
+\item ignore_sub_misalignment logical: when a player is substituted, the player lineups (in the \code{plays} component of \code{x}) should change on the same row as the substitution code. However, in some dvw files the player lineups are changed immediately after the final action of the rally, but the actual substitution code(s) appear on subsequent lines. Hence the lineups are recorded incorrectly on one or more lines, but will be correct by the time the next rally starts. The error in lineups in this situation is relatively minor and unlikely to cause analysis problems. If \code{ignore_sub_misalignment = TRUE} these errors will not be reported (unless they are associated with a genuine substitution error). If \code{ignore_sub_misalignment = FALSE} (the default), they will be reported but only at \code{validation_level = 3}
 }}
 
 \item{file_type}{string: "indoor" or "beach". If not provided, will be taken from the \code{x$file_meta$file_format} entry}
