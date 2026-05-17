@@ -833,3 +833,33 @@ inspect <- function(x,vars="minimal",maxrows=100,extra) {
     }
     print(x[1:min(nrow(x),maxrows),cols_to_show])
 }
+
+#' Extract the meta component from a datavolley object, or assign a new one
+#'
+#' @param x datavolley: a datavolley object as returned by \code{dv_read}
+#' @param value list: new data
+#'
+#' @return The meta component of x (a list), or a modified version of x with the new meta component inserted
+#'
+#' @seealso \code{\link{dv_read}}
+#'
+#' @examples
+#' \dontrun{
+#'   x <- dv_read(dv_example_file(), insert_technical_timeouts=FALSE)
+#'   str(meta(x))
+#'
+#'   m <- meta(x)
+#'   m$match$date <- Sys.Date() ## change the match date
+#'   meta(x) <- m
+#' }
+#' @export
+meta <- function(x) {
+    if ("meta" %in% names(x)) x$meta else stop("input has no meta component")
+}
+
+#' @rdname meta
+#' @export
+`meta<-` <- function(x, value) {
+    x$meta <- value
+    x
+}
