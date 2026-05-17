@@ -2,7 +2,227 @@
 
 #' Read a DataVolley or VolleyStation file
 #'
-#' The `do_transliterate` option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)
+#' Read a DataVolley or VolleyStation file
+#'
+#' The data structure returned by this function is an object of class `datavolley`. The `meta` element of this object (accessible via the [meta()] function) has the following structure. Note that some data frames might have undocumented columns (named as `Xn` or `Vn`) - the contents of these are unknown but typically unpopulated or uninformative. "Coordinates" refers to integer coordinates used to encode positions on court, see e.g. [dv_xy2index()].
+#'
+#' * `meta$match`: a tibble with columns giving match information:
+#'   - `date` Date: match date
+#'   - `time` Period: match time
+#'   - `season` string: free text describing the match season
+#'   - `league` string: free text describing the league
+#'   - `phase` string: free text describing the match phase (e.g. "Regular season", "Playoffs")
+#'   - `home_away` string: whether the match was a "Home" or "Away" one (text might be in the language of the scout's locale rather than English)
+#'   - `day_number` numeric: day number of the match
+#'   - `match_number` string or numeric: the match identifier, usually used for official league matches
+#'   - `text_encoding` string or numeric: the text encoding of the original file. The `dv_read` function goes to a lot of effort to detect this and convert the contents of the file to UTF-8, so you should usually not need to do anything with this `text_encoding` value
+#'   - `regulation` string: match regulations, one of "indoor rally point", "beach rally point", or "indoor sideout" (the old scoring system where a team could only score a point while serving)
+#'   - `zones_or_cones` string: whether the attack directions have been scouted as zones ("Z") or cones ("C") (see <https://snippets.openvolley.org/court-plots.html#plotting-by-cone>)
+#'
+#' * `meta$more`: a tibble with columns giving information about the match venue and scout:
+#'   - `referees` string: match referee names
+#'   - `spectators` numeric: number of spectators
+#'   - `receipts` numeric: not defined in the manual
+#'   - `city` string: name of the city
+#'   - `arena` string: name of the arena
+#'   - `scout` string: name of the person who scouted the match
+#'
+#' * `meta$comments`: a tibble with columns:
+#'   - comment_1 to `comment_5` (some may be missing) string: free text match comments
+#'
+#' * `meta$result`: a tibble with columns giving information about the match result, with one row per set played:
+#'   - `played` logical: whether the set was played. Should usually all be `TRUE`, unplayed sets are automatically removed
+#'   - `score_intermediate1` string: the first intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 8 points for indoor. Different for beach or 5th sets
+#'   - `score_intermediate2` string: the second intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 16 points for indoor. Different for beach or 5th sets
+#'   - `score_intermediate3` string: the third intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 21 points for indoor. Different for beach or 5th sets
+#'   - `score` string: the final set score in the format "HS-VS" (home team score and visiting team score)
+#'   - `duration numeric: set duration in minutes
+#'   - `score_home_team numeric: home team score in each set
+#'   - `score_visiting_team numeric: visiting team score in each set
+#'
+#' * `meta$teams`: a two-row tibble with columns giving information about the teams:
+#'   - `team_id` string: short identifier of the team
+#'   - `team` string: team name
+#'   - `sets_won` numeric: the number of sets won by the team in the match
+#'   - `coach` string: name of the head coach
+#'   - `assistant` string: name(s) of the assistant coach(es)
+#'   - `shirt_colour` string: the team jersey colour in "#RRGGBB" hex format
+#'   - `home_away_team` string: "*" for the home team and "a" for the visiting team
+#'   - `won_match` logical: whether the team won the match
+
+#' * `meta$players_h`: a tibble with columns giving information about the home team:
+#'   - `number` numeric: player jersey number
+#'   - `starting_position_set1` to `starting_position_set5` string: number 1-6 if this player was in the starting lineup for this set, or "*" if they were a substitute or libero
+#'   - `player_id` string: unique player ID
+#'   - `lastname` string: player last name
+#'   - `firstname` string: player first name
+#'   - `nickname` string: player nickname
+#'   - `special_role` string: zero or more of "L" (libero) or "C" (captain)
+#'   - `role` string: the player role, one of "libero", "middle", "opposite", "outside", "setter", or "unknown"
+#'   - `foreign` logical: `TRUE` if the player is registered as a foreign player
+#'   - `name` string: a concatenation of `firstname` and `lastname`
+
+#' * `meta$players_v`: a tibble with columns giving information about the visiting team, with the same structure as `meta$players_h`
+
+#' * `meta$attacks`: a tibble with columns describing attack compound codes:
+#'   - `code` string: the two-character attack compound code (e.g. "X1", "V5", "PP")
+#'   - `attacker_position` numeric: the default start zone (1-9) of the attack
+#'   - `side` string: "C", "L", or "R"
+#'   - `type` string: a single-character attack tempo ("Q"uick, s"U"per, fas"T", "M"edium, "H"igh, "O"ther)
+#'   - `description` string: free text describing the attack
+#'   - `colour` string: the colour in hex format ("#RRGGBB") that can nominally be used to plot this type of attack on an attack chart
+#'   - `start_coordinate` numeric: the start coordinate of the attack
+#'   - `set_type` string: a single character describing the set type, one of "F"ront, "C"entre, "B"ack, "P"ipe, or "S"etter dump
+
+#' * `meta$sets`: a tibble with columns describing setter calls (where the middle hitter has been told by the setter to run their attack):
+#'   - `code` string: two-character setter call code (e.g. "K1", "KF")
+#'   - `description` string: free text describing the setter call
+#'   - `colour` string: the colour in hex format ("#RRGGBB") that can nominally be used to plot this type of setter call on an attack chart
+#'   - `start_coordinate`, `mid_coordinate`, and `end_coordinate` numeric: the start, middle, and end coordinate of a typical path that the middle hitter might take for this setter call
+#'   - `path` string: a comma-separated list of coordinates giving a path
+#'   - `path_colour` string: the colour in hex format ("#RRGGBB") that can nominally be used to plot the path of this setter call on an attack chart
+#'
+#' * `meta$winning_symbols`: a tibble with columns describing which `evaluation_code` values for a given skill correspond to a winning or losing action:
+#'   - `skill` string: single character, one of "S"erve, "R"eception, s"E"t, "A"ttack, "B"lock, "D"ig, "F"reeball
+#'   - `win_lose` string: whether this `skill` and `code` is a "W"inning or "L"osing action
+#'   - `code` string: the `evaluation_code` value recorded by the scout, usually one of "#", "=", "/"
+#'
+#' * `meta$match_id` string: a hash computed from (parts of) the match metadata
+#'
+#' * `meta$video`: a data.frame (usually only one row) giving information about the match video file, if there is one. If no video has been registered to this match file, `meta$video` should have zero rows.
+#'   - `camera` string: the camera description, usually "Camera0"
+#'   - `file` string: the path to the video file
+#'
+#' * `meta$filename` string: the file name that was passed to `dv_read`
+#'
+#'
+#' The `plays` element of a `datavolley` object is a data frame that describes events in the match (generally, each ball contact, but also events like timeouts and substitutions). It has this structure:
+#'   - `match_id` string: as for `meta$match_id`
+#'   - `home_team` string: the name of the home team in this match
+#'   - `home_team_id` string: the ID of the home team in this match
+#'   - `visiting_team` string: the name of the visiting team in this match
+#'   - `visiting_team_id` string: the ID of the visiting team in this match
+#'   - `point_id` numeric: the rally number in the match. Timeouts will generally be assigned their own `point_id`. Substitutions will generally be assigned as part of the rally that follows the substitution
+#'   - `team_touch_id` numeric: a numeric identifier for each set of ball touches made by a team before the ball crosses the net to the other team. A team can make a maximum of 3 ball touches (4 if there was a block touch, for indoor) before the ball must cross the net to the other team. Events with the same `team_touch_id` correspond to the same set of 3 team ball touches
+#'   - `time` POSIXct: clock time of the event. This time is recorded by the scouting software, usually as the clock time that the scout entered this code. It might not be an accurate reflection of the actual real-world ball contact time, if the event is a ball contact
+#'   - `video_file_number` numeric: the row number of the `meta$video` data frame giving the video file details. Only a single video file is currently supported, so `video_file_number` will generally be 1 (or missing, if there is no associated video)
+#'   - `video_time` numeric: time (in seconds) of this event relative to the start of the video
+#'   - `code` string: the code entered by the scout for this event
+#'   - `team` string: the name of the team, if this event was associated with a particular team
+#'   - `team_id` string: the ID of the team, if this event was associated with a particular team
+#'   - `player_number` numeric: the player number, if this event is associated with a particular player
+#'   - `player_name` string: the player name, if this event is associated with a particular player
+#'   - `player_id` string: the player ID, if this event is associated with a particular player
+#'   - `skill` string: one of "Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball", "Timeout", or "Technical timeout"
+#'   - `skill_type` string: text describing the type of skill performed (e.g. "Jump serve" or "High ball attack")
+#'   - `evaluation_code` string: a single character code entered by the scout that corresponds to the outcome of this ball contact. One of "#", "+", "!", "-", "/", "=". The meaning of each code is not fixed, it is dependent on the associated `skill` and the conventions being used by the individual scout. See also `evaluation`
+#'   - `evaluation` string: a plain text interpretation of the `evaluation_code`. The mapping between `evaluation_code` and `evaluation` depends on the `skill_evaluation_decode` parameter provided to the `dv_read()` function, and this should correspond to the conventions being used by the person who scouted the match. The default values are:
+#'     * serve:
+#'       - "=": "Error"
+#'       - "-": "Negative, opponent free attack"
+#'       - "!": "OK, no first tempo possible"
+#'       - "/": "Positive, no attack"
+#'       - "+": "Positive, opponent some attack"
+#'       - "#": "Ace"
+#'     * reception:
+#'       - "=": "Error"
+#'       - "/": "Poor, no attack"
+#'       - "-": "Negative, limited attack"
+#'       - "!": "OK, no first tempo possible"
+#'       - "+": "Positive, attack"
+#'       - "#": "Perfect pass"
+#'     * attack:
+#'       - "=": "Error"
+#'       - "/": "Blocked"
+#'       - "-": "Poor, easily dug"
+#'       - "!": "Blocked for reattack"
+#'       - "+": "Positive, good attack"
+#'       - "#": "Winning attack"
+#'     * block:
+#'       - "=": "Error" (i.e. an attack kill off the block, not a block fault)
+#'       - "/": "Invasion" (net touch or other illegal block) or "Poor, opposition to replay" (VolleyMetrics conventions)
+#'       - "-": "Poor, opposition to replay" or "Poor block" (VolleyMetrics conventions)
+#'       - "+": "Positive, block touch" or "Positive block" (VolleyMetrics conventions)
+#'       - "#": "Winning block"
+#'       - "!": "Poor, opposition to replay" or "Poor, blocking team cannot recover" (VolleyMetrics conventions)
+#'     * dig:
+#'       - "=": "Error"
+#'       - "/": "Ball directly back over net" or "Positive block cover" (VolleyMetrics conventions)
+#'       - "-": "No structured attack possible"
+#'       - "!": "OK, no first tempo possible" or "Poor block cover" (VolleyMetrics conventions)
+#'       - "+": "Good dig"
+#'       - "#": "Perfect dig"
+#'     * set:
+#'       - "=": "Error"
+#'       - "-": "Poor"
+#'       - "/": "Poor" (usually a set that crosses the net) or "Error" (VolleyMetrics conventions, a reach over the net)
+#'       - "!": "OK"
+#'       - "+": "Positive"
+#'       - "#": "Perfect"
+#'     * freeball:
+#'       - "=": "Error"
+#'       - "/": "Poor"
+#'       - "!": "OK, no first tempo possible"
+#'       - "-": "OK, only high set possible"
+#'       - "+": "Good"
+#'       - "#": "Perfect"
+#'   - `attack_code` string: the attack code, only populated if `skill` is "Attack" and the attack was scouted using an attack combination code (see `meta$attacks`)
+#'   - `attack_description` string: the description of the attack (see `meta$attacks`), if `attack_code` is populated
+#'   - `set_code` string: the setter call, only populated if `skill` is "Set" and the scout recorded a setter call (see `meta$sets`)
+#'   - `set_description` string: the description of the setter call (see `meta$sets`), if `set_code` is populated
+#'   - `set_type` string: the `set_type` ("F"ront, "C"entre, "B"ack, "P"ipe, or "S"etter dump, see `meta$sets`), if `attack_code` is populated
+#'   - `start_zone` numeric: 1-9, the start zone of the event. Note that the conventions used by the DataVolley scouting software are not necessarily the actual start and end locations of the event. For example, the start and end locations of a reception event are assigned to be those of the serve, and similarly digs are as for the corresponding attack
+#'   - `end_zone` numeric: 1-9, the end zone of the event. If attacks are being scouted with cones, this column will not be populated for attacks
+#'   - `end_subzone` string: the end subzone ("A", "B", "C", or "D") of the event. If attacks are being scouted with cones, this column will not be populated for attacks
+#'   - `end_cone` numeric: only populated for attacks, and only if the scout is using cones for attack directions
+#'   - `skill_subtype` string: the sub-type of the event. The entries here generally follow the defaults described in the DataVolley software manual, with some adjustments for beach files:
+#'     * attack: "Hard spike", "Soft spike/topspin", or "Tip"
+#'     * block: "Block assist", "Block attempt", "Block on soft spike" (note that these are rarely used)
+#'     * reception: "On left", "On right", "Low", "Overhand", "Middle line" (describing how the receiver passed the ball)
+#'     * set: "1 hand set", "2 hands set", "Bump set", Other set", "Underhand set", (for some beach files) "Hand set"
+#'     * dig: "Spike cover", "After block", "Emergency", "Tip", "Soft spike"
+#'   - `num_players_numeric` numeric: the numeric value entered by the scout for the number of players involved in this event
+#'   - `num_players` string: a text description of the number of players involved in this event:
+#'     * attack and block: "No block", "1 player block", "2 player block", "3 player block", "Hole block" or (for beach) "No block", "Line block", "Crosscourt block", "Block jumps to line", "Block jumps to crosscourt"
+#'     * reception: "Two players receiving, the player on left receives", "Two players receiving, the player on right receives", "Three players receiving, the player on left receives", "Three players receiving, the player in center receives", "Three players receiving, the player on right receives", "Four players receiving, the player on left receives", "Four players receiving, the player on center-left receives", "Four players receiving, the player on center-right receives", "Four players receiving, the player on right receives"
+#'   - `special_code` string: a single character giving an optional special code for this event. The entries here generally follow the defaults described in the DataVolley software manual. A special code entry with an unknown value of "xyz" will appear as "Unexpected xyz":
+#'     * attack (on an error): "Attack out - side", "Attack out - long", "Attack in net", "Net contact", "Referee call", "Antenna"
+#'     * attack (on an attack kill): "Block out - side", "Block out - long", "Block on floor", "Direct on floor", "Let",
+#'     * attack (on an attack that remains in play): "Let", "Block control"
+#'     * block: "Ball out - side", "Ball out - long", "Ball on floor", "Between hands", "Hands - net", "Net contact", "Antenna", "No jump", "Position error", "Referee call"
+#'     * reception (on an error): "Unplayable", "Body error", "Position error", "Referee call", "Lack of effort" (e.g. catch and throw)
+#'     * freeball (on an error): "Unplayable", "Body error", "Position error", "Referee call" (e.g. catch and throw)
+#'     * dig (on an error): "Unplayable", "Body error", "Position error", "Referee call", "Ball on floor", "Ball out", "Lack of effort"
+#'     * set (on an error): "Cannot be hit", "Net touch", "Referee call" (e.g. double contact)
+#'     * serve (on an error): "Ball out - long", "Ball out - left", "Ball out - right", "Ball in net", "Referee call" (e.g. foot fault, time violation)
+#'     * serve (on an ace or a serve that remains in play): "Let"
+#'   - `timeout` logical: `TRUE` if this was a timeout
+#'   - `end_of_set` logical: `TRUE` if this event was the end of a set
+#'   - `substitution` logical: `TRUE` if this event was a substitution
+#'   - `point` logical: `TRUE` if this row represents a point being assigned
+#'   - `home_team_score` numeric: the home team score at the end of this rally (see also `home_score_start_of_point`)
+#'   - `visiting_team_score numeric: the visiting team score at the end of this rally (see also `visiting_score_start_of_point`)
+#'   - `home_score_start_of_point` numeric: the home team score at the start of this rally
+#'   - `visiting_score_start_of_point` numeric: the visiting team score at the start of this rally
+#'   - `home_setter_position` numeric: the position on court 1-6 of the home team setter
+#'   - `visiting_setter_position` numeric: the position on court 1-6 of the visiting team setter
+#'   - `custom_code` string: an optional custom code (max 5 characters) entered by the scout. The meaning of this code is entirely determined by the individual scout
+#'   - `file_line_number` numeric: the line number in the file corresponding to this row in the `plays` data
+#'   - `home_p1` to `home_p6` numeric: the jersey number of the home team players in positions 1-6 on court. For beach matches, only columns `home_p1` and `home_p2` will exist. For indoor, note that the libero is never listed here as "on court" because libero entries and exits are not explicitly recorded in the scout file. If the home team libero comes on court for the back-row middle in position 1, the `home_p1` value will still be that of the middle
+#'   - `home_player_id1` to `home_player_id6` string: as for `home_p1` to `home_p6`, but giving player IDs instead of jersey numbers
+#'   - `visiting_p1` to `visiting_p6` numeric: as for `home_p1` to `home_p6`, but for the visiting team
+#'   - `visiting_player_id1` to `visiting_player_id6` string: as for `visiting_p1` to `visiting_p6`, but giving player IDs instead of jersey numbers
+#'   - `start_coordinate` numeric: a single integer giving the start coordinate of the event. Only populated if the scout has entered coordinates, which will typically not be the case in e.g. live-scouted matches (because it is a relatively slow process to do). See also `start_coordinate_x` and `start_coordinate_y`
+#'   - `start_coordinate_x` and `start_coordinate_y` numeric: sepaarate x- and y-coordinates calculated from `start_coordinate`. See <https://snippets.openvolley.org/court-plots.html#background-on-location-information> for the coordinate system used
+#'   - `mid_coordinate`, `mid_coordinate_x`, `mid_coordinate_y` numeric: as for the start coordinate, but giving the midpoint-coordinate of the event (e.g. if an attack was deflected off the block or the net, a midpoint-coordinate might be recorded)
+#'   - `end_coordinate`, `end_coordinate_x`, `end_coordinate_y` numeric: as for the start coordinate, but giving the end coordinate of the event
+#'   - `point_phase` string: "Breakpoint" (the team associated with this event was the serving team) or "Sideout" (the team associated with this event was the receiving team)
+#'   - `attack_phase` string: for attacks, whether the attack occured during "Reception" "Transition breakpoint", or "Transition sideout" phase
+#'   - `set_number` numeric: the set number (generally 1-5 for indoor, 1-3 for beach)
+#'   - `point_won_by` string: the name of the team that won this rally
+#'   - `winning_attack` logical: TRUE if this event was an attack kill
+#'   - `serving_team` string: the name of the team that served in this rally
+#'   - `phase` string: one of "Serve" (for serve events), "Reception" (events in the reception phase of play. The reception itself as well as the first set and attack, and the block on that attack are considered to be "Reception" phase), or "Transition" (all events in a rally after the reception-phase events)
 #'
 #' @references \url{http://www.dataproject.com/IT/en/Volleyball}
 #' @param filename string: file name to read
@@ -10,8 +230,8 @@
 #' @param do_warn logical: should we issue warnings about the contents of the file as we read it?
 #' @param extra_validation numeric: should we run some extra validation checks on the file? 0=no extra validation, 1=check only for major errors, 2=somewhat more extensive, 3=the most extra checking
 #' @param validation_options list: additional options to pass to the validation step. See [dv_validate()] for details
-#' @param do_transliterate logical: should we transliterate all text to ASCII? See details
-#' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed
+#' @param do_transliterate logical: should we transliterate all text to ASCII? This might be helpful when trying to work with multiple files from the same competition, because different text encodings can be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8
+#' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)
 #' @param date_format string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If `date_format` is something other than "guess", that date format will be preferred where dates are ambiguous
 #' @param surname_case string or function: should we change the case of player surnames? If `surname_case` is a string, valid values are "upper","lower","title", or "asis"; otherwise `surname_case` may be a function that will be applied to the player surname strings
 #' @param skill_evaluation_decode function or string: if `skill_evaluation_decode` is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If `skill_evaluation_decode` is a function, it should convert skill evaluation codes into meaningful phrases. See [skill_evaluation_decoder()]
@@ -20,7 +240,7 @@
 #' @param verbose logical: if TRUE, show progress
 #' @param edited_meta list: if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata
 #'
-#' @return A named list with several elements. `meta` provides match metadata, `plays` is the main play-by-play data in the form of a data.frame. `raw` is the line-by-line content of the datavolley file. `messages` is a data.frame describing any inconsistencies found in the file.
+#' @return An object of class `datavolley` (which is a named list) with several elements: `meta` (accessible via the [meta()] function) provides match metadata, `plays` (accessible via the [plays()] function) is the main play-by-play data in the form of a data.frame. `raw` is the line-by-line content of the datavolley file. `messages` is a data.frame describing any inconsistencies found in the file. See Details for more information.
 #'
 #' @seealso [skill_evaluation_decoder()], [dv_validate()]
 #' @examples

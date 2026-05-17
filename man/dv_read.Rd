@@ -46,9 +46,9 @@ read_dv(
 
 \item{do_warn}{logical: should we issue warnings about the contents of the file as we read it?}
 
-\item{do_transliterate}{logical: should we transliterate all text to ASCII? See details}
+\item{do_transliterate}{logical: should we transliterate all text to ASCII? This might be helpful when trying to work with multiple files from the same competition, because different text encodings can be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8}
 
-\item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed}
+\item{encoding}{character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)}
 
 \item{date_format}{string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If \code{date_format} is something other than "guess", that date format will be preferred where dates are ambiguous}
 
@@ -69,10 +69,263 @@ read_dv(
 \item{edited_meta}{list: if supplied, will be used in place of the metadata present in the file itself. This makes it possible to, for example, read a file, edit the metadata, and re-parse the file but using the modified metadata}
 }
 \value{
-A named list with several elements. \code{meta} provides match metadata, \code{plays} is the main play-by-play data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file.
+An object of class \code{datavolley} (which is a named list) with several elements: \code{meta} (accessible via the \code{\link[=meta]{meta()}} function) provides match metadata, \code{plays} (accessible via the \code{\link[=plays]{plays()}} function) is the main play-by-play data in the form of a data.frame. \code{raw} is the line-by-line content of the datavolley file. \code{messages} is a data.frame describing any inconsistencies found in the file. See Details for more information.
 }
 \description{
-The \code{do_transliterate} option may be helpful when trying to work with multiple files from the same competition, since different text encodings may be used on different files. This can lead to e.g. multiple versions of the same team name. Transliterating can help avoid this, at the cost of losing e.g. diacriticals. Transliteration is applied after converting from the specified text encoding to UTF-8. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)
+Read a DataVolley or VolleyStation file
+}
+\details{
+The data structure returned by this function is an object of class \code{datavolley}. The \code{meta} element of this object (accessible via the \code{\link[=meta]{meta()}} function) has the following structure. Note that some data frames might have undocumented columns (named as \code{Xn} or \code{Vn}) - the contents of these are unknown but typically unpopulated or uninformative. "Coordinates" refers to integer coordinates used to encode positions on court, see e.g. \code{\link[=dv_xy2index]{dv_xy2index()}}.
+\itemize{
+\item \code{meta$match}: a tibble with columns giving match information:
+\itemize{
+\item \code{date} Date: match date
+\item \code{time} Period: match time
+\item \code{season} string: free text describing the match season
+\item \code{league} string: free text describing the league
+\item \code{phase} string: free text describing the match phase (e.g. "Regular season", "Playoffs")
+\item \code{home_away} string: whether the match was a "Home" or "Away" one (text might be in the language of the scout's locale rather than English)
+\item \code{day_number} numeric: day number of the match
+\item \code{match_number} string or numeric: the match identifier, usually used for official league matches
+\item \code{text_encoding} string or numeric: the text encoding of the original file. The \code{dv_read} function goes to a lot of effort to detect this and convert the contents of the file to UTF-8, so you should usually not need to do anything with this \code{text_encoding} value
+\item \code{regulation} string: match regulations, one of "indoor rally point", "beach rally point", or "indoor sideout" (the old scoring system where a team could only score a point while serving)
+\item \code{zones_or_cones} string: whether the attack directions have been scouted as zones ("Z") or cones ("C") (see \url{https://snippets.openvolley.org/court-plots.html#plotting-by-cone})
+}
+\item \code{meta$more}: a tibble with columns giving information about the match venue and scout:
+\itemize{
+\item \code{referees} string: match referee names
+\item \code{spectators} numeric: number of spectators
+\item \code{receipts} numeric: not defined in the manual
+\item \code{city} string: name of the city
+\item \code{arena} string: name of the arena
+\item \code{scout} string: name of the person who scouted the match
+}
+\item \code{meta$comments}: a tibble with columns:
+\itemize{
+\item comment_1 to \code{comment_5} (some may be missing) string: free text match comments
+}
+\item \code{meta$result}: a tibble with columns giving information about the match result, with one row per set played:
+\itemize{
+\item \code{played} logical: whether the set was played. Should usually all be \code{TRUE}, unplayed sets are automatically removed
+\item \code{score_intermediate1} string: the first intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 8 points for indoor. Different for beach or 5th sets
+\item \code{score_intermediate2} string: the second intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 16 points for indoor. Different for beach or 5th sets
+\item \code{score_intermediate3} string: the third intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 21 points for indoor. Different for beach or 5th sets
+\item \code{score} string: the final set score in the format "HS-VS" (home team score and visiting team score)
+\item `duration numeric: set duration in minutes
+\item `score_home_team numeric: home team score in each set
+\item `score_visiting_team numeric: visiting team score in each set
+}
+\item \code{meta$teams}: a two-row tibble with columns giving information about the teams:
+\itemize{
+\item \code{team_id} string: short identifier of the team
+\item \code{team} string: team name
+\item \code{sets_won} numeric: the number of sets won by the team in the match
+\item \code{coach} string: name of the head coach
+\item \code{assistant} string: name(s) of the assistant coach(es)
+\item \code{shirt_colour} string: the team jersey colour in "#RRGGBB" hex format
+\item \code{home_away_team} string: "*" for the home team and "a" for the visiting team
+\item \code{won_match} logical: whether the team won the match
+}
+\item \code{meta$players_h}: a tibble with columns giving information about the home team:
+\itemize{
+\item \code{number} numeric: player jersey number
+\item \code{starting_position_set1} to \code{starting_position_set5} string: number 1-6 if this player was in the starting lineup for this set, or "*" if they were a substitute or libero
+\item \code{player_id} string: unique player ID
+\item \code{lastname} string: player last name
+\item \code{firstname} string: player first name
+\item \code{nickname} string: player nickname
+\item \code{special_role} string: zero or more of "L" (libero) or "C" (captain)
+\item \code{role} string: the player role, one of "libero", "middle", "opposite", "outside", "setter", or "unknown"
+\item \code{foreign} logical: \code{TRUE} if the player is registered as a foreign player
+\item \code{name} string: a concatenation of \code{firstname} and \code{lastname}
+}
+\item \code{meta$players_v}: a tibble with columns giving information about the visiting team, with the same structure as \code{meta$players_h}
+\item \code{meta$attacks}: a tibble with columns describing attack compound codes:
+\itemize{
+\item \code{code} string: the two-character attack compound code (e.g. "X1", "V5", "PP")
+\item \code{attacker_position} numeric: the default start zone (1-9) of the attack
+\item \code{side} string: "C", "L", or "R"
+\item \code{type} string: a single-character attack tempo ("Q"uick, s"U"per, fas"T", "M"edium, "H"igh, "O"ther)
+\item \code{description} string: free text describing the attack
+\item \code{colour} string: the colour in hex format ("#RRGGBB") that can nominally be used to plot this type of attack on an attack chart
+\item \code{start_coordinate} numeric: the start coordinate of the attack
+\item \code{set_type} string: a single character describing the set type, one of "F"ront, "C"entre, "B"ack, "P"ipe, or "S"etter dump
+}
+\item \code{meta$sets}: a tibble with columns describing setter calls (where the middle hitter has been told by the setter to run their attack):
+\itemize{
+\item \code{code} string: two-character setter call code (e.g. "K1", "KF")
+\item \code{description} string: free text describing the setter call
+\item \code{colour} string: the colour in hex format ("#RRGGBB") that can nominally be used to plot this type of setter call on an attack chart
+\item \code{start_coordinate}, \code{mid_coordinate}, and \code{end_coordinate} numeric: the start, middle, and end coordinate of a typical path that the middle hitter might take for this setter call
+\item \code{path} string: a comma-separated list of coordinates giving a path
+\item \code{path_colour} string: the colour in hex format ("#RRGGBB") that can nominally be used to plot the path of this setter call on an attack chart
+}
+\item \code{meta$winning_symbols}: a tibble with columns describing which \code{evaluation_code} values for a given skill correspond to a winning or losing action:
+\itemize{
+\item \code{skill} string: single character, one of "S"erve, "R"eception, s"E"t, "A"ttack, "B"lock, "D"ig, "F"reeball
+\item \code{win_lose} string: whether this \code{skill} and \code{code} is a "W"inning or "L"osing action
+\item \code{code} string: the \code{evaluation_code} value recorded by the scout, usually one of "#", "=", "/"
+}
+\item \code{meta$match_id} string: a hash computed from (parts of) the match metadata
+\item \code{meta$video}: a data.frame (usually only one row) giving information about the match video file, if there is one. If no video has been registered to this match file, \code{meta$video} should have zero rows.
+\itemize{
+\item \code{camera} string: the camera description, usually "Camera0"
+\item \code{file} string: the path to the video file
+}
+\item \code{meta$filename} string: the file name that was passed to \code{dv_read}
+}
+
+The \code{plays} element of a \code{datavolley} object is a data frame that describes events in the match (generally, each ball contact, but also events like timeouts and substitutions). It has this structure:
+\itemize{
+\item \code{match_id} string: as for \code{meta$match_id}
+\item \code{home_team} string: the name of the home team in this match
+\item \code{home_team_id} string: the ID of the home team in this match
+\item \code{visiting_team} string: the name of the visiting team in this match
+\item \code{visiting_team_id} string: the ID of the visiting team in this match
+\item \code{point_id} numeric: the rally number in the match. Timeouts will generally be assigned their own \code{point_id}. Substitutions will generally be assigned as part of the rally that follows the substitution
+\item \code{team_touch_id} numeric: a numeric identifier for each set of ball touches made by a team before the ball crosses the net to the other team. A team can make a maximum of 3 ball touches (4 if there was a block touch, for indoor) before the ball must cross the net to the other team. Events with the same \code{team_touch_id} correspond to the same set of 3 team ball touches
+\item \code{time} POSIXct: clock time of the event. This time is recorded by the scouting software, usually as the clock time that the scout entered this code. It might not be an accurate reflection of the actual real-world ball contact time, if the event is a ball contact
+\item \code{video_file_number} numeric: the row number of the \code{meta$video} data frame giving the video file details. Only a single video file is currently supported, so \code{video_file_number} will generally be 1 (or missing, if there is no associated video)
+\item \code{video_time} numeric: time (in seconds) of this event relative to the start of the video
+\item \code{code} string: the code entered by the scout for this event
+\item \code{team} string: the name of the team, if this event was associated with a particular team
+\item \code{team_id} string: the ID of the team, if this event was associated with a particular team
+\item \code{player_number} numeric: the player number, if this event is associated with a particular player
+\item \code{player_name} string: the player name, if this event is associated with a particular player
+\item \code{player_id} string: the player ID, if this event is associated with a particular player
+\item \code{skill} string: one of "Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball", "Timeout", or "Technical timeout"
+\item \code{skill_type} string: text describing the type of skill performed (e.g. "Jump serve" or "High ball attack")
+\item \code{evaluation_code} string: a single character code entered by the scout that corresponds to the outcome of this ball contact. One of "#", "+", "!", "-", "/", "=". The meaning of each code is not fixed, it is dependent on the associated \code{skill} and the conventions being used by the individual scout. See also \code{evaluation}
+\item \code{evaluation} string: a plain text interpretation of the \code{evaluation_code}. The mapping between \code{evaluation_code} and \code{evaluation} depends on the \code{skill_evaluation_decode} parameter provided to the \code{dv_read()} function, and this should correspond to the conventions being used by the person who scouted the match. The default values are:
+\itemize{
+\item serve:
+\itemize{
+\item "=": "Error"
+\item "-": "Negative, opponent free attack"
+\item "!": "OK, no first tempo possible"
+\item "/": "Positive, no attack"
+\item "+": "Positive, opponent some attack"
+\item "#": "Ace"
+}
+\item reception:
+\itemize{
+\item "=": "Error"
+\item "/": "Poor, no attack"
+\item "-": "Negative, limited attack"
+\item "!": "OK, no first tempo possible"
+\item "+": "Positive, attack"
+\item "#": "Perfect pass"
+}
+\item attack:
+\itemize{
+\item "=": "Error"
+\item "/": "Blocked"
+\item "-": "Poor, easily dug"
+\item "!": "Blocked for reattack"
+\item "+": "Positive, good attack"
+\item "#": "Winning attack"
+}
+\item block:
+\itemize{
+\item "=": "Error" (i.e. an attack kill off the block, not a block fault)
+\item "/": "Invasion" (net touch or other illegal block) or "Poor, opposition to replay" (VolleyMetrics conventions)
+\item "-": "Poor, opposition to replay" or "Poor block" (VolleyMetrics conventions)
+\item "+": "Positive, block touch" or "Positive block" (VolleyMetrics conventions)
+\item "#": "Winning block"
+\item "!": "Poor, opposition to replay" or "Poor, blocking team cannot recover" (VolleyMetrics conventions)
+}
+\item dig:
+\itemize{
+\item "=": "Error"
+\item "/": "Ball directly back over net" or "Positive block cover" (VolleyMetrics conventions)
+\item "-": "No structured attack possible"
+\item "!": "OK, no first tempo possible" or "Poor block cover" (VolleyMetrics conventions)
+\item "+": "Good dig"
+\item "#": "Perfect dig"
+}
+\item set:
+\itemize{
+\item "=": "Error"
+\item "-": "Poor"
+\item "/": "Poor" (usually a set that crosses the net) or "Error" (VolleyMetrics conventions, a reach over the net)
+\item "!": "OK"
+\item "+": "Positive"
+\item "#": "Perfect"
+}
+\item freeball:
+\itemize{
+\item "=": "Error"
+\item "/": "Poor"
+\item "!": "OK, no first tempo possible"
+\item "-": "OK, only high set possible"
+\item "+": "Good"
+\item "#": "Perfect"
+}
+}
+\item \code{attack_code} string: the attack code, only populated if \code{skill} is "Attack" and the attack was scouted using an attack combination code (see \code{meta$attacks})
+\item \code{attack_description} string: the description of the attack (see \code{meta$attacks}), if \code{attack_code} is populated
+\item \code{set_code} string: the setter call, only populated if \code{skill} is "Set" and the scout recorded a setter call (see \code{meta$sets})
+\item \code{set_description} string: the description of the setter call (see \code{meta$sets}), if \code{set_code} is populated
+\item \code{set_type} string: the \code{set_type} ("F"ront, "C"entre, "B"ack, "P"ipe, or "S"etter dump, see \code{meta$sets}), if \code{attack_code} is populated
+\item \code{start_zone} numeric: 1-9, the start zone of the event. Note that the conventions used by the DataVolley scouting software are not necessarily the actual start and end locations of the event. For example, the start and end locations of a reception event are assigned to be those of the serve, and similarly digs are as for the corresponding attack
+\item \code{end_zone} numeric: 1-9, the end zone of the event. If attacks are being scouted with cones, this column will not be populated for attacks
+\item \code{end_subzone} string: the end subzone ("A", "B", "C", or "D") of the event. If attacks are being scouted with cones, this column will not be populated for attacks
+\item \code{end_cone} numeric: only populated for attacks, and only if the scout is using cones for attack directions
+\item \code{skill_subtype} string: the sub-type of the event. The entries here generally follow the defaults described in the DataVolley software manual, with some adjustments for beach files:
+\itemize{
+\item attack: "Hard spike", "Soft spike/topspin", or "Tip"
+\item block: "Block assist", "Block attempt", "Block on soft spike" (note that these are rarely used)
+\item reception: "On left", "On right", "Low", "Overhand", "Middle line" (describing how the receiver passed the ball)
+\item set: "1 hand set", "2 hands set", "Bump set", Other set", "Underhand set", (for some beach files) "Hand set"
+\item dig: "Spike cover", "After block", "Emergency", "Tip", "Soft spike"
+}
+\item \code{num_players_numeric} numeric: the numeric value entered by the scout for the number of players involved in this event
+\item \code{num_players} string: a text description of the number of players involved in this event:
+\itemize{
+\item attack and block: "No block", "1 player block", "2 player block", "3 player block", "Hole block" or (for beach) "No block", "Line block", "Crosscourt block", "Block jumps to line", "Block jumps to crosscourt"
+\item reception: "Two players receiving, the player on left receives", "Two players receiving, the player on right receives", "Three players receiving, the player on left receives", "Three players receiving, the player in center receives", "Three players receiving, the player on right receives", "Four players receiving, the player on left receives", "Four players receiving, the player on center-left receives", "Four players receiving, the player on center-right receives", "Four players receiving, the player on right receives"
+}
+\item \code{special_code} string: a single character giving an optional special code for this event. The entries here generally follow the defaults described in the DataVolley software manual. A special code entry with an unknown value of "xyz" will appear as "Unexpected xyz":
+\itemize{
+\item attack (on an error): "Attack out - side", "Attack out - long", "Attack in net", "Net contact", "Referee call", "Antenna"
+\item attack (on an attack kill): "Block out - side", "Block out - long", "Block on floor", "Direct on floor", "Let",
+\item attack (on an attack that remains in play): "Let", "Block control"
+\item block: "Ball out - side", "Ball out - long", "Ball on floor", "Between hands", "Hands - net", "Net contact", "Antenna", "No jump", "Position error", "Referee call"
+\item reception (on an error): "Unplayable", "Body error", "Position error", "Referee call", "Lack of effort" (e.g. catch and throw)
+\item freeball (on an error): "Unplayable", "Body error", "Position error", "Referee call" (e.g. catch and throw)
+\item dig (on an error): "Unplayable", "Body error", "Position error", "Referee call", "Ball on floor", "Ball out", "Lack of effort"
+\item set (on an error): "Cannot be hit", "Net touch", "Referee call" (e.g. double contact)
+\item serve (on an error): "Ball out - long", "Ball out - left", "Ball out - right", "Ball in net", "Referee call" (e.g. foot fault, time violation)
+\item serve (on an ace or a serve that remains in play): "Let"
+}
+\item \code{timeout} logical: \code{TRUE} if this was a timeout
+\item \code{end_of_set} logical: \code{TRUE} if this event was the end of a set
+\item \code{substitution} logical: \code{TRUE} if this event was a substitution
+\item \code{point} logical: \code{TRUE} if this row represents a point being assigned
+\item \code{home_team_score} numeric: the home team score at the end of this rally (see also \code{home_score_start_of_point})
+\item \verb{visiting_team_score numeric: the visiting team score at the end of this rally (see also }visiting_score_start_of_point`)
+\item \code{home_score_start_of_point} numeric: the home team score at the start of this rally
+\item \code{visiting_score_start_of_point} numeric: the visiting team score at the start of this rally
+\item \code{home_setter_position} numeric: the position on court 1-6 of the home team setter
+\item \code{visiting_setter_position} numeric: the position on court 1-6 of the visiting team setter
+\item \code{custom_code} string: an optional custom code (max 5 characters) entered by the scout. The meaning of this code is entirely determined by the individual scout
+\item \code{file_line_number} numeric: the line number in the file corresponding to this row in the \code{plays} data
+\item \code{home_p1} to \code{home_p6} numeric: the jersey number of the home team players in positions 1-6 on court. For beach matches, only columns \code{home_p1} and \code{home_p2} will exist. For indoor, note that the libero is never listed here as "on court" because libero entries and exits are not explicitly recorded in the scout file. If the home team libero comes on court for the back-row middle in position 1, the \code{home_p1} value will still be that of the middle
+\item \code{home_player_id1} to \code{home_player_id6} string: as for \code{home_p1} to \code{home_p6}, but giving player IDs instead of jersey numbers
+\item \code{visiting_p1} to \code{visiting_p6} numeric: as for \code{home_p1} to \code{home_p6}, but for the visiting team
+\item \code{visiting_player_id1} to \code{visiting_player_id6} string: as for \code{visiting_p1} to \code{visiting_p6}, but giving player IDs instead of jersey numbers
+\item \code{start_coordinate} numeric: a single integer giving the start coordinate of the event. Only populated if the scout has entered coordinates, which will typically not be the case in e.g. live-scouted matches (because it is a relatively slow process to do). See also \code{start_coordinate_x} and \code{start_coordinate_y}
+\item \code{start_coordinate_x} and \code{start_coordinate_y} numeric: sepaarate x- and y-coordinates calculated from \code{start_coordinate}. See \url{https://snippets.openvolley.org/court-plots.html#background-on-location-information} for the coordinate system used
+\item \code{mid_coordinate}, \code{mid_coordinate_x}, \code{mid_coordinate_y} numeric: as for the start coordinate, but giving the midpoint-coordinate of the event (e.g. if an attack was deflected off the block or the net, a midpoint-coordinate might be recorded)
+\item \code{end_coordinate}, \code{end_coordinate_x}, \code{end_coordinate_y} numeric: as for the start coordinate, but giving the end coordinate of the event
+\item \code{point_phase} string: "Breakpoint" (the team associated with this event was the serving team) or "Sideout" (the team associated with this event was the receiving team)
+\item \code{attack_phase} string: for attacks, whether the attack occured during "Reception" "Transition breakpoint", or "Transition sideout" phase
+\item \code{set_number} numeric: the set number (generally 1-5 for indoor, 1-3 for beach)
+\item \code{point_won_by} string: the name of the team that won this rally
+\item \code{winning_attack} logical: TRUE if this event was an attack kill
+\item \code{serving_team} string: the name of the team that served in this rally
+\item \code{phase} string: one of "Serve" (for serve events), "Reception" (events in the reception phase of play. The reception itself as well as the first set and attack, and the block on that attack are considered to be "Reception" phase), or "Transition" (all events in a rally after the reception-phase events)
+}
 }
 \examples{
 \dontrun{
