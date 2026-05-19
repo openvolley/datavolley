@@ -58,7 +58,7 @@ read_dv(
 
 \item{surname_case}{string or function: should we change the case of player surnames? If \code{surname_case} is a string, valid values are "upper","lower","title", or "asis"; otherwise \code{surname_case} may be a function that will be applied to the player surname strings}
 
-\item{skill_evaluation_decode}{function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link[=skill_evaluation_decoder]{skill_evaluation_decoder()}}}
+\item{skill_evaluation_decode}{function or string: if \code{skill_evaluation_decode} is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (follows the conventions described in the 2026/27 DVV scouting codebook), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If \code{skill_evaluation_decode} is a function, it should convert skill evaluation codes into meaningful phrases. See \code{\link[=skill_evaluation_decoder]{skill_evaluation_decoder()}}}
 
 \item{custom_code_parser}{function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the \code{datavolley} object) and should return a list with two named components: \code{plays} and \code{messages}}
 
@@ -75,7 +75,7 @@ An object of class \code{datavolley} (which is a named list) with several elemen
 Read a DataVolley or VolleyStation file
 }
 \details{
-The data structure returned by this function is an object of class \code{datavolley}. The \code{meta} element of this object (accessible via the \code{\link[=meta]{meta()}} function) has the following structure. Note that some data frames might have undocumented columns (named as \code{Xn} or \code{Vn}) - the contents of these are unknown but typically unpopulated or uninformative. "Coordinates" refers to integer coordinates used to encode positions on court, see e.g. \code{\link[=dv_xy2index]{dv_xy2index()}}.
+The data structure returned by this function is an object of class \code{datavolley}. The \code{meta} element of this object (accessible via the \code{\link[=meta]{meta()}} function) has the following structure. Note that some data frames might have undocumented columns (named as \code{Xn} or \code{Vn}) - the contents of these are unknown but typically unpopulated or uninformative. "Coordinates" refers to integer coordinates used to encode positions on court, see e.g. \code{\link[=dv_xy2index]{dv_xy2index()}} or \url{https://snippets.openvolley.org/court-plots.html#coordinates}.
 \itemize{
 \item \code{meta$match}: a tibble with columns giving match information:
 \itemize{
@@ -102,7 +102,7 @@ The data structure returned by this function is an object of class \code{datavol
 }
 \item \code{meta$comments}: a tibble with columns:
 \itemize{
-\item comment_1 to \code{comment_5} (some may be missing) string: free text match comments
+\item \code{comment_1} to \code{comment_5} (some may be missing) string: free text match comments
 }
 \item \code{meta$result}: a tibble with columns giving information about the match result, with one row per set played:
 \itemize{
@@ -111,9 +111,9 @@ The data structure returned by this function is an object of class \code{datavol
 \item \code{score_intermediate2} string: the second intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 16 points for indoor. Different for beach or 5th sets
 \item \code{score_intermediate3} string: the third intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 21 points for indoor. Different for beach or 5th sets
 \item \code{score} string: the final set score in the format "HS-VS" (home team score and visiting team score)
-\item `duration numeric: set duration in minutes
-\item `score_home_team numeric: home team score in each set
-\item `score_visiting_team numeric: visiting team score in each set
+\item \code{duration} numeric: set duration in minutes
+\item \code{score_home_team} numeric: home team score in each set
+\item \code{score_visiting_team} numeric: visiting team score in each set
 }
 \item \code{meta$teams}: a two-row tibble with columns giving information about the teams:
 \itemize{
@@ -303,7 +303,7 @@ The \code{plays} element of a \code{datavolley} object is a data frame that desc
 \item \code{substitution} logical: \code{TRUE} if this event was a substitution
 \item \code{point} logical: \code{TRUE} if this row represents a point being assigned
 \item \code{home_team_score} numeric: the home team score at the end of this rally (see also \code{home_score_start_of_point})
-\item \verb{visiting_team_score numeric: the visiting team score at the end of this rally (see also }visiting_score_start_of_point`)
+\item \code{visiting_team_score} numeric: the visiting team score at the end of this rally (see also \code{visiting_score_start_of_point})
 \item \code{home_score_start_of_point} numeric: the home team score at the start of this rally
 \item \code{visiting_score_start_of_point} numeric: the visiting team score at the start of this rally
 \item \code{home_setter_position} numeric: the position on court 1-6 of the home team setter
@@ -315,7 +315,7 @@ The \code{plays} element of a \code{datavolley} object is a data frame that desc
 \item \code{visiting_p1} to \code{visiting_p6} numeric: as for \code{home_p1} to \code{home_p6}, but for the visiting team
 \item \code{visiting_player_id1} to \code{visiting_player_id6} string: as for \code{visiting_p1} to \code{visiting_p6}, but giving player IDs instead of jersey numbers
 \item \code{start_coordinate} numeric: a single integer giving the start coordinate of the event. Only populated if the scout has entered coordinates, which will typically not be the case in e.g. live-scouted matches (because it is a relatively slow process to do). See also \code{start_coordinate_x} and \code{start_coordinate_y}
-\item \code{start_coordinate_x} and \code{start_coordinate_y} numeric: sepaarate x- and y-coordinates calculated from \code{start_coordinate}. See \url{https://snippets.openvolley.org/court-plots.html#background-on-location-information} for the coordinate system used
+\item \code{start_coordinate_x} and \code{start_coordinate_y} numeric: separate x- and y-coordinates calculated from \code{start_coordinate}. See \url{https://snippets.openvolley.org/court-plots.html#background-on-location-information} for the coordinate system used
 \item \code{mid_coordinate}, \code{mid_coordinate_x}, \code{mid_coordinate_y} numeric: as for the start coordinate, but giving the midpoint-coordinate of the event (e.g. if an attack was deflected off the block or the net, a midpoint-coordinate might be recorded)
 \item \code{end_coordinate}, \code{end_coordinate_x}, \code{end_coordinate_y} numeric: as for the start coordinate, but giving the end coordinate of the event
 \item \code{point_phase} string: "Breakpoint" (the team associated with this event was the serving team) or "Sideout" (the team associated with this event was the receiving team)

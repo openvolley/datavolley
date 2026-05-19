@@ -4,7 +4,7 @@
 #'
 #' Read a DataVolley or VolleyStation file
 #'
-#' The data structure returned by this function is an object of class `datavolley`. The `meta` element of this object (accessible via the [meta()] function) has the following structure. Note that some data frames might have undocumented columns (named as `Xn` or `Vn`) - the contents of these are unknown but typically unpopulated or uninformative. "Coordinates" refers to integer coordinates used to encode positions on court, see e.g. [dv_xy2index()].
+#' The data structure returned by this function is an object of class `datavolley`. The `meta` element of this object (accessible via the [meta()] function) has the following structure. Note that some data frames might have undocumented columns (named as `Xn` or `Vn`) - the contents of these are unknown but typically unpopulated or uninformative. "Coordinates" refers to integer coordinates used to encode positions on court, see e.g. [dv_xy2index()] or <https://snippets.openvolley.org/court-plots.html#coordinates>.
 #'
 #' * `meta$match`: a tibble with columns giving match information:
 #'   - `date` Date: match date
@@ -28,7 +28,7 @@
 #'   - `scout` string: name of the person who scouted the match
 #'
 #' * `meta$comments`: a tibble with columns:
-#'   - comment_1 to `comment_5` (some may be missing) string: free text match comments
+#'   - `comment_1` to `comment_5` (some may be missing) string: free text match comments
 #'
 #' * `meta$result`: a tibble with columns giving information about the match result, with one row per set played:
 #'   - `played` logical: whether the set was played. Should usually all be `TRUE`, unplayed sets are automatically removed
@@ -36,9 +36,9 @@
 #'   - `score_intermediate2` string: the second intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 16 points for indoor. Different for beach or 5th sets
 #'   - `score_intermediate3` string: the third intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 21 points for indoor. Different for beach or 5th sets
 #'   - `score` string: the final set score in the format "HS-VS" (home team score and visiting team score)
-#'   - `duration numeric: set duration in minutes
-#'   - `score_home_team numeric: home team score in each set
-#'   - `score_visiting_team numeric: visiting team score in each set
+#'   - `duration` numeric: set duration in minutes
+#'   - `score_home_team` numeric: home team score in each set
+#'   - `score_visiting_team` numeric: visiting team score in each set
 #'
 #' * `meta$teams`: a two-row tibble with columns giving information about the teams:
 #'   - `team_id` string: short identifier of the team
@@ -201,7 +201,7 @@
 #'   - `substitution` logical: `TRUE` if this event was a substitution
 #'   - `point` logical: `TRUE` if this row represents a point being assigned
 #'   - `home_team_score` numeric: the home team score at the end of this rally (see also `home_score_start_of_point`)
-#'   - `visiting_team_score numeric: the visiting team score at the end of this rally (see also `visiting_score_start_of_point`)
+#'   - `visiting_team_score` numeric: the visiting team score at the end of this rally (see also `visiting_score_start_of_point`)
 #'   - `home_score_start_of_point` numeric: the home team score at the start of this rally
 #'   - `visiting_score_start_of_point` numeric: the visiting team score at the start of this rally
 #'   - `home_setter_position` numeric: the position on court 1-6 of the home team setter
@@ -213,7 +213,7 @@
 #'   - `visiting_p1` to `visiting_p6` numeric: as for `home_p1` to `home_p6`, but for the visiting team
 #'   - `visiting_player_id1` to `visiting_player_id6` string: as for `visiting_p1` to `visiting_p6`, but giving player IDs instead of jersey numbers
 #'   - `start_coordinate` numeric: a single integer giving the start coordinate of the event. Only populated if the scout has entered coordinates, which will typically not be the case in e.g. live-scouted matches (because it is a relatively slow process to do). See also `start_coordinate_x` and `start_coordinate_y`
-#'   - `start_coordinate_x` and `start_coordinate_y` numeric: sepaarate x- and y-coordinates calculated from `start_coordinate`. See <https://snippets.openvolley.org/court-plots.html#background-on-location-information> for the coordinate system used
+#'   - `start_coordinate_x` and `start_coordinate_y` numeric: separate x- and y-coordinates calculated from `start_coordinate`. See <https://snippets.openvolley.org/court-plots.html#background-on-location-information> for the coordinate system used
 #'   - `mid_coordinate`, `mid_coordinate_x`, `mid_coordinate_y` numeric: as for the start coordinate, but giving the midpoint-coordinate of the event (e.g. if an attack was deflected off the block or the net, a midpoint-coordinate might be recorded)
 #'   - `end_coordinate`, `end_coordinate_x`, `end_coordinate_y` numeric: as for the start coordinate, but giving the end coordinate of the event
 #'   - `point_phase` string: "Breakpoint" (the team associated with this event was the serving team) or "Sideout" (the team associated with this event was the receiving team)
@@ -234,7 +234,7 @@
 #' @param encoding character: text encoding to use. Text is converted from this encoding to UTF-8. A vector of multiple encodings can be provided, and this function will attempt to choose the best. If encoding is "guess", the encoding will be guessed. Common encodings used with DataVolley files include "windows-1252" (western Europe), "windows-1250" (central Europe), "iso-8859-1" (western Europe and Americas), "iso-8859-2" (central/eastern Europe), "iso-8859-13" (Baltic languages)
 #' @param date_format string: the expected date format (one of "ymd", "mdy", or "dmy") or "guess". If `date_format` is something other than "guess", that date format will be preferred where dates are ambiguous
 #' @param surname_case string or function: should we change the case of player surnames? If `surname_case` is a string, valid values are "upper","lower","title", or "asis"; otherwise `surname_case` may be a function that will be applied to the player surname strings
-#' @param skill_evaluation_decode function or string: if `skill_evaluation_decode` is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (same as "default" but with B/ and B= swapped), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If `skill_evaluation_decode` is a function, it should convert skill evaluation codes into meaningful phrases. See [skill_evaluation_decoder()]
+#' @param skill_evaluation_decode function or string: if `skill_evaluation_decode` is a string, it can be either "default" (use the default DataVolley conventions for dvw or vsm files), "volleymetrics" (to follow the scouting conventions used by VolleyMetrics), "german" (follows the conventions described in the 2026/27 DVV scouting codebook), or "guess" (use volleymetrics if it looks like a VolleyMetrics file, otherwise default). If `skill_evaluation_decode` is a function, it should convert skill evaluation codes into meaningful phrases. See [skill_evaluation_decoder()]
 #' @param custom_code_parser function: function to process any custom codes that might be present in the datavolley file. This function takes one input (the `datavolley` object) and should return a list with two named components: `plays` and `messages`
 #' @param metadata_only logical: don't process the plays component of the file, just the match and player metadata
 #' @param verbose logical: if TRUE, show progress
@@ -288,6 +288,7 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     }
     if (ft == "dvw") dvlines <- stringi::stri_trans_general(readLines(filename, warn = FALSE, n = 100L), "latin-ascii")
     ## figure out the scouting conventions to follow
+    style <- "default" ## this is about scouting conventions (for e.g. skill type decoding) and is passed to some other internal functions through parse_code
     if (is.string(skill_evaluation_decode)) {
         skill_evaluation_decode <- match.arg(tolower(skill_evaluation_decode), c("default", "volleymetrics", "guess", "german"))
         if (skill_evaluation_decode == "guess") {
@@ -295,11 +296,20 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
             if (ft == "dvw") {
                 ## otherwise for dvw, guess here
                 is_vm <- tryCatch(any(grepl("volleymetric", dvlines, ignore.case = TRUE)), error = function(e) FALSE)
-                skill_evaluation_decode <- if (is_vm) "volleymetrics" else "default"
+                if (is_vm) {
+                    skill_evaluation_decode <- "volleymetrics"
+                    style <- "volleymetrics"
+                } else {
+                    skill_evaluation_decode <- "default"
+                }
             } else if (ft == "psvb") {
                 skill_evaluation_decode <- "default"
+            } else {
+                style <- "guess" ## will be resolved by the file-type-specific handler
             }
             if (ft == "dvw" && skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
+        } else if (skill_evaluation_decode %in% c("german", "volleymetrics")) {
+            style <- skill_evaluation_decode
         }
         if (ft == "dvw") skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }
@@ -535,7 +545,7 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         } else {
             cln <- NULL
         }
-        temp <- parse_code(code = this_main$code, meta = out$meta, evaluation_decoder = skill_evaluation_decode, code_line_num = cln, full_lines = if (is.null(cln)) NULL else file_text[cln], file_type = file_type)
+        temp <- parse_code(code = this_main$code, meta = out$meta, evaluation_decoder = skill_evaluation_decode, code_line_num = cln, full_lines = if (is.null(cln)) NULL else file_text[cln], file_type = file_type, style = style)
         out$plays <- temp$plays
         if (!is.null(temp$messages) && nrow(temp$messages)>0) {
             temp$messages$file_line <- as.character(temp$messages$file_line)

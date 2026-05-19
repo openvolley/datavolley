@@ -11,21 +11,21 @@ skill_decode <- function(skill, code, full_line, line_num) {
                           D = "Dig",
                           E = "Set",
                           F = "Freeball",
-                          paste0("Unknown skill: ", skill)),
+                          paste("Unknown skill:", skill)),
          messages = mymsgs)
     }
 
-attack_map <- function(type,skill) {
+attack_map <- function(type, skill) {
     switch(type,
-           H=paste0("High ball ",skill),
-           M=paste0("Half ball ",skill),
-           Q=paste0("Quick ball ",skill),
-           T=paste0("Head ball ",skill),
-           U=paste0("Super ball ",skill),
-           F=paste0("Fast ball ",skill),
-           N=paste0("Slide ball ",skill),
-           O=paste0("Other ",skill),
-           paste0("Unknown ",skill," type"))
+           H = paste("High ball", skill),
+           M = paste("Half ball", skill),
+           Q = paste("Quick ball", skill),
+           T = paste("Head ball", skill),
+           U = paste("Super ball", skill),
+           F = paste("Fast ball", skill),
+           N = paste("Slide ball", skill),
+           O = paste("Other", skill),
+           paste("Unknown", skill, "type"))
 }
 
 #' Translate attack type and starting zone into an attack code.
@@ -219,31 +219,31 @@ dv_create_meta_attacks <- function(plays){
     unique(as.data.frame(attack_df[, c("code", "attacker_position", "side", "type", "description", "X6", "X7", "X8", "set_type", "X10", "X11")]))
 }
 
-serve_map <- function(type, skill, file_type = "indoor") {
+serve_map <- function(type, skill, file_type = "indoor", style = "default") {
     if (grepl("beach", file_type)) {
         switch(type,
-               Q=paste0("Jump ",skill),
-               T=paste0("Jump-float ",skill),
-               H=paste0("Standing ",skill),
-               paste0("Unknown ",skill," type"))
+               Q = paste("Jump", skill),
+               T = paste("Jump-float", skill),
+               H = paste("Standing", skill),
+               paste("Unknown", skill, "type"))
     } else {
         switch(type,
-               H=paste0("Float ",skill), ## volleymetrics use this for float far from the service line
-               M=paste0("Jump-float ",skill),
-               Q=paste0("Jump ",skill),
-               T=paste0("Topspin ",skill), ## volleymetrics use this for float from the service line
-               paste0("Unknown ",skill," type"))
+               H = paste("Float", skill), ## volleymetrics use this for float far from the service line
+               M = paste("Jump-float", skill),
+               Q = paste("Jump", skill),
+               T = paste(if (style == "german") "Jump" else if (style == "volleymetrics") "Float" else "Topspin", skill), ## DVV uses this for "Drive jump (short)", volleymetrics use this for float from the service line
+               paste("Unknown", skill, "type"))
     }
 }
 
-skill_type_decode <- function(skill, type, full_line, line_num, file_type = "indoor") {
+skill_type_decode <- function(skill, type, full_line, line_num, file_type = "indoor", style = "default") {
     mymsgs <- list()
     this_allowed_types <- if (skill %in% c("S","R")) c("H", "M", "Q", "T") else c("H", "M", "Q", "T", "U", "F", "O", "N")
     if (!any(type == this_allowed_types))
         mymsgs <- collect_messages(mymsgs, paste0("Unexpected skill type: ", type, " for skill: ", skill), line_num, full_line, severity = 1)
     list(decoded = switch(EXPR = skill,
-             S = serve_map(type, "serve", file_type = file_type),
-             R = serve_map(type, "serve reception", file_type = file_type),
+             S = serve_map(type, "serve", file_type = file_type, style = style),
+             R = serve_map(type, "serve reception", file_type = file_type, style = style),
              A = attack_map(type, "attack"),
              B = attack_map(type, "block"),
              D = attack_map(type, "dig"),
@@ -324,9 +324,9 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
     if (style=="volleymetrics") {
         dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="/"] <- "Poor, opposition to replay"
         ## B! is used for negative block, unplayable to our side
-        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="!"] <- "Poor, blocking team cannot recover" 
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="!"] <- "Poor, blocking team cannot recover"
         ## B- is negative block touch, either back to opposition or poor on our side
-        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="-"] <- "Poor block" 
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="-"] <- "Poor block"
         ## B+ is used for positive block touch, either to our defense or difficult for opposition
         dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="+"] <- "Positive block"
         ## D/ is block cover that gives attacking team a chance to re-attack
@@ -339,6 +339,8 @@ F^#^Perfect",sep="^",header=TRUE,comment.char="",stringsAsFactors=FALSE)
         ## swap B= Error and B/ Invasion
         dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="/"] <- "Error"
         dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="="] <- "Invasion"
+        ## and also
+        dtbl$evaluation[dtbl$skill=="B" & dtbl$evaluation_code=="-"] <- "Poor block"
     }
     ## extract the columns as vectors: faster
     dtbl_evaluation <- dtbl$evaluation
@@ -447,7 +449,7 @@ read_main <- function(filename, file_text) {
     x
 }
 
-parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines, file_type = "indoor") {
+parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines, file_type = "indoor", style) {
     if (missing(code_line_num)) code_line_num <- NULL
     if (missing(full_lines)) full_lines <- code ## default to codes, if full lines not supplied
     using_cones <- tolower(meta$match$zones_or_cones) %eq% "c"
@@ -637,10 +639,10 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
         out_skill[ci] <- tmp$decoded
         msgs <- join_messages(msgs,tmp$messages)
         hit_type <- substr(code,2,2)
-        tmp <- skill_type_decode(skill, hit_type, full_lines[ci], code_line_num[ci], file_type = file_type)
+        tmp <- skill_type_decode(skill, hit_type, full_lines[ci], code_line_num[ci], file_type = file_type, style = style)
         out_skill_type[ci] <- tmp$decoded
-        msgs <- join_messages(msgs,tmp$messages)
-        skill_eval <- substr(code,3,3)
+        msgs <- join_messages(msgs, tmp$messages)
+        skill_eval <- substr(code, 3, 3)
         out_evaluation_code[ci] <- skill_eval
         if (nchar(skill_eval)<1) {
             msgs <- collect_messages(msgs,"Missing evaluation code",code_line_num[ci],full_lines[ci],severity=1)

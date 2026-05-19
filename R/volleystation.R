@@ -464,21 +464,11 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
 
     idx <- which(!is.na(px$hit_type))
     px$skill_subtype_code <- px$skill_type ## we use subtype for what volleystation is calling type
-    if (FALSE) {
-        out_skill_type <- rep(NA_character_, nrow(px))
-        for (ii in idx) {
-            tmp <- skill_type_decode(temp_skill[ii], px$hit_type[ii], NA_character_, NA_integer_, file_type = file_type)
-            out_skill_type[ii] <- tmp$decoded
-            msgs <- join_messages(msgs, tmp$messages)
-        }
-        px$skill_type <- out_skill_type
-    } else {
-        temp <- dv_decode_skill_type(px$skill, px$hit_type, data_type = file_type, style = skill_evaluation_decode)
-        if (has_dvmsg(temp)) {
-            msgs <- collect_messages(msgs, get_dvmsg_pxln(temp), xraw = x$raw)
-        }
-        px$skill_type <- clear_dvmsg(temp)
+    temp <- dv_decode_skill_type(px$skill, px$hit_type, data_type = file_type, style = skill_evaluation_decode)
+    if (has_dvmsg(temp)) {
+        msgs <- collect_messages(msgs, get_dvmsg_pxln(temp), xraw = x$raw)
     }
+    px$skill_type <- clear_dvmsg(temp)
 
     out_evaluation <- rep(NA_character_, nrow(px))
     px <- px %>% dplyr::rename(evaluation_code = "effect")

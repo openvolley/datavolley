@@ -1,3 +1,9 @@
+datavolley 1.16.0
+================
+- added `meta` function for getting and setting the metadata component of a datavolley object
+- detailed documentation of the datavolley object data schema
+- update the `dv_read(..., skill_evaluation_decode = "german")` option to follow information from the 2026/27 DVV scouting codebook
+
 datavolley 1.15.0
 ================
 - added `dv_remap_attack_codes` function for remapping or deleting attack combination codes
