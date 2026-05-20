@@ -52,7 +52,7 @@
 
 #' * `meta$players_h`: a tibble with columns giving information about the home team:
 #'   - `number` numeric: player jersey number
-#'   - `starting_position_set1` to `starting_position_set5` string: number 1-6 if this player was in the starting lineup for this set, or "*" if they were a substitute or libero
+#'   - `starting_position_set1` to `starting_position_set5` string: number 1-6 giving their starting position on court if this player was in the starting lineup for this set, or "*" if they were a substitute or libero
 #'   - `player_id` string: unique player ID
 #'   - `lastname` string: player last name
 #'   - `firstname` string: player first name

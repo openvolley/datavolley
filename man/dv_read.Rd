@@ -129,7 +129,7 @@ The data structure returned by this function is an object of class \code{datavol
 \item \code{meta$players_h}: a tibble with columns giving information about the home team:
 \itemize{
 \item \code{number} numeric: player jersey number
-\item \code{starting_position_set1} to \code{starting_position_set5} string: number 1-6 if this player was in the starting lineup for this set, or "*" if they were a substitute or libero
+\item \code{starting_position_set1} to \code{starting_position_set5} string: number 1-6 giving their starting position on court if this player was in the starting lineup for this set, or "*" if they were a substitute or libero
 \item \code{player_id} string: unique player ID
 \item \code{lastname} string: player last name
 \item \code{firstname} string: player first name
