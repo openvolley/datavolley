@@ -112,8 +112,8 @@ The data structure returned by this function is an object of class \code{datavol
 \item \code{score_intermediate3} string: the third intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 21 points for indoor. Different for beach or 5th sets
 \item \code{score} string: the final set score in the format "HS-VS" (home team score and visiting team score)
 \item \code{duration} numeric: set duration in minutes
-\item \code{score_home_team} numeric: home team score in each set
-\item \code{score_visiting_team} numeric: visiting team score in each set
+\item \code{score_home_team} numeric: the final home team score in the set
+\item \code{score_visiting_team} numeric: the final visiting team score in the set
 }
 \item \code{meta$teams}: a two-row tibble with columns giving information about the teams:
 \itemize{
@@ -144,7 +144,7 @@ The data structure returned by this function is an object of class \code{datavol
 \itemize{
 \item \code{code} string: the two-character attack compound code (e.g. "X1", "V5", "PP")
 \item \code{attacker_position} numeric: the default start zone (1-9) of the attack
-\item \code{side} string: "C", "L", or "R"
+\item \code{side} string: "C"entre, "L"eft, or "R"ight
 \item \code{type} string: a single-character attack tempo ("Q"uick, s"U"per, fas"T", "M"edium, "H"igh, "O"ther)
 \item \code{description} string: free text describing the attack
 \item \code{colour} string: the colour in hex format ("#RRGGBB") that can nominally be used to plot this type of attack on an attack chart
@@ -170,7 +170,7 @@ The data structure returned by this function is an object of class \code{datavol
 \item \code{meta$video}: a data.frame (usually only one row) giving information about the match video file, if there is one. If no video has been registered to this match file, \code{meta$video} should have zero rows.
 \itemize{
 \item \code{camera} string: the camera description, usually "Camera0"
-\item \code{file} string: the path to the video file
+\item \code{file} string: the path to the video file (on the scout's computer)
 }
 \item \code{meta$filename} string: the file name that was passed to \code{dv_read}
 }
@@ -288,10 +288,10 @@ The \code{plays} element of a \code{datavolley} object is a data frame that desc
 \item \code{special_code} string: a single character giving an optional special code for this event. The entries here generally follow the defaults described in the DataVolley software manual. A special code entry with an unknown value of "xyz" will appear as "Unexpected xyz":
 \itemize{
 \item attack (on an error): "Attack out - side", "Attack out - long", "Attack in net", "Net contact", "Referee call", "Antenna"
-\item attack (on an attack kill): "Block out - side", "Block out - long", "Block on floor", "Direct on floor", "Let",
+\item attack (on an attack kill): "Block out - side", "Block out - long", "Block on floor", "Direct on floor", "Let"
 \item attack (on an attack that remains in play): "Let", "Block control"
 \item block: "Ball out - side", "Ball out - long", "Ball on floor", "Between hands", "Hands - net", "Net contact", "Antenna", "No jump", "Position error", "Referee call"
-\item reception (on an error): "Unplayable", "Body error", "Position error", "Referee call", "Lack of effort" (e.g. catch and throw)
+\item reception (on an error): "Unplayable", "Body error", "Position error", "Referee call" (e.g. catch and throw), "Lack of effort"
 \item freeball (on an error): "Unplayable", "Body error", "Position error", "Referee call" (e.g. catch and throw)
 \item dig (on an error): "Unplayable", "Body error", "Position error", "Referee call", "Ball on floor", "Ball out", "Lack of effort"
 \item set (on an error): "Cannot be hit", "Net touch", "Referee call" (e.g. double contact)

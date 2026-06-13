@@ -37,8 +37,8 @@
 #'   - `score_intermediate3` string: the third intermediate score in each set in the format "HS-VS" (home team score and visiting team score). This intermediate score is usually the match score when the first team gets to 21 points for indoor. Different for beach or 5th sets
 #'   - `score` string: the final set score in the format "HS-VS" (home team score and visiting team score)
 #'   - `duration` numeric: set duration in minutes
-#'   - `score_home_team` numeric: home team score in each set
-#'   - `score_visiting_team` numeric: visiting team score in each set
+#'   - `score_home_team` numeric: the final home team score in the set
+#'   - `score_visiting_team` numeric: the final visiting team score in the set
 #'
 #' * `meta$teams`: a two-row tibble with columns giving information about the teams:
 #'   - `team_id` string: short identifier of the team
@@ -67,7 +67,7 @@
 #' * `meta$attacks`: a tibble with columns describing attack compound codes:
 #'   - `code` string: the two-character attack compound code (e.g. "X1", "V5", "PP")
 #'   - `attacker_position` numeric: the default start zone (1-9) of the attack
-#'   - `side` string: "C", "L", or "R"
+#'   - `side` string: "C"entre, "L"eft, or "R"ight
 #'   - `type` string: a single-character attack tempo ("Q"uick, s"U"per, fas"T", "M"edium, "H"igh, "O"ther)
 #'   - `description` string: free text describing the attack
 #'   - `colour` string: the colour in hex format ("#RRGGBB") that can nominally be used to plot this type of attack on an attack chart
@@ -91,7 +91,7 @@
 #'
 #' * `meta$video`: a data.frame (usually only one row) giving information about the match video file, if there is one. If no video has been registered to this match file, `meta$video` should have zero rows.
 #'   - `camera` string: the camera description, usually "Camera0"
-#'   - `file` string: the path to the video file
+#'   - `file` string: the path to the video file (on the scout's computer)
 #'
 #' * `meta$filename` string: the file name that was passed to `dv_read`
 #'
@@ -187,10 +187,10 @@
 #'     * reception: "Two players receiving, the player on left receives", "Two players receiving, the player on right receives", "Three players receiving, the player on left receives", "Three players receiving, the player in center receives", "Three players receiving, the player on right receives", "Four players receiving, the player on left receives", "Four players receiving, the player on center-left receives", "Four players receiving, the player on center-right receives", "Four players receiving, the player on right receives"
 #'   - `special_code` string: a single character giving an optional special code for this event. The entries here generally follow the defaults described in the DataVolley software manual. A special code entry with an unknown value of "xyz" will appear as "Unexpected xyz":
 #'     * attack (on an error): "Attack out - side", "Attack out - long", "Attack in net", "Net contact", "Referee call", "Antenna"
-#'     * attack (on an attack kill): "Block out - side", "Block out - long", "Block on floor", "Direct on floor", "Let",
+#'     * attack (on an attack kill): "Block out - side", "Block out - long", "Block on floor", "Direct on floor", "Let"
 #'     * attack (on an attack that remains in play): "Let", "Block control"
 #'     * block: "Ball out - side", "Ball out - long", "Ball on floor", "Between hands", "Hands - net", "Net contact", "Antenna", "No jump", "Position error", "Referee call"
-#'     * reception (on an error): "Unplayable", "Body error", "Position error", "Referee call", "Lack of effort" (e.g. catch and throw)
+#'     * reception (on an error): "Unplayable", "Body error", "Position error", "Referee call" (e.g. catch and throw), "Lack of effort"
 #'     * freeball (on an error): "Unplayable", "Body error", "Position error", "Referee call" (e.g. catch and throw)
 #'     * dig (on an error): "Unplayable", "Body error", "Position error", "Referee call", "Ball on floor", "Ball out", "Lack of effort"
 #'     * set (on an error): "Cannot be hit", "Net touch", "Referee call" (e.g. double contact)
