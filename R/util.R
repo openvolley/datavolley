@@ -654,7 +654,7 @@ decode_dv_utf8 <- function(z, na_is = NA, warn = FALSE) {
         if (warn) warning("could not decode text")
         return(z)
     }
-    str_trim(sub_u_spaces(intToUtf8(strtoi(stringi::stri_sub(z, seq(3, nchar(z), by = nbytes), length = nbytes), 16))))
+    str_trim(sub_u_spaces(intToUtf8(strtoi(stri_sub(z, seq(3, nchar(z), by = nbytes), length = nbytes), 16))))
 }
 
 ## unicode includes a bunch of space character that aren't necessarily detected by the regexp [[:space:]] (e.g. the \ua0 non-breaking space is not)

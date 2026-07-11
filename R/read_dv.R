@@ -764,15 +764,12 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
         ##}
         #### not sure how to deal with these!
+trace_ma("dv8.6")
 
         ## winning attacks
         ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
-        temp1 <- out$plays[-nrow(out$plays),]
-        temp2 <- out$plays[-1,]
-        out$plays$winning_attack <- FALSE
-        out$plays$winning_attack[1:(nrow(out$plays)-1)] <- temp1$skill=="Attack" & (temp1$evaluation=="Winning attack" | ((temp2$skill=="Dig" | temp2$skill=="Block") & temp2$evaluation=="Error"))
-        ## note the block error is not actually needed there, since such attacks are recorded as winning ones anyway
-        out$plays$winning_attack[is.na(out$plays$winning_attack)] <- FALSE
+        out$plays <- mutate(out$plays, winning_attack2 = case_when(.data$skill == "Attack" & (.data$evaluation == "Winning attack" | (lead((.data$skill == "Dig" | .data$skill == "Block") & .data$evaluation == "Error"))) ~ TRUE, TRUE ~ FALSE))
+
         ## fill in scores, so that all lines have a score
         scores <- unique(na.omit(out$plays[, c("point_id", "home_team_score", "visiting_team_score")]))
         scores <- left_join(out$plays[, "point_id", drop = FALSE], scores, by = "point_id")
