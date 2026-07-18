@@ -764,7 +764,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
         ##}
         #### not sure how to deal with these!
-trace_ma("dv8.6")
 
         ## winning attacks
         ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
