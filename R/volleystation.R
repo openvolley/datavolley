@@ -43,7 +43,7 @@ vs_reformat_players <- function(jx, which = "home") {
     ## enforce some columns. If e.g. a team roster is entered without any players being given firstName, that column will not exist in the VS json export
     temp <- list(position = NA_integer_, firstName = "", lastName = "", shirtNumber = NA_integer_)
     for (ii in names(temp)) { if (!ii %in% names(ply)) ply[[ii]] <- temp[[ii]] }
-    px <- tibble(X1 = if (which == "home") 0L else 1L,
+    px <- tibble(X1 = if (which == "home") "0" else "1", ## these were previously integer but changed to char here to be consistent with dvw's
                  number = as.integer(ply$shirtNumber),
                  X3 = seq_len(nrow(ply)) + if (which %in% "home") 0L else nrow(p_h),
                  starting_position_set1 = NA_character_,
@@ -368,8 +368,13 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         vs <- tryCatch(unlist(thisex[1, paste0("visiting_p", pseq)])[thisex$visiting_setter_position[1]], error = function(e) 0L)
         lineup_codes <- paste0(c(paste0("*P", lead0(hs)), paste0("*z", thisex$home_setter_position[1]), paste0("aP", lead0(vs)), paste0("az", thisex$visiting_setter_position[1])), ">LUp")
         thisex <- bind_rows(thisex[rep(1, 4), keepcols] %>% mutate(code = lineup_codes, team = c("*", "*", "a", "a")), thisex)
-        ## **Xset code at end
-        bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
+        ## **Xset code at end but only if this set was completed, in which case the jx$scout$sets$score row will be populated for this set
+        if (!is.null(jx$scout$sets$score) && nrow(jx$scout$sets$score) >= si && !any(is.na(unlist(jx$scout$sets$score[si, ])))) {
+            thisex <- bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
+        } else {
+            if (!"end_of_set" %in% names(thisex)) thisex$end_of_set <- FALSE
+        }
+        thisex
     }))
 
     if (nrow(px) < 1) {
