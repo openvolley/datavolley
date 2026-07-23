@@ -369,11 +369,16 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         lineup_codes <- paste0(c(paste0("*P", lead0(hs)), paste0("*z", thisex$home_setter_position[1]), paste0("aP", lead0(vs)), paste0("az", thisex$visiting_setter_position[1])), ">LUp")
         thisex <- bind_rows(thisex[rep(1, 4), keepcols] %>% mutate(code = lineup_codes, team = c("*", "*", "a", "a")), thisex)
         ## **Xset code at end but only if this set was completed, in which case the jx$scout$sets$score row will be populated for this set
-        if (!is.null(jx$scout$sets$score) && nrow(jx$scout$sets$score) >= si && !any(is.na(unlist(jx$scout$sets$score[si, ])))) {
-            thisex <- bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
-        } else {
-            if (!"end_of_set" %in% names(thisex)) thisex$end_of_set <- FALSE
+        if (!is.null(jx$scout$sets$score) && nrow(jx$scout$sets$score) >= si) {
+            ## there is a row giving the scores for this set
+            ## but the row might still be present even if the set has not finished: if the set was finished and then undo applied to rewind it, the row might be populated (it seems with 0-0 scores)
+            ## we can't know if the set has been completed just by looking at the scores: not all leagues use standard rules, or this might be a scrimmage match. Missing or all-zero scores are taken as a indication of an uncompleted set
+            temp <- unlist(jx$scout$sets$score[si, ]) ## this set score
+            if (!any(is.na(temp)) && all(temp > 0)) {
+                thisex <- bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
+            }
         }
+        if (!"end_of_set" %in% names(thisex)) thisex$end_of_set <- FALSE
         thisex
     }))
 
