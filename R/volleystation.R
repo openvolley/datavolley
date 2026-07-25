@@ -374,7 +374,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             ## but the row might still be present even if the set has not finished: if the set was finished and then undo applied to rewind it, the row might be populated (it seems with 0-0 scores)
             ## we can't know if the set has been completed just by looking at the scores: not all leagues use standard rules, or this might be a scrimmage match. Missing or all-zero scores are taken as a indication of an uncompleted set
             temp <- unlist(jx$scout$sets$score[si, ]) ## this set score
-            if (!any(is.na(temp)) && all(temp > 0)) {
+            if (!any(is.na(temp)) && !all(temp < 1)) {
                 thisex <- bind_rows(thisex, thisex[nrow(thisex), keepcols] %>% mutate(code = paste0("**", si, "set"), end_of_set = TRUE, point_won_by = NA_character_))
             }
         }
