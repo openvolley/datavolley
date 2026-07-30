@@ -764,10 +764,11 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
         ##}
         #### not sure how to deal with these!
+#trace_ma("dv8.6")
 
         ## winning attacks
         ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
-        out$plays <- mutate(out$plays, winning_attack2 = case_when(.data$skill == "Attack" & (.data$evaluation == "Winning attack" | (lead((.data$skill == "Dig" | .data$skill == "Block") & .data$evaluation == "Error"))) ~ TRUE, TRUE ~ FALSE))
+        out$plays <- mutate(out$plays, winning_attack = case_when(.data$skill == "Attack" & (.data$evaluation == "Winning attack" | (lead((.data$skill == "Dig" | .data$skill == "Block") & .data$evaluation == "Error"))) ~ TRUE, TRUE ~ FALSE))
 
         ## fill in scores, so that all lines have a score
         scores <- unique(na.omit(out$plays[, c("point_id", "home_team_score", "visiting_team_score")]))
