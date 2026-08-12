@@ -50,6 +50,7 @@
 #' \itemize{
 #'   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options = list(setter_tip_codes = c("PP", "XY"))}
 #'   \item ignore_sub_misalignment logical: when a player is substituted, the player lineups (in the \code{plays} component of \code{x}) should change on the same row as the substitution code. However, in some dvw files the player lineups are changed immediately after the final action of the rally, but the actual substitution code(s) appear on subsequent lines. Hence the lineups are recorded incorrectly on one or more lines, but will be correct by the time the next rally starts. The error in lineups in this situation is relatively minor and unlikely to cause analysis problems. If \code{ignore_sub_misalignment = TRUE} these errors will not be reported (unless they are associated with a genuine substitution error). If \code{ignore_sub_misalignment = FALSE} (the default), they will be reported but only at \code{validation_level = 3}
+#'   \item style string: "default" or "german" (following the DVV Scouting Codebook)
 #' }
 #' @param file_type string: "indoor" or "beach". If not provided, will be taken from the \code{x$file_meta$file_format} entry
 #'
@@ -68,12 +69,17 @@
 #' }
 #'
 #' @export
-dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
-    assert_that(is.numeric(validation_level) && validation_level %in% 0:3)
+dv_validate <- function(x, validation_level = 2, options = list(style = "default"), file_type) {
     assert_that(is.list(options))
+    if (!"style" %in% names(options)) options$style <- "default"
+    options$style <- tolower(options$style)
+    stopifnot("options$style should be \"default\" or \"german\"" = options$style %in% c("default", "german"))
+    if (options$style == "german" && missing(validation_level)) validation_level <- 3 ## default to strict here if called directly. Note that this won't trigger if dv_validate is being run automatically through a dv_read call
+    assert_that(is.numeric(validation_level) && validation_level %in% 0:3)
     if (missing(file_type)) file_type <- if (isTRUE(grepl("beach", x$file_meta$file_type))) "beach" else "indoor"
     assert_that(is.string(file_type))
     file_type <- match.arg(tolower(file_type), c("indoor", "beach"))
+    options$de_terminal_seq_checks <- if (!"de_terminal_seq_checks" %in% names(options)) TRUE else isTRUE(options$de_terminal_seq_checks) ## currently undocumented. Set to FALSE if sequence checking on terminal actions (with German conventions) is happening independently of this validation
 
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
 
@@ -224,17 +230,14 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
             ## reception zones must match serve zones
             idx <- which(plays$skill %eq% "Reception" & lag(plays$skill) %eq% "Serve")
             ## start zones mismatch, but ignore any missing
-            idx2 <- idx[(!plays$start_zone[idx] %eq% plays$start_zone[idx-1]) & !is.na(plays$start_zone[idx]) & !is.na(plays$start_zone[idx-1])]
-            if (length(idx2)>0)
-                out <- rbind(out,chk_df(plays[idx2,],paste0("Reception start zone (",plays$start_zone[idx2],") does not match serve start zone (",plays$start_zone[idx2-1],")"),severity=1))
+            idx2 <- idx[(!plays$start_zone[idx] %eq% plays$start_zone[idx - 1]) & !is.na(plays$start_zone[idx]) & !is.na(plays$start_zone[idx - 1])]
+            if (length(idx2)>0) out <- rbind(out, chk_df(plays[idx2, ], paste0("Reception start zone (", plays$start_zone[idx2], ") does not match serve start zone (", plays$start_zone[idx2 - 1], ")"), severity = 1))
             ## end zones mismatch, but ignore any missing
-            idx2 <- idx[(!plays$end_zone[idx] %eq% plays$end_zone[idx-1]) & !is.na(plays$end_zone[idx]) & !is.na(plays$end_zone[idx-1])]
-            if (length(idx2)>0)
-                out <- rbind(out,chk_df(plays[idx2,],paste0("Reception end zone (",plays$end_zone[idx2],") does not match serve end zone (",plays$end_zone[idx2-1],")"),severity=1))
+            idx2 <- idx[(!plays$end_zone[idx] %eq% plays$end_zone[idx - 1]) & !is.na(plays$end_zone[idx]) & !is.na(plays$end_zone[idx - 1])]
+            if (length(idx2)>0) out <- rbind(out, chk_df(plays[idx2, ], paste0("Reception end zone (", plays$end_zone[idx2], ") does not match serve end zone (", plays$end_zone[idx2 - 1], ")"), severity = 1))
             ## end zones mismatch, but ignore any missing
-            idx2 <- idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx-1]) & !is.na(plays$end_subzone[idx]) & !is.na(plays$end_subzone[idx-1])]
-            if (length(idx2)>0)
-                out <- rbind(out,chk_df(plays[idx2,],paste0("Reception end sub-zone (",plays$end_subzone[idx2],") does not match serve end sub-zone (",plays$end_subzone[idx2-1],")"),severity=1))
+            idx2 <- idx[(!plays$end_subzone[idx] %eq% plays$end_subzone[idx - 1]) & !is.na(plays$end_subzone[idx]) & !is.na(plays$end_subzone[idx - 1])]
+            if (length(idx2)>0) out <- rbind(out, chk_df(plays[idx2, ], paste0("Reception end sub-zone (", plays$end_subzone[idx2], ") does not match serve end sub-zone (", plays$end_subzone[idx2 - 1], ")"), severity = 1))
 
             ## attack type must match set type
             ## but only from same team, so that e.g. attacks on over-sets don't get flagged here
@@ -262,6 +265,55 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
             ignore_codes <- options$setter_tip_codes
             if (!is.null(ignore_codes) && !is.character(ignore_codes)) ignore_codes <- NULL
             if (!is.null(ignore_codes)) ignore_codes <- na.omit(ignore_codes)
+            expected_attack_combos <- NULL
+            if (options$style == "german") {
+                expected_attack_combos <- tribble(~attack_code, ~expected_start_zone, ~expected_something, ~expected_tempo, ~expected_set_type,
+                                                  "X1", 3L, "C", "Q", "C",
+                                                  "X2", 3L, "C", "Q", "C",
+                                                  "XC", 3L, "L", "Q", "C",
+                                                  "XG", 3L, "R", "Q", "C",
+                                                  "X7", 3L, "C", "Q", "C",
+                                                  "XS", 2L, "R", "Q", "C",
+                                                  "PP", 3L, "C", "O", "S",
+                                                  "X8", 9L, "L", "T", "B",
+                                                  "C8", 9L, "L", "M", "B",
+                                                  "V8", 9L, "L", "H", "B",
+                                                  "XX", 9L, "L", "T", "B",
+                                                  "VX", 9L, "L", "H", "B",
+                                                  "X6", 2L, "L", "T", "B",
+                                                  "C6", 2L, "L", "M", "B",
+                                                  "V6", 2L, "L", "H", "B",
+                                                  "X4", 2L, "L", "T", "B",
+                                                  "V4", 2L, "L", "H", "B",
+                                                  "V3", 3L, "C", "H", "-",
+                                                  "X5", 4L, "R", "T", "F",
+                                                  "C5", 4L, "R", "M", "F",
+                                                  "V5", 4L, "R", "H", "F",
+                                                  "X9", 4L, "R", "T", "F",
+                                                  "V9", 4L, "R", "H", "F",
+                                                  "X0", 7L, "C", "T", NA_character_,
+                                                  "C0", 7L, "C", "M", NA_character_,
+                                                  "V0", 7L, "R", "H", NA_character_,
+                                                  "XP", 8L, "C", "U", "P",
+                                                  "VP", 8L, "C", "H", "P",
+                                                  "XR", 8L, "C", "U", "P",
+                                                  "VR", 8L, "C", "H", "P",
+                                                  "XB", 8L, "C", "U", "P",
+                                                  "VB", 8L, "C", "H", "P",
+                                                  "XT", 3L, "R", "M", "F",
+                                                  "X3", 3L, "L", "M", "B",
+                                                  "XF", 2L, "R", "M", "B",
+                                                  "PR", 3L, "C", "O", NA_character_,
+                                                  "P2", 2L, "C", "O", NA_character_,
+                                                  "P3", 3L, "C", "O", NA_character_,
+                                                  "P4", 4L, "C", "O", NA_character_,
+                                                  "P1", 9L, "C", "O", NA_character_,
+                                                  "P6", 8L, "C", "O", NA_character_,
+                                                  "P5", 7L, "C", "O", NA_character_,
+                                                  "PK", 4L, "C", "O", NA_character_,
+                                                  "PO", 8L, "C", "O", NA_character_)
+                ignore_codes <- unique(c(ignore_codes, expected_attack_combos$attack_code[expected_attack_combos$expected_tempo == "O"]))
+            }
             attacks <- plays[plays$skill %eq% "Attack", ]
             if (nrow(attacks) > 0) {
                 for (p in 1:6) attacks[, paste0("attacker_", p)] <- NA_integer_
@@ -284,12 +336,43 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                 idx <- attacks$team %eq% attacks$visiting_team
                 temp_roles <- left_join(attacks[idx, ], dplyr::distinct(x$meta$players_v[, c("player_id", "role")], .data$player_id, .keep_all = TRUE), by = "player_id")$role
                 attacks$player_role[idx] <- temp_roles
-                ## first-tempo attack by non-middle (but allow slides, because e.g. the opposite might run a slide, albeit unusual)
-                chk <- attacks[!attacks$player_role %in% c(NA_character_, "middle") & grepl("^Quick", attacks$skill_type), ]
-                if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Quick attack by non-middle player", severity = 2))
+                ## first-tempo attack by non-middle (but allow slides, because e.g. the opposite might run a slide, albeit unusual). Skip this for German style, there is a more specific check below for that
+                if (options$style != "german") {
+                    chk <- attacks[!attacks$player_role %in% c(NA_character_, "middle") & grepl("^Quick", attacks$skill_type), ]
+                    if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Quick attack by non-middle player", severity = 2))
+                }
                 ## middle attack not a quick, slide, or other (e.g. overpass PR) ball
                 chk <- attacks[attacks$player_role %eq% "middle" & !grepl("^(Quick|Other|Slide)", attacks$skill_type), ]
                 if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Middle player made a non-quick attack", severity = 2))
+
+                if (options$style == "german") {
+                    attacks$p1rec <- attacks$team != attacks$serving_team &
+                        ((attacks$team == attacks$home_team & attacks$home_setter_position == 1) | (attacks$team == attacks$visiting_team & attacks$visiting_setter_position == 1))
+                    ## note that if roles are missing, these role-based checks won't pick anything up, but there will be a note that roles are missing
+                    ## zone 4 attacks should only be by outsides, or by outsides or opposites in P1/rec. Exception: quick tempo attacks (e.g. X7) can be by a middle
+                    ## report p1/rec separately, for clarity
+                    idx <- which(!attacks$attack_code %in% ignore_codes & !attacks$p1rec & attacks$start_zone == 4 & attacks$player_role != "outside" & !grepl("^(Quick|Other|Slide)", attacks$skill_type))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], paste("Attack from zone 4 by unexpected player (player role", attacks$player_role[idx], "but we expect outside)"), severity = 3))
+                    idx <- which(!attacks$attack_code %in% ignore_codes & attacks$p1rec & attacks$start_zone == 4 & !attacks$player_role %in% c("opposite", "outside") & !grepl("^(Quick|Other|Slide)", attacks$skill_type))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], paste("Attack from zone 4 by unexpected player (player role", attacks$player_role[idx], "but we expect outside or opposite in reception/P1)"), severity = 3))
+                    ## Z3 attack by non middle (except type O attacks), or a quick attack by a non-middle
+                    idx <- which(!attacks$attack_code %in% ignore_codes & attacks$start_zone == 3 & attacks$player_role != "middle")
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], paste("Attack from zone 3 by unexpected player (player role", attacks$player_role[idx], "but we expect middle)"), severity = 3))
+                    idx <- setdiff(which(!attacks$attack_code %in% ignore_codes & grepl("^Quick", attacks$skill_type) & attacks$player_role != "middle"), idx) ## setdiff to avoid double-reporting a non-quick attack through zone 3
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], paste("Quick attack by unexpected player (player role", attacks$player_role[idx], "but we expect middle)"), severity = 3))
+                    ## Z2, Z1, Z9 attack by non opposite
+                    idx <- which(!attacks$attack_code %in% ignore_codes & !attacks$p1rec & attacks$start_zone == 2 & attacks$player_role != "opposite" & !grepl("^(Quick|Other|Slide)", attacks$skill_type))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], paste("Attack from zone 2 by unexpected player (player role", attacks$player_role[idx], "but we expect opposite)"), severity = 3))
+                    idx <- which(!attacks$attack_code %in% ignore_codes & attacks$p1rec & attacks$start_zone == 2 & !attacks$player_role %in% c("outside", "opposite") & !grepl("^(Quick|Other|Slide)", attacks$skill_type))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], paste("Attack from zone 2 by unexpected player (player role", attacks$player_role[idx], "but we expect outside or opposite in reception/P1)"), severity = 3))
+                    idx <- which(!attacks$attack_code %in% ignore_codes & attacks$start_zone %in% c(9, 1) & attacks$player_role != "opposite")
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], paste("Attack from zone", attacks$start_zone[idx], "by unexpected player (player role", attacks$player_role[idx], "but we expect opposite)"), severity = 3))
+                    ## Z8 attack by non outside (except type O attacks). Opposite is possible, but warn
+                    idx <- which(!attacks$attack_code %in% ignore_codes & attacks$start_zone == 8 & !attacks$player_role %in% c("outside", "opposite"))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], paste("Attack from zone 8 by unexpected player (player role", attacks$player_role[idx], "but we expect outside or opposite)"), severity = 3))
+                    idx <- which(!attacks$attack_code %in% ignore_codes & attacks$start_zone == 8 & attacks$player_role == "opposite")
+                    if (length(idx) > 0) out <- rbind(out, chk_df(attacks[idx, ], "Attack from zone 8 by opposite (legal, but possibly a scouting error)", severity = 2))
+                }
             }
             ## back row player blocking
             chk <- (plays$skill %eq% "Block") &
@@ -321,8 +404,7 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
             pid <- bind_rows(lapply(split(plays, plays$point_id), find_should_be_aces)) %>% na.omit %>% dplyr::filter(.data$should_be_ace) %>% pull(.data$point_id) %>% sort
 
             chk <- plays$skill %eq% "Serve" & plays$point_id %in% pid
-            if (any(chk))
-                out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Winning serve not coded as an ace",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
+            if (any(chk)) out <- rbind(out, data.frame(file_line_number = plays$file_line_number[chk], video_time = video_time_from_raw(x$raw[plays$file_line_number[chk]]), message = "Winning serve not coded as an ace", file_line = mt2nachar(x$raw[plays$file_line_number[chk]]), severity = 3, stringsAsFactors = FALSE))
             ## and vice-versa: serves that were coded as aces, but should not have been
             find_should_not_be_aces <- function(rally,rotation_error_is_ace=TRUE) {
                 ## by default assume rotation errors should be aces here (opposite to above)
@@ -349,17 +431,200 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
             chk <- (plays$skill %eq% "Serve") & (((plays$team %eq% plays$home_team) & (!plays$player_number %eq% plays$home_p1)) | ((plays$team %eq% plays$visiting_team) & (!plays$player_number %eq% plays$visiting_p1)))
             if (any(chk))
                 out <- rbind(out,data.frame(file_line_number=plays$file_line_number[chk],video_time=video_time_from_raw(x$raw[plays$file_line_number[chk]]),message="Serving player not in position 1",file_line=mt2nachar(x$raw[plays$file_line_number[chk]]),severity=3,stringsAsFactors=FALSE))
+
+            if (options$style == "german") {
+                end_zsz <- paste0(plays$end_zone, plays$end_subzone)
+                ## Codebook 2.5(f): P2/PP attack codes should be preceded by two touches by the same player: a reception / defense / freeball that is played or used as a set for an attack on the second touch, has to be coded twice - once as R / D / F and once as a set of the same player
+                ## BUT not PP attacks, those should have E and A by same player
+                idx <- which(plays$skill == "Attack" & plays$attack_code %in% paste0("P", 1:6) & ## second-touch attack (not PO, PK, PR, PP)
+                             ((!plays$team %eq% lag(plays$team) | !lag(plays$team) %eq% lag(plays$team, 2)) | ## not preceded by two touches by the same team
+                              (!lag(plays$player_id) %eq% lag(plays$player_id, 2)) | ## preceding two touches were not by the same player
+                              (!lag(plays$skill) %eq% "Set" & lag(plays$skill, 2) %in% c("Freeball", "Dig", "Reception")))) ## preceding two touches were not RDF then E
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Attack code", plays$attack_code[idx], "should be preceded by two touches by the same player (i.e. a dig/reception/freeball and then a set by that same player: codebook 2.5f)"), severity = 3))
+
+                idx <- which(plays$skill == "Attack" & plays$attack_code == "PP" & ## PP attack (setter dump)
+                             ((!plays$team %eq% lag(plays$team) | !lag(plays$team) %eq% lag(plays$team, 2)) | ## not preceded by two touches by the same team
+                              (!plays$player_id %eq% lag(plays$player_id)) | ## preceding touch was not by the attacking player
+                              (!lag(plays$skill) %eq% "Set" & lag(plays$skill, 2) %in% c("Freeball", "Dig", "Reception")))) ## preceding two touches were not RDF then E
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Setter dump", plays$attack_code[idx], "should be preceded by a set by the same player, and a dig/reception/freeball prior to that"), severity = 3))
+
+                ## serves can only be type M, Q, H, T, which we decode as M = Jump-float, Q = Jump, H = Float, T = Jump (with German conventions) or Topspin (default conventions)
+                idx <- which(plays$skill == "Serve" & !plays$skill_type %in% paste(c("Jump", "Jump-float", "Float"), "serve"))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Serve should be of type M, Q, H, or T (codebook 1.2)", severity = 3))
+
+                ## serve match flow
+                idx <- which(plays$skill == "Serve" & lead(plays$skill) == "Reception")
+                idx2 <- idx[plays$evaluation_code[idx] %eq% "+" & !plays$evaluation_code[idx + 1] %eq% "-"] ## S+R-
+                if (length(idx2) > 0) out <- rbind(out, chk_df(plays[idx2, ], "Serve rated + should be followed by reception rated - (codebook 1.3)", severity = 3))
+                idx2 <- idx[plays$evaluation_code[idx] %eq% "!" & !plays$evaluation_code[idx + 1] %eq% "!"] ## S!R!
+                if (length(idx2) > 0) out <- rbind(out, chk_df(plays[idx2, ], "Serve rated ! should be followed by reception rated ! (codebook 1.3)", severity = 3))
+                idx2 <- idx[plays$evaluation_code[idx] %eq% "!" & !plays$evaluation_code[idx + 1] %eq% "!"] ## S/R/
+                if (length(idx2) > 0) out <- rbind(out, chk_df(plays[idx2, ], "Serve rated / should be followed by reception rated / (codebook 1.3)", severity = 3))
+                idx2 <- idx[plays$evaluation_code[idx] %eq% "-" & !plays$evaluation_code[idx + 1] %in% c("#", "+")] ## S-R#+
+                if (length(idx2) > 0) out <- rbind(out, chk_df(plays[idx2, ], "Serve rated - should be followed by reception rated # or + (codebook 1.3)", severity = 3))
+                if (options$de_terminal_seq_checks) {
+                    ## not needed if we are running sequence checks elsewhere
+                    idx <- which(plays$skill == "Serve" & plays$evaluation == "Error" & !is.na(lead(plays$skill))) ## S=(no rec)
+                    if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Serve error should not be followed by another touch (codebook 1.3)", severity = 3))
+                }
+
+                ## check locations of particular skill/evaluation pairs. Remember that VS codes end locations on the reception skill, but we move this to the set skill for internal consistency with DV
+                ## R# (D#, F#) outside 2C/3B
+                idx <- which(lead(plays$skill) == "Set" & plays$skill %in% c("Reception", "Dig", "Freeball") & plays$evaluation_code == "#" & !lead(end_zsz) %in% c("2C", "3B"))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Perfect", tolower(plays$skill[idx]), "should end in zone 2C or 3B (codebook 2.2)"), severity = 3))
+                ## R+ (D+, F+) outside 2/3
+                idx <- which(lead(plays$skill) == "Set" & plays$skill %in% c("Reception", "Dig", "Freeball") & plays$evaluation_code == "+" & !lead(plays$end_zone) %in% c(2, 3))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Positive", tolower(plays$skill[idx]), "should end in zone 2 or 3 (codebook 2.2)"), severity = 3))
+
+                ## reception match flow
+                ## R/ crosses net for aA or aF
+                idx <- which(plays$skill == "Reception" & plays$evaluation_code == "/" & plays$team == lead(plays$team))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Overpass (R/) was played again by the receiving team (codebook 2.4)", severity = 3))
+                idx <- which(plays$skill == "Reception" & plays$evaluation_code == "/" & !lead(plays$skill) %in% c("Attack", "Freeball"))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Overpass (R/) should be followed by an opposition attack or freeball (codebook 2.4)", severity = 3))
+                ## R#+!- should be followed by E of same team
+                idx <- which(plays$skill == "Reception" & plays$evaluation_code %in% c("#", "+", "!", "-") & !(lead(plays$skill) %eq% "Set" & lead(plays$team) %eq% plays$team))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste0("R", plays$evaluation_code[idx], " should be followed by a set by the same team (codebook 2.4)"), severity = 3))
+                if (options$de_terminal_seq_checks) {
+                    idx <- which(plays$skill == "Reception" & plays$evaluation_code == "=" & !is.na(lead(plays$skill)))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Reception error should not be followed by another touch (codebook 2.4)", severity = 3))
+                }
+
+                ## setter calls only K1, K7, K2, KE, KS
+                idx <- which(!plays$set_code %in% c(NA, "K1", "K7", "K2", "KE", "KS"))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Setter call", plays$set_code[idx], "is unexpected (only K1, K7, K2, KE, KS: codebook 3.1)"), severity = 3))
+                ## don't expect anything other than KE on an R- that's off the net (an "almost overpass" where the setter sets with one hand should be coded R-, and the middle can be in play on this, so we can have other setter calls on R- at the net. But a bump set close to the net would also be R-, and the middle would likely be out of play on this. So don't check R- near the net, it's ambiguous)
+                ## So just check for setter calls that aren't KE on sets in zones 1, 5, 6
+                idx <- which(plays$set_code != "KE" & plays$end_zone %in% c(1, 5, 6))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste0("Don't expect setter call ", plays$set_code[idx], " on a set in zone ", plays$end_zone[idx], " where the middle is out of play (codebook 3.1)"), severity = 3))
+
+                ## E match flow
+                ## E#+!- should be followed by A
+                idx <- which(plays$skill == "Set" & plays$evaluation_code %in% c("#", "+", "!", "-") & !(lead(plays$skill) %eq% "Attack" & lead(plays$team) %eq% plays$team))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Set (not overpass or error) should be followed by an attack by the same team (codebook 3.5)", severity = 3))
+                ## E= followed by another touch should be picked up in the sequence checks
+                if (options$de_terminal_seq_checks) {
+                    idx <- which(plays$skill == "Set" & plays$evaluation_code == "=" & !is.na(lead(plays$skill)))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Set error should not be followed by another touch (codebook 3.5)", severity = 3))
+                }
+                ## E/ should be followed by aA or aF
+                idx <- which(plays$skill == "Set" & plays$evaluation_code == "/" & plays$team == lead(plays$team))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Overset (E/) was played again by the same team (codebook 3.5)", severity = 3))
+                idx <- which(plays$skill == "Set" & plays$evaluation_code == "/" & !lead(plays$skill) %in% c("Attack", "Freeball"))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Overset (E/) should be followed by an opposition attack or freeball (codebook 3.5)", severity = 3))
+
+                ## Attack type not according to codebook attack combinations list (wrong config?)
+                plays <- left_join(plays, expected_attack_combos, by = "attack_code")
+                plays$attack_tempo <- attack2char(plays$skill_type)
+
+                idx <- which(!plays$attack_code %in% c(NA, expected_attack_combos$attack_code))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Attack code", plays$attack_code[idx], "should not be used (codebook 4.2)"), severity = 3))
+                idx <- which(!is.na(plays$attack_code) & plays$attack_code %in% expected_attack_combos$attack_code & !plays$attack_tempo %eq% plays$expected_tempo)
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Attack code", plays$attack_code[idx], "is expected to have tempo", plays$expected_tempo[idx], "but has tempo", plays$attack_tempo[idx], "(codebook 4.2)"), severity = 3))
+                idx <- which(!is.na(plays$attack_code) & plays$attack_code %in% expected_attack_combos$attack_code & lag(plays$skill) == "Set" & !((lag(plays$set_type) %eq% plays$expected_set_type) | (is.na(lag(plays$set_type)) & is.na(plays$expected_set_type))))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx - 1, ], paste("The set for attack code", plays$attack_code[idx], "is expected to have set direction", plays$expected_set_type[idx], "but has", ifelse(is.na(plays$set_type[idx - 1]), "no direction recorded", paste("direction", plays$set_type[idx - 1])), "(codebook 4.2)"), severity = 3))
+                ## Set with no direction (F, B, C, P, S)
+                ac_no_set_dir <- if (!is.null(expected_attack_combos)) expected_attack_combos$attack_code[is.na(expected_attack_combos$expected_set_type) | expected_attack_combos$expected_set_type == "-"] else c() ## don't expect set direction on these
+                idx <- setdiff(which(plays$skill == "Set" & (is.na(plays$set_type) | plays$set_type == "-") & !plays$evaluation_code %in% c("=", "/") & !lead(plays$attack_code %in% ac_no_set_dir)), idx)
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Set has no direction  (F, B, C, P, S)", severity = 3)) ## no codebook entry?
+                ## start zone of attack does not match the start zone in the attacks table
+                ## exclude "other" and quick attacks from this
+                excl <- expected_attack_combos %>% dplyr::filter(.data$expected_tempo %in% c("Q", "O") | .data$attack_code %in% c("XT", "X3", "XR", "VR", "XB", "VB")) %>% pull(.data$attack_code)
+                idx <- which(!is.na(plays$attack_code) & plays$attack_code %in% expected_attack_combos$attack_code & !plays$attack_code %in% excl & !plays$start_zone %eq% plays$expected_start_zone)
+                idx <- c(idx, which(plays$attack_code %in% c("XR", "VR") & !plays$start_zone %in% c(7, 8))) ## XR, VR nominally from zone 8 but could be from zone 7
+                idx <- sort(unique(c(idx, which(plays$attack_code %in% c("XB", "VB") & !plays$start_zone %in% c(8, 9))))) ## XB, VB nominally from zone 8 but could be from zone 9
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Attack code", plays$attack_code[idx], "is expected to be from zone", plays$expected_start_zone[idx], "but was made from zone", plays$start_zone[idx], "(codebook 4.2)"), severity = 3))
+
+                ## attack match flow
+                ## A# can be followed by aB/- or aD= or by nothing
+                idx <- which(plays$skill == "Attack" & plays$evaluation_code %in% c("#", "+", "!", "/", "-") & plays$team == lead(plays$team))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Attack that was not an error was played again by the attacking team (codebook 4.6)", severity = 3))
+                idx <- which(plays$skill == "Attack" & plays$evaluation_code == "#" &
+                             !((lead(plays$skill) == "Block" & lead(plays$evaluation_code) %in% c("/", "-")) |
+                               (lead(plays$skill) == "Dig" & lead(plays$evaluation_code) == "=") |
+                               is.na(lead(plays$skill))))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Attack kill (A#) does not follow the expected match flow (codebook 4.6)", severity = 3))
+                ## A+ can be followed by aB- or aD/=
+                idx <- which(plays$skill == "Attack" & plays$evaluation_code == "+" &
+                             !((lead(plays$skill) == "Block" & lead(plays$evaluation_code) == "-") |
+                               (lead(plays$skill) == "Dig" & lead(plays$evaluation_code) %in% c("/", "="))))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Positive attack (A+) does not follow the expected match flow (codebook 4.6)", severity = 3))
+                ## A! can be followed by aB!
+                idx <- which(plays$skill == "Attack" & plays$evaluation_code == "!" & !(lead(plays$skill) == "Block" & lead(plays$evaluation_code) == "!"))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Attack that was blocked back to the attacking team (A!) was not followed by B! (codebook 4.6)", severity = 3))
+                ## A/ can be followed by aB#
+                idx <- which(plays$skill == "Attack" & plays$evaluation_code == "/" & !(lead(plays$skill) == "Block" & lead(plays$evaluation_code) == "#"))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Attack that was blocked (A/) was not followed by a block kill B# (codebook 4.6)", severity = 3))
+                ## A- can be followed by aB+= or aD#+!-
+                idx <- which(plays$skill == "Attack" & plays$evaluation_code == "-" &
+                             !((lead(plays$skill) == "Block" & lead(plays$evaluation_code) %in% c("+", "=")) |
+                               (lead(plays$skill) == "Dig" & lead(plays$evaluation_code) %in% c("#", "+", "!", "-"))))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Poor attack (A-) does not follow the expected match flow (codebook 4.6)", severity = 3))
+                ## A= should not be followed by anything, but this will be picked up by the sequence check
+                if (options$de_terminal_seq_checks) {
+                    idx <- which(plays$skill == "Attack" & plays$evaluation_code == "=" & !is.na(lead(plays$skill)))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Attack error should not be followed by another touch (codebook 4.6)", severity = 3))
+                }
+                ## 4.7h No point for the attacker is recorded on blocking error (net, line fault, etc.), except the attack was killed anyway. In such a case the blocking error will not be registered.
+                idx <- which(plays$skill == "Block" & plays$evaluation_code == "=" & lag(plays$skill) == "Attack" & lag(plays$evaluation_code) == "#")
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Block fault (B=) should not be recorded on an attack kill (codebook 4.7h)", severity = 3))
+
+                ## block match flow
+                ## B# should not be followed by e.g. aD=
+                ## 5.3b A block counts as a kill, even if there are (unsuccessful) defense efforts afterwards, which are not recorded.
+                idx <- which(plays$skill == "Block" & plays$evaluation_code == "#" & lead(plays$skill) == "Dig" & lead(plays$evaluation_code) == "=")
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx + 1, ], "Unsuccessful dig attempts after block kill (B#) should not be recorded (codebook 5.3b)", severity = 3))
+                ## should not be any skills after B#: D= is checked above and others should be picked up by sequence check
+                if (options$de_terminal_seq_checks) {
+                    idx <- setdiff(which(plays$skill == "Block" & plays$evaluation_code == "#" & !is.na(lead(plays$skill))), idx)
+                    if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Block kill should not be followed by another touch (codebook 5.2)", severity = 3))
+                }
+                ## B+ can be followed by A or D (with any evaluation)
+                idx <- which(plays$skill == "Block" & plays$evaluation_code == "+" & !(lead(plays$skill) %in% c("Dig", "Attack") & plays$team %eq% lead(plays$team)))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Positive block (B+) should be followed by a dig or attack by the blocking team (codebook 5.2)", severity = 3))
+                ## B! can be followed by aA or aD (with any evaluation)
+                idx <- which(plays$skill == "Block" & plays$evaluation_code == "!" & !(lead(plays$skill) %in% c("Dig", "Attack") & plays$team != lead(plays$team)))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Block back to the attacking team (B!) should be followed by a dig or attack by the attacking team (codebook 5.2)", severity = 3))
+                ## B/ is a kill off hands with no following dig
+                idx <- which(plays$skill == "Block" & plays$evaluation_code == "/" & lead(plays$skill) == "Dig")
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Block-out (B/) should not be followed by a dig (codebook 5.2)", severity = 3))
+                idx <- which(plays$skill == "Block" & plays$evaluation_code == "-" & !(lead(plays$skill) %eq% "Dig" & lead(plays$evaluation_code) %in% c("/", "=") & plays$team %eq% lead(plays$team)))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Negative block (B-) should be followed by D/ or D= by the blocking team (codebook 5.2)", severity = 3))
+                ## B=D= and B/D/ are not allowed. Use B=, or B-D=, or D=
+                ## B/D is already checked above, and B= should be picked up by the sequence check
+                if (options$de_terminal_seq_checks) {
+                    idx <- which(plays$skill == "Block" & plays$evaluation_code == "=" & !is.na(lead(plays$skill)))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Block error should not be followed by another touch (codebook 5.2)", severity = 3))
+                }
+                ## dig/freeball match flow
+                ## D or F cannot be played by same team as the touch before, except if it's a block
+                idx <- which(plays$skill == "Dig" & lag(plays$skill) != "Block" & plays$team %eq% lag(plays$team))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Dig was made by same team as the preceding ball touch (codebook 6.4)", severity = 3))
+                idx <- which(plays$skill == "Freeball" & lag(plays$skill) != "Block" & plays$team %eq% lag(plays$team))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Freeball was made by same team as the preceding ball touch (codebook 6.4). If this is a freeball being sent over the net it should be coded as E/ or a PK attack (codebook 6.3b)", severity = 3))
+                idx <- which(plays$skill %in% c("Dig", "Freeball") & plays$evaluation_code %in% c("#", "+", "!", "-") & !(lead(plays$team) %eq% plays$team) & lead(plays$skill) %eq% "Set")
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste(plays$skill[idx], "should be followed by a set by the same team (codebook 6.4)"), severity = 3))
+                idx <- which(plays$skill %in% c("Dig", "Freeball") & plays$evaluation_code == "/" & (lead(plays$team) %eq% plays$team | !lead(plays$skill) %in% c("Attack", "Freeball")))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste0(plays$skill[idx], " over (", skill2char(plays$skill[idx]), "/) should be followed by a freeball or attack by the other team (codebook 6.4)"), severity = 3))
+                if (options$de_terminal_seq_checks) {
+                    idx <- which(plays$skill %in% c("Dig", "Freeball") & plays$evaluation_code == "=" & !is.na(lead(plays$skill)))
+                    if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste(plays$skill[idx], "error should not be followed by another touch (codebook 6.4)"), severity = 3))
+                }
+
+                ## ## check freeball over, should be using e.g. E/ or PK attack
+                ## plays <- dv_add_freeball_over(plays)
+                ## idx <- which(plays$freeball_over)
+                ## if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], "Freeball looks like it might be a freeball being sent over the net (not a freeball being received). Freeball-over should be coded as E/ or a PK attack (codebook 6.3b)", severity = 2))
+                ## skip this: a freeball over will almost certainly have a preceding touch by the same team, which will be picked up by the match flow check above
+            }
         }
 
         ## number of blockers (for an attack) should be >=1 if it is followed by a block
         idx <- which(plays$skill %eq% "Attack" & lead(plays$skill) %eq% "Block" & !plays$team %eq% lead(plays$team))
         idx2 <- idx[is.na(plays$num_players[idx])]
-        if (length(idx2)>0)
-            out <- rbind(out,chk_df(plays[idx2,],"Attack (which was blocked) does not have number of blockers recorded",severity=1))
-
+        if (length(idx2) > 0) out <- rbind(out, chk_df(plays[idx2, ], "Attack (which was blocked) does not have number of blockers recorded", severity = 1))
         idx2 <- idx[plays$num_players[idx] %eq% "No block"]
-        if (length(idx2)>0)
-            out <- rbind(out,chk_df(plays[idx2,],"Attack (which was followed by a block) has \"No block\" recorded for number of players",severity=3))
+        if (length(idx2) > 0) out <- rbind(out, chk_df(plays[idx2, ], "Attack (which was followed by a block) has \"No block\" recorded for number of players", severity = 3))
 
         ## winning attack not coded as such
         ## this one seems to be too problematic: e.g. can have attack that was hit out, but block net touch, so attack should NOT be coded as winning attack
@@ -500,10 +765,13 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
             if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Set on perfect/good reception made by a player other than the designated setter (might indicate an error with the rotation/designated setter)", severity = 2))
             ## depending on the scout, we might not expect setter calls to be included on sets made by a player other than the designated setter
             chk <- plays %>% dplyr::filter(!is.na(.data$set_code), (.data$player_id != .data$setter_id))
+            if (options$style == "german") chk <- chk %>% dplyr::filter(.data$set_code != "KE") ## ignore KE setter calls
             if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Setter call on a set made by a player other than the designated setter (might indicate an error with the rotation/designated setter)", severity = 1))
             ## or on negative reception
-            chk <- plays %>% dplyr::filter(!is.na(.data$set_code), lag(.data$skill == "Reception"), grepl("^(Poor|Negative)", lag(.data$evaluation)), .data$team == lag(.data$team))
-            if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Setter call on negative reception", severity = 1))
+            if (options$style != "german") {
+                chk <- plays %>% dplyr::filter(!is.na(.data$set_code), lag(.data$skill == "Reception"), grepl("^(Poor|Negative)", lag(.data$evaluation)), .data$team == lag(.data$team))
+                if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Setter call on negative reception", severity = 1))
+            }
         }
 
         ## duplicate entries with same skill and evaluation code for the same player
@@ -513,17 +781,16 @@ dv_validate <- function(x, validation_level = 2, options = list(), file_type) {
                      (plays$player_number[-1] %eq% plays$player_number[-nrow(plays)])
                      )+1
         if (length(idx) > 0)
-            out <- rbind(out,data.frame(file_line_number=plays$file_line_number[idx],video_time=video_time_from_raw(x$raw[plays$file_line_number[idx]]),message="Repeated row with same skill and evaluation_code for the same player",file_line=mt2nachar(x$raw[plays$file_line_number[idx]]),severity=3,stringsAsFactors=FALSE))
+            out <- rbind(out, data.frame(file_line_number = plays$file_line_number[idx], video_time = video_time_from_raw(x$raw[plays$file_line_number[idx]]), message = "Repeated row with same skill and evaluation_code for the same player", file_line = mt2nachar(x$raw[plays$file_line_number[idx]]), severity = 3, stringsAsFactors = FALSE))
 
         ## consecutive actions by the same player
         ## be selective about which skill sequences count here, because some scouts might record duplicate skills for the same player (e.g. reception and set) for one physical action
         ## also don't bother picking up illegal skill sequences, they will be picked up elsewhere
-        idx0 <- seq_len(nrow(plays)-1); idx0_next <- seq_len(nrow(plays))[-1]
+        idx0 <- seq_len(nrow(plays) - 1); idx0_next <- seq_len(nrow(plays))[-1]
         idx <- which(plays$player_id[idx0] %eq% plays$player_id[idx0_next] &
                      ((plays$skill[idx0] %eq% "Reception" & plays$skill[idx0_next] %in% c("Attack")) |
                       (plays$skill[idx0] %eq% "Set" & plays$skill[idx0_next] %eq% "Block")))
-        if (length(idx)>0)
-            out <- rbind(out,chk_df(plays[idx+1,],"Consecutive actions by the same player",severity=3))
+        if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx + 1, ], "Consecutive actions by the same player", severity = 3))
 
         ## look for aR -> *E -> aA or similar, suggesting that the set was assigned to the wrong team
         chk <- plays %>% dplyr::filter(.data$skill == "Set",

@@ -272,7 +272,7 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     assert_that(is.string(date_format))
     date_format <- match.arg(tolower(date_format), c("guess", "dmy", "ymd", "mdy"))
     date_format_suggested <- NULL
-    assert_that(is.numeric(extra_validation),extra_validation %in% 0:3)
+    assert_that(is.numeric(extra_validation), extra_validation %in% 0:3)
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
 
@@ -308,8 +308,12 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
                 style <- "guess" ## will be resolved by the file-type-specific handler
             }
             if (ft == "dvw" && skill_evaluation_decode %eq% "volleymetrics" && is.null(date_format_suggested)) date_format_suggested <- "mdy"
-        } else if (skill_evaluation_decode %in% c("german", "volleymetrics")) {
-            style <- skill_evaluation_decode
+        } else if (skill_evaluation_decode == "german") {
+            style <- "german"
+            if (!"style" %in% validation_options) validation_options$style <- "german"
+            if (missing(extra_validation)) extra_validation <- 3 ## default to this
+        } else if (skill_evaluation_decode == "volleymetrics") {
+            style <- "volleymetrics"
         }
         if (ft == "dvw") skill_evaluation_decode <- skill_evaluation_decoder(style = skill_evaluation_decode)
     }

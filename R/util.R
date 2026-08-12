@@ -713,3 +713,11 @@ empty_plays_df <- function(vs = TRUE) {
     }
     out
 }
+
+skill2char <- function(skill) {
+    ifelse(skill == "Serve", "S", ifelse(skill == "Reception", "R", ifelse (skill == "Attack", "A", ifelse(skill == "Block", "B", ifelse(skill == "Dig", "D", ifelse(skill == "Set", "E", ifelse(skill == "Freeball", "F", skill)))))))
+}
+
+dv_add_freeball_over <- function(x) {
+    mutate(x, freeball_over = .data$skill %eq% "Freeball" & lag(.data$match_id) %eq% .data$match_id & lag(.data$point_id) %eq% .data$point_id & ((!is.na(lead(.data$team)) & !is.na(lead(.data$skill)) & lead(.data$team) != .data$team) | lag(.data$team) %eq% .data$team))
+}
