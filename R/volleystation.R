@@ -94,7 +94,7 @@ vs_reformat_players <- function(jx, which = "home") {
     px %>% dplyr::arrange(.data$number) %>% mutate(X3 = dplyr::row_number() + if (which %in% "home") 0L else nrow(p_h))
 }
 
-dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, do_transliterate = FALSE, extra_validation = 2, validation_options = list(), metadata_only = FALSE, verbose = FALSE, ...) {
+dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_timeouts = TRUE, do_transliterate = FALSE, extra_validation = 2, validation_options = list(), metadata_only = FALSE, dv_compat = TRUE, verbose = FALSE, ...) {
     ## do_warn=FALSE, do_transliterate=FALSE, surname_case="asis", custom_code_parser, edited_meta
     if (is.function(skill_evaluation_decode)) stop("providing a function to skill_evaluation_decode is not supported for vsm files")
     skill_evaluation_decode <- match.arg(skill_evaluation_decode, c("default", "german", "guess", "volleymetrics")) ## used as the 'style' parm to dv_decode_* and dv_default_*
@@ -711,6 +711,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             x$messages <- x$messages[order(x$messages$file_line_number, na.last = FALSE), ]
             row.names(x$messages) <- NULL
         }
+        if (dv_compat && skill_evaluation_decode == "german") x <- dv_make_compat(x, style = "german", file_type = file_type) ## placeholder, this implementation will probably change
     }
     x
 }

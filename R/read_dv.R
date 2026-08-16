@@ -276,6 +276,8 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     assert_that(is.list(validation_options))
     assert_that(is.string(surname_case) || is.function(surname_case))
 
+    dv_compat <- TRUE ## currently only internal: eventually this will be a user-exposed parameter
+    ## if dv_compat is TRUE, we convert conventions to match original DV conventions, so that the user can e.g. read a mixture of vsm and dvw files and work with them all together
 
     ft <- dv_file_type(filename) ## dvw, vsm, psvb, hxml
     if (ft == "psvb") {
@@ -319,7 +321,7 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
     }
     ## pass non-dvw readers off to their dedicated read functions
     if (ft == "vsm") {
-        return(dv_read_vsm(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, do_transliterate = do_transliterate, extra_validation = extra_validation, validation_options = validation_options, verbose = verbose))
+        return(dv_read_vsm(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, do_transliterate = do_transliterate, extra_validation = extra_validation, validation_options = validation_options, dv_compat = dv_compat, verbose = verbose))
     } else if (ft == "hxml") {
         return(dv_read_hxml(filename, skill_evaluation_decode = skill_evaluation_decode, insert_technical_timeouts = insert_technical_timeouts, do_transliterate = do_transliterate, extra_validation = extra_validation, validation_options = validation_options, verbose = verbose))
     }
@@ -768,7 +770,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         ##    head(na.omit(out$plays[out$plays$point_id>dpi,c("home_team_score","visiting_team_score","point_won_by")]),1)
         ##}
         #### not sure how to deal with these!
-#trace_ma("dv8.6")
 
         ## winning attacks
         ## A followed by D with "Error" evaluation, or A with "Winning attack" evaluation
@@ -893,7 +894,11 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
             cat(paste0("line ",out$messages$file_line_number[k],vt,": ",out$messages$message[k]," (line in file is: \"",out$messages$file_line[k],"\")"),"\n")
         }
     }
-    out
+    if (dv_compat && style == "german") {
+        dv_make_compat(out, style = "german", file_type = file_type) ## placeholder, this implementation will probably change
+    } else {
+        out
+    }
 }
 
 #' @rdname dv_read

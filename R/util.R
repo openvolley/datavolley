@@ -723,3 +723,22 @@ attack2char <- function(type) ifelse(type == "High ball attack", "H", ifelse(typ
 dv_add_freeball_over <- function(x) {
     mutate(x, freeball_over = .data$skill %eq% "Freeball" & lag(.data$match_id) %eq% .data$match_id & lag(.data$point_id) %eq% .data$point_id & ((!is.na(lead(.data$team)) & !is.na(lead(.data$skill)) & lead(.data$team) != .data$team) | lag(.data$team) %eq% .data$team))
 }
+
+dv_make_compat <- function(x, style, file_type = "indoor") {
+    if (isTRUE(style == "german")) {
+        ## German conventions use E/ for a freeball over the net: convert these to freeballs for compatibility
+        ## E/ could also indicate a set that was inadvertently rather than deliberately set over the net, but (i) inadvertent ones should be rare, and (ii) it is not clear that we can differentiate them anyway since with deliberate E/ not all touches are recorded (codebook 6.3b(a)). Even if an E/ has a setter call attached (which we could reasonably take as an indication that it was a genuine set attempt) it might have been an unhittable set that was then freeballed over (but that third touch is not scouted according to the codebook)
+        idx <- which(x$plays$skill == "Set" & x$plays$evaluation_code == "/" & ## set over
+                     lead(x$plays$skill) %in% c("Attack", "Freeball") & x$plays$team != lead(x$plays$team)) ## attacked or played as a freeball dig by the opposition on the next touch
+        x$plays$skill[idx] <- "Freeball"
+        x$plays$skill_type[idx] <- x$plays$skill_type[idx + 1]
+        nxt <- x$plays$evaluation_code[idx + 1]
+        x$plays$evaluation_code[idx] <- case_when(nxt %in% c("+", "#") ~ "-",
+                                                  nxt == "!" ~ "!",
+                                                  nxt == "-" ~ "+",
+                                                  TRUE ~ "+")
+        x$plays$evaluation[idx] <- dv_decode_evaluation("Freeball", x$plays$evaluation_code[idx], data_type = file_type, style = "german")
+        substr(x$plays$code[idx], 4, 6) <- paste0("F", substr(x$plays$code[idx + 1], 5, 5), x$plays$evaluation_code[idx])
+    }
+    x
+}
