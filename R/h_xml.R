@@ -192,7 +192,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     }
     ## check for beach vs indoor
     chk <- readLines(filename, n = 200L, warn = FALSE)
-    if (any(grepl("Rotation", chk, fixed = TRUE))) stop("this appears to be an indoor file - not yet supported. Please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")
+    if (any(grepl("Rotation", chk, fixed = TRUE, useBytes = TRUE))) stop("this appears to be an indoor file - not yet supported. Please contact the package authors or submit an issue via <", utils::packageDescription("datavolley")$BugReports, ">")
 
     xml <- read_xml(filename)
     ## find the instances of interest to us
@@ -202,7 +202,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
 
     ## pull out the id, start, end, and code elements of each instance
     i1 <- xml_find_all(alli, "(ID|id|start|end|code)")
-    i1 <- tibble(nm = xml_name(i1), val = xml_text(i1))
+    i1 <- tibble(nm = tolower(xml_name(i1)), val = xml_text(i1))
     ## convert to wide format, one row per id
     i1 <- tibble(id = i1$val[i1$nm == "id"],
                  start = i1$val[i1$nm == "start"],
@@ -320,7 +320,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
     ## TODO check any missing scores
 
     x <- list(raw = paste0("<instance>", str_trim(strsplit(gsub(">\n[[:space:]]*<", "><", as.character(xml)), "<instance>")[[1]])))
-    raw_id <- str_match(x$raw, "<id>([^<]+)</id>")[, 2]
+    raw_id <- str_match(x$raw, stringr::regex("<id>([^<]+)</id>", ignore_case = TRUE))[, 2]
     idlnum <- setNames(as.list(seq_along(raw_id)), raw_id) ## line numbers, named by their corresponding _id
     ## there should not be duplicate IDs, but they will cause problems so make sure
     idlnum <- idlnum[!is.na(raw_id) & !raw_id %in% raw_id[duplicated(raw_id)]]
