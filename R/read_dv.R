@@ -788,33 +788,20 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         for (k in seq_len(nrow(out$plays))[-1]) {
             if (grepl("^\\*\\*[[:digit:]]set", out$plays$code[k], ignore.case = TRUE)) {
                 ## make end-of-set row have the same as the preceding scores
-                if (is.na(temp_home_team_score[k])) temp_home_team_score[k] <- temp_home_team_score[k-1]
-                if (is.na(temp_visiting_team_score[k])) temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
+                if (is.na(temp_home_team_score[k])) temp_home_team_score[k] <- temp_home_team_score[k - 1]
+                if (is.na(temp_visiting_team_score[k])) temp_visiting_team_score[k] <- temp_visiting_team_score[k - 1]
             } else {
                 if (is.na(temp_home_team_score[k]) & !temp_pt[k]) {
-                    temp_home_team_score[k] <- temp_home_team_score[k-1]
+                    temp_home_team_score[k] <- temp_home_team_score[k - 1]
                 }
                 if (is.na(temp_visiting_team_score[k]) & !temp_pt[k]) {
-                    temp_visiting_team_score[k] <- temp_visiting_team_score[k-1]
+                    temp_visiting_team_score[k] <- temp_visiting_team_score[k - 1]
                 }
             }
         }
         out$plays$home_team_score <- temp_home_team_score
         out$plays$visiting_team_score <- temp_visiting_team_score
 
-        ##out$plays$home_team_score <- scores$home_team_score
-        ##out$plays$visiting_team_score <- scores$visiting_team_score
-        #### will still have NA scores for timeouts and technical timeouts, patch NAs where we can
-        ##for (k in 2:nrow(out$plays)) {
-        ##    if (is.na(out$plays$home_team_score[k]) & !out$plays$point[k]) {
-        ##        out$plays$home_team_score[k] <- out$plays$home_team_score[k-1]
-        ##    }
-        ##    if (is.na(out$plays$visiting_team_score[k]) & !out$plays$point[k]) {
-        ##        out$plays$visiting_team_score[k] <- out$plays$visiting_team_score[k-1]
-        ##    }
-        ##}
-
-        ##^^^ CHECK
         ## enforce some columns to be integer
         ints <- intersect(names(out$plays), c("player_number", "start_zone", "end_zone", "end_cone", "home_team_score", "visiting_team_score", "home_setter_position", "visiting_setter_position", "set_number"))
         for (i in ints) out$plays[, i] <- as.integer(out$plays[, i])

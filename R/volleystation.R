@@ -350,6 +350,12 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             this <- dv_expand_rally_codes(this, last_home_setter_position = last_hsp, last_home_setter = last_hs,
                                           last_visiting_setter_position = last_vsp, last_visiting_setter = last_vs,
                                           last_home_team_score = last_hts, last_visiting_team_score = last_vts, keepcols = keepcols, meta = mx)
+            ## if we have only subs/setter assignments we can/will miss setting the scores
+            if (all(this$skill %in% c("Timeout", "Technical timeout", NA_character_))) {
+                if (all(is.na(this$home_team_score))) this$home_team_score <- last_hts
+                if (all(is.na(this$visiting_team_score))) this$visiting_team_score <- last_vts
+            }
+            if (any(is.na(this$home_team_score) | is.na(this$visiting_team_score))) browser()
             if ("evaluation_code" %in% names(this)) this <- this %>% dplyr::rename(effect = "evaluation_code")
             if ("player_number" %in% names(this)) this <- this %>% dplyr::rename(player = "player_number")
             if ("skill_type_code" %in% names(this)) this <- this %>% dplyr::rename(hit_type = "skill_type_code")
