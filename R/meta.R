@@ -124,6 +124,12 @@ read_match <- function(txt, date_format = NULL) {
     }
     tryCatch(p2 <- read_semi_text2(txt[idx + 1], types = c(match_number = "Cn", day_number = "Cn", regulation = "n"), nms = c("date", "time", "season", "league", "phase", "home_away", "day_number", "match_number", "text_encoding", "regulation", "zones_or_cones")), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
     ## arguably season, league, phase, and home_away might also be type "Cn" because previously they were left to readr and would have been type numeric if they were numbers
+    ## weirdly, some dvw files seem to have an extra column after regulation??
+    zc_col <- which(names(p2) == "zones_or_cones")
+    if (length(zc_col) == 1 && ncol(p2) > zc_col && is.na(p2[1, zc_col]) && p2[1, zc_col + 1] %in% c("Z", "C")) {
+        p2[1, zc_col] <- p2[1, zc_col + 1]
+        p2[1, zc_col + 1] <- NA
+    }
     p2 <- process_dv_utf8(p2, from = 13:15, to = c("league", "phase", "home_away")) ## use UTF8 columns if available
     ## backwards compatibility, text encoding was numeric if it was a number
     temp <- suppressWarnings(as.numeric(p2$text_encoding))
