@@ -446,10 +446,11 @@ read_main <- function(filename, file_text) {
         }
     }
     x$code <- as.character(x$code)
+#trace_ma("main99")
     x
 }
 
-parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines, file_type = "indoor", style) {
+parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines, file_type = "indoor", style = "default") {
     if (missing(code_line_num)) code_line_num <- NULL
     if (missing(full_lines)) full_lines <- code ## default to codes, if full lines not supplied
     using_cones <- tolower(meta$match$zones_or_cones) %eq% "c"
