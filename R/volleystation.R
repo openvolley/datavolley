@@ -231,8 +231,13 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     prev_time <- NA_real_
     px <- bind_rows(lapply(seq_along(jx$scout$sets$events), function(si) {
         thisev <- jx$scout$sets$events[[si]]
-        if ((is.list(thisev) && length(thisev) < 1) || (is.data.frame(thisev) && nrow(thisev) < 1)) return(NULL)
+        if ((is.data.frame(thisev) && nrow(thisev) < 1) || (is.list(thisev) && length(thisev) < 1)) return(NULL)
         thisex <- thisev$exchange
+        if (is.null(thisex) || (is.data.frame(thisex) && nrow(thisex) < 1) || (is.list(thisex) && length(thisex) < 1)) {
+            ## note that if thisev was not empty, but thisex is empty, then we perhaps have lineups for the set but not yet any ball touches
+            ## ideally we could insert the lineup codes but for the time being we just return nothing
+            return(NULL)
+        }
         this_point_ids <- temp_pid + seq_len(nrow(thisex))
         temp_pid <<- max(this_point_ids)
         pwb <- tibble(point_won_by = thisex$point, point_id = this_point_ids)
@@ -355,7 +360,6 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
                 if (all(is.na(this$home_team_score))) this$home_team_score <- last_hts
                 if (all(is.na(this$visiting_team_score))) this$visiting_team_score <- last_vts
             }
-            if (any(is.na(this$home_team_score) | is.na(this$visiting_team_score))) browser()
             if ("evaluation_code" %in% names(this)) this <- this %>% dplyr::rename(effect = "evaluation_code")
             if ("player_number" %in% names(this)) this <- this %>% dplyr::rename(player = "player_number")
             if ("skill_type_code" %in% names(this)) this <- this %>% dplyr::rename(hit_type = "skill_type_code")
@@ -710,7 +714,7 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             moreval <- dv_validate(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
             if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
         }
-        if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = integer(), message = character(), file_line = character())
+        if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- empty_messages_df()
         if (nrow(x$messages) > 0) {
             x$messages$file_line_number <- as.integer(x$messages$file_line_number)
             x$messages$video_time <- as.integer(x$messages$video_time)
@@ -718,6 +722,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             row.names(x$messages) <- NULL
         }
         if (dv_compat && skill_evaluation_decode == "german") x <- dv_make_compat(x, style = "german", file_type = file_type) ## placeholder, this implementation will probably change
+    } else {
+        if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- empty_messages_df()
     }
     x
 }

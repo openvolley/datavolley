@@ -757,7 +757,7 @@ dv_read_hxml <- function(filename, insert_technical_timeouts = TRUE, do_translit
         moreval <- dv_validate(x, validation_level = extra_validation, options = validation_options, file_type = file_type)
         if (!is.null(moreval) && nrow(moreval) > 0) x$messages <- bind_rows(x$messages, moreval)
     }
-    if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- tibble(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character())
+    if (is.null(x$messages) || ncol(x$messages) < 1) x$messages <- empty_messages_df()
     if (nrow(x$messages) > 0) {
         x$messages$file_line_number <- as.integer(x$messages$file_line_number)
         x$messages$video_time <- as.integer(x$messages$video_time)

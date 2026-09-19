@@ -714,6 +714,8 @@ empty_plays_df <- function(vs = TRUE) {
     out
 }
 
+empty_messages_df <- function() tibble(file_line_number = integer(), video_time = integer(), message = character(), file_line = character())
+
 skill2char <- function(skill) {
     ifelse(skill == "Serve", "S", ifelse(skill == "Reception", "R", ifelse (skill == "Attack", "A", ifelse(skill == "Block", "B", ifelse(skill == "Dig", "D", ifelse(skill == "Set", "E", ifelse(skill == "Freeball", "F", skill)))))))
 }
