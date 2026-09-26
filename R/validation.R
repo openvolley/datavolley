@@ -74,7 +74,6 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
     if (!"style" %in% names(options)) options$style <- "default"
     options$style <- tolower(options$style)
     stopifnot("options$style should be \"default\" or \"german\"" = options$style %in% c("default", "german"))
-    if (options$style == "german" && missing(validation_level)) validation_level <- 3 ## default to strict here if called directly. Note that this won't trigger if dv_validate is being run automatically through a dv_read call
     assert_that(is.numeric(validation_level) && validation_level %in% 0:3)
     if (missing(file_type)) file_type <- if (isTRUE(grepl("beach", x$file_meta$file_type))) "beach" else "indoor"
     assert_that(is.string(file_type))
@@ -217,7 +216,7 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
         idx <- which(plays$skill %eq% "Reception" & lag(plays$skill) %eq% "Serve")
         idx2 <- idx[plays$skill_type[idx] != paste0(plays$skill_type[idx-1], " reception") & (!grepl("^Unknown ", plays$skill_type[idx]))]
         if (length(idx2)>0)
-            out <- rbind(out, chk_df(plays[idx2, ], paste0("Reception type (", plays$skill_type[idx2], ") does not match serve type (", plays$skill_type[idx2-1], ")")))
+            out <- rbind(out, chk_df(plays[idx2, ], paste0("Reception type (", plays$skill_type[idx2], ") does not match serve type (", plays$skill_type[idx2 - 1], ")")))
         if (validation_level > 2) {
             ##idx <- which(plays$skill %eq% "Serve" & !is.na(plays$end_zone) & !is.na(plays$end_coordinate))
             ##if (length(idx) > 0) {
@@ -244,19 +243,21 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
             idx <- which(plays$skill %eq% "Attack" & lag(plays$skill) %eq% "Set" & plays$team %eq% lag(plays$team))
             idx <- idx[plays$skill_type[idx] != gsub(" set"," attack",plays$skill_type[idx-1])]
             if (length(idx)>0)
-                out <- rbind(out,chk_df(plays[idx,],paste0("Attack type (",plays$skill_type[idx],") does not match set type (",plays$skill_type[idx-1],")")))
+                out <- rbind(out, chk_df(plays[idx, ], paste0("Attack type (", plays$skill_type[idx], ") does not match set type (", plays$skill_type[idx - 1], ")"), severity = 1))
 
             ## block type must match attack type
             idx <- which(plays$skill %eq% "Block" & lag(plays$skill) %eq% "Attack")
             idx <- idx[plays$skill_type[idx] != gsub(" attack"," block",plays$skill_type[idx-1])]
             if (length(idx)>0)
-                out <- rbind(out,chk_df(plays[idx,],paste0("Block type (",plays$skill_type[idx],") does not match attack type (",plays$skill_type[idx-1],")")))
+                out <- rbind(out, chk_df(plays[idx,], paste0("Block type (", plays$skill_type[idx], ") does not match attack type (", plays$skill_type[idx - 1], ")"), severity = 1))
 
-            ## dig type must match attack type
-            idx <- which(plays$skill %eq% "Dig" & lag(plays$skill) %eq% "Attack")
-            idx <- idx[plays$skill_type[idx]!=gsub(" attack"," dig",plays$skill_type[idx-1])]
-            if (length(idx)>0)
-                out <- rbind(out,chk_df(plays[idx,],paste0("Dig type (",plays$skill_type[idx],") does not match attack type (",plays$skill_type[idx-1],")")))
+            ## dig type must match attack type, but not for German conventions
+            if (options$style != "german") {
+                idx <- which(plays$skill %eq% "Dig" & lag(plays$skill) %eq% "Attack")
+                idx <- idx[plays$skill_type[idx]!=gsub(" attack"," dig",plays$skill_type[idx-1])]
+                if (length(idx)>0)
+                    out <- rbind(out, chk_df(plays[idx,], paste0("Dig type (", plays$skill_type[idx], ") does not match attack type (", plays$skill_type[idx - 1], ")"), severity = 1))
+            }
         }
 
         if (file_type == "indoor") {
@@ -310,7 +311,8 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
                                                   "P1", 9L, "C", "O", NA_character_,
                                                   "P6", 8L, "C", "O", NA_character_,
                                                   "P5", 7L, "C", "O", NA_character_,
-                                                  "PK", 4L, "C", "O", NA_character_,
+                                                  "PK", 3L, "C", "O", NA_character_,
+                                                  "PN", 8L, "C", "O", NA_character_,
                                                   "PO", 8L, "C", "O", NA_character_)
                 ignore_codes <- unique(c(ignore_codes, expected_attack_combos$attack_code[expected_attack_combos$expected_tempo == "O"]))
             }
@@ -323,6 +325,16 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
                 chk <- attacks[which(attacks$start_zone %in% c(2, 3, 4) & (!attacks$attack_code %in% ignore_codes) & (attacks$player_number == attacks$attacker_1 | attacks$player_number == attacks$attacker_5 | attacks$player_number == attacks$attacker_6)), ]
                 if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Back-row player made an attack from a front-row zone", severity = 3))
 
+                if (options$style == "german") {
+                    ## special check for PK and PN attacks: PK is a front-row "giveaway" attack, we just check that it has been made by a front-row player, and vice-versa for PN which is a back-row giveaway
+                    attacks <- attacks %>% dplyr::filter(.data$attack_code %in% c("PN", "PK")) %>%
+                        left_join(x$meta$attacks %>% dplyr::select(attack_code = "code", nominal_start_zone = "attacker_position"), by = "attack_code") %>%
+                        mutate(player_back = .data$player_number == .data$attacker_1 | .data$player_number == .data$attacker_5 | .data$player_number == .data$attacker_6)
+                    chk <- attacks %>% dplyr::filter(.data$attack_code == "PK", .data$player_back)
+                    if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Back-row player made a PK attack (this is a front-row giveaway attack, codebook 4.2: use PN for giveaway attacks by back-row players)", severity = 3))
+                    chk <- attacks %>% dplyr::filter(.data$attack_code == "PN", !.data$player_back)
+                    if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Front-row player made a PN attack (this is a back-row giveaway attack, codebook 4.2: use PK for giveaway attacks by front-row players)", severity = 3))
+                }
                 ## and vice-versa: attack starting from back row by a front-row player
                 chk <- attacks[which(attacks$start_zone %in% c(5, 6, 7, 8, 9, 1) & (attacks$player_number == attacks$attacker_2 | attacks$player_number == attacks$attacker_3 | attacks$player_number == attacks$attacker_4)), ]
                 if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Front-row player made an attack from a back-row zone (legal, but possibly a scouting error)", severity = 2))
@@ -518,7 +530,7 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
                 plays$attack_tempo <- attack2char(plays$skill_type)
 
                 idx <- which(!plays$attack_code %in% c(NA, expected_attack_combos$attack_code))
-                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Attack code", plays$attack_code[idx], "should not be used (codebook 4.2)"), severity = 3))
+                if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Attack code", plays$attack_code[idx], "should not be used (it is not in the codebook, section 4.2)"), severity = 3))
                 idx <- which(!is.na(plays$attack_code) & plays$attack_code %in% expected_attack_combos$attack_code & !plays$attack_tempo %eq% plays$expected_tempo)
                 if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Attack code", plays$attack_code[idx], "is expected to have tempo", plays$expected_tempo[idx], "but has tempo", plays$attack_tempo[idx], "(codebook 4.2)"), severity = 3))
                 idx <- which(!is.na(plays$attack_code) & plays$attack_code %in% expected_attack_combos$attack_code & lag(plays$skill) == "Set" & !((lag(plays$set_type) %eq% plays$expected_set_type) | (is.na(lag(plays$set_type)) & is.na(plays$expected_set_type))))
@@ -1008,6 +1020,7 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
         }
         if (length(rot_errors) > 0) out <- rbind(out, unique(do.call(rbind, rot_errors)))
     } ## checking plays data
+    ## validation level will be 3 for strict. Discard severity = 1 items unless we are being strict
     out <- out[(4 - out$severity) <= validation_level, ]
     if (nrow(out) > 0) out <- dplyr::arrange(out, .data$file_line_number)
     out[, setdiff(names(out), "severity")]
