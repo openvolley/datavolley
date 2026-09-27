@@ -327,12 +327,12 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
 
                 if (options$style == "german") {
                     ## special check for PK and PN attacks: PK is a front-row "giveaway" attack, we just check that it has been made by a front-row player, and vice-versa for PN which is a back-row giveaway
-                    attacks <- attacks %>% dplyr::filter(.data$attack_code %in% c("PN", "PK")) %>%
+                    attacks2 <- attacks %>% dplyr::filter(.data$attack_code %in% c("PN", "PK")) %>%
                         left_join(x$meta$attacks %>% dplyr::select(attack_code = "code", nominal_start_zone = "attacker_position"), by = "attack_code") %>%
                         mutate(player_back = .data$player_number == .data$attacker_1 | .data$player_number == .data$attacker_5 | .data$player_number == .data$attacker_6)
-                    chk <- attacks %>% dplyr::filter(.data$attack_code == "PK", .data$player_back)
+                    chk <- attacks2 %>% dplyr::filter(.data$attack_code == "PK", .data$player_back)
                     if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Back-row player made a PK attack (this is a front-row giveaway attack, codebook 4.2: use PN for giveaway attacks by back-row players)", severity = 3))
-                    chk <- attacks %>% dplyr::filter(.data$attack_code == "PN", !.data$player_back)
+                    chk <- attacks2 %>% dplyr::filter(.data$attack_code == "PN", !.data$player_back)
                     if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Front-row player made a PN attack (this is a back-row giveaway attack, codebook 4.2: use PK for giveaway attacks by front-row players)", severity = 3))
                 }
                 ## and vice-versa: attack starting from back row by a front-row player
