@@ -313,7 +313,6 @@ dv_read <- function(filename, insert_technical_timeouts = TRUE, do_warn = FALSE,
         } else if (skill_evaluation_decode == "german") {
             style <- "german"
             if (!"style" %in% validation_options) validation_options$style <- "german"
-            if (missing(extra_validation)) extra_validation <- 3 ## default to this
         } else if (skill_evaluation_decode == "volleymetrics") {
             style <- "volleymetrics"
         }

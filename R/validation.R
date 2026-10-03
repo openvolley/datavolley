@@ -49,7 +49,7 @@
 #' @param options list: named list of options that control optional validation behaviour. Valid entries are:
 #' \itemize{
 #'   \item setter_tip_codes character: vector of attack codes that represent setter tips (or other attacks that a back-row player can validly make from a front-row position). If you code setter tips as attacks, and don't want such attacks to be flagged as an error when made by a back-row player in a front-row zone, enter the setter tip attack codes here. e.g. \code{options = list(setter_tip_codes = c("PP", "XY"))}
-#'   \item ignore_sub_misalignment logical: when a player is substituted, the player lineups (in the \code{plays} component of \code{x}) should change on the same row as the substitution code. However, in some dvw files the player lineups are changed immediately after the final action of the rally, but the actual substitution code(s) appear on subsequent lines. Hence the lineups are recorded incorrectly on one or more lines, but will be correct by the time the next rally starts. The error in lineups in this situation is relatively minor and unlikely to cause analysis problems. If \code{ignore_sub_misalignment = TRUE} these errors will not be reported (unless they are associated with a genuine substitution error). If \code{ignore_sub_misalignment = FALSE} (the default), they will be reported but only at \code{validation_level = 3}
+#'   \item ignore_sub_misalignment logical: when a player is substituted, the player lineups (in the \code{plays} component of \code{x}) should change on the same row as the substitution code. However, in some dvw files the player lineups are changed immediately after the final action of the rally, but the actual substitution code(s) appear on subsequent lines. Hence the lineups are recorded incorrectly on one or more lines, but will be correct by the time the next rally starts. The error in lineups in this situation is relatively minor and unlikely to cause analysis problems. If \code{ignore_sub_misalignment = TRUE} (the default) these errors will not be reported (unless they are associated with a genuine substitution error). If \code{ignore_sub_misalignment = FALSE}, they will be reported but only at \code{validation_level = 3}
 #'   \item style string: "default" or "german" (following the DVV Scouting Codebook)
 #' }
 #' @param file_type string: "indoor" or "beach". If not provided, will be taken from the \code{x$file_meta$file_format} entry
@@ -79,7 +79,7 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
     assert_that(is.string(file_type))
     file_type <- match.arg(tolower(file_type), c("indoor", "beach"))
     options$de_terminal_seq_checks <- if (!"de_terminal_seq_checks" %in% names(options)) TRUE else isTRUE(options$de_terminal_seq_checks) ## currently undocumented. Set to FALSE if sequence checking on terminal actions (with German conventions) is happening independently of this validation
-
+    if (is.null(options$ignore_sub_misalignment) || is.na(options$ignore_sub_misalignment)) options$ignore_sub_misalignment <- TRUE
     team_player_num <- if (grepl("beach", file_type)) 1:2 else 1:6
 
     out <- data.frame(file_line_number = integer(), video_time = numeric(), message = character(), file_line = character(), severity = numeric(), stringsAsFactors = FALSE)
