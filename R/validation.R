@@ -326,14 +326,21 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
                 if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Back-row player made an attack from a front-row zone", severity = 3))
 
                 if (options$style == "german") {
-                    ## special check for PK and PN attacks: PK is a front-row "giveaway" attack, we just check that it has been made by a front-row player, and vice-versa for PN which is a back-row giveaway
-                    attacks2 <- attacks %>% dplyr::filter(.data$attack_code %in% c("PN", "PK")) %>%
-                        left_join(x$meta$attacks %>% dplyr::select(attack_code = "code", nominal_start_zone = "attacker_position"), by = "attack_code") %>%
-                        mutate(player_back = .data$player_number == .data$attacker_1 | .data$player_number == .data$attacker_5 | .data$player_number == .data$attacker_6)
-                    chk <- attacks2 %>% dplyr::filter(.data$attack_code == "PK", .data$player_back)
-                    if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Back-row player made a PK attack (this is a front-row giveaway attack, codebook 4.2: use PN for giveaway attacks by back-row players)", severity = 3))
-                    chk <- attacks2 %>% dplyr::filter(.data$attack_code == "PN", !.data$player_back)
-                    if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Front-row player made a PN attack (this is a back-row giveaway attack, codebook 4.2: use PK for giveaway attacks by front-row players)", severity = 3))
+                    if (is.null(x$meta$attacks) || nrow(x$meta$attacks) < 1) {
+                        flnm <- grep("[3ATTACKCOMBINATION]", x$raw, fixed = TRUE)
+                        if (length(flnm) != 1) flnm <- NA_integer_
+                        out <- rbind(out, data.frame(file_line_number = flnm, video_time = NA_integer_, message = "The attack combinations table is empty (codebook 4.2)",
+                                                     file_line = if (!is.na(flnm)) x$raw[flnm] else NA_character_, severity = 3, stringsAsFactors = FALSE))
+                    } else {
+                        ## special check for PK and PN attacks: PK is a front-row "giveaway" attack, we just check that it has been made by a front-row player, and vice-versa for PN which is a back-row giveaway
+                        attacks2 <- attacks %>% dplyr::filter(.data$attack_code %in% c("PN", "PK")) %>%
+                            left_join(x$meta$attacks %>% dplyr::select(attack_code = "code", nominal_start_zone = "attacker_position"), by = "attack_code") %>%
+                            mutate(player_back = .data$player_number == .data$attacker_1 | .data$player_number == .data$attacker_5 | .data$player_number == .data$attacker_6)
+                        chk <- attacks2 %>% dplyr::filter(.data$attack_code == "PK", .data$player_back)
+                        if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Back-row player made a PK attack (this is a front-row giveaway attack, codebook 4.2: use PN for giveaway attacks by back-row players)", severity = 3))
+                        chk <- attacks2 %>% dplyr::filter(.data$attack_code == "PN", !.data$player_back)
+                        if (nrow(chk) > 0) out <- rbind(out, chk_df(chk, "Front-row player made a PN attack (this is a back-row giveaway attack, codebook 4.2: use PK for giveaway attacks by front-row players)", severity = 3))
+                    }
                 }
                 ## and vice-versa: attack starting from back row by a front-row player
                 chk <- attacks[which(attacks$start_zone %in% c(5, 6, 7, 8, 9, 1) & (attacks$player_number == attacks$attacker_2 | attacks$player_number == attacks$attacker_3 | attacks$player_number == attacks$attacker_4)), ]
@@ -503,6 +510,12 @@ dv_validate <- function(x, validation_level = 2, options = list(style = "default
                 }
 
                 ## setter calls only K1, K7, K2, KE, KS
+                if (is.null(x$meta$sets) || nrow(x$meta$sets) < 1) {
+                    flnm <- grep("[3SETTERCALL]", x$raw, fixed = TRUE)
+                    if (length(flnm) != 1) flnm <- NA_integer_
+                    out <- rbind(out, data.frame(file_line_number = flnm, video_time = NA_integer_, message = "The setter calls table is empty (codebook 3.1)",
+                                                 file_line = if (!is.na(flnm)) x$raw[flnm] else NA_character_, severity = 3, stringsAsFactors = FALSE))
+                }
                 idx <- which(!plays$set_code %in% c(NA, "K1", "K7", "K2", "KE", "KS"))
                 if (length(idx) > 0) out <- rbind(out, chk_df(plays[idx, ], paste("Setter call", plays$set_code[idx], "is unexpected (only K1, K7, K2, KE, KS: codebook 3.1)"), severity = 3))
                 ## don't expect anything other than KE on an R- that's off the net (an "almost overpass" where the setter sets with one hand should be coded R-, and the middle can be in play on this, so we can have other setter calls on R- at the net. But a bump set close to the net would also be R-, and the middle would likely be out of play on this. So don't check R- near the net, it's ambiguous)
