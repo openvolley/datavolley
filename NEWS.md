@@ -1,3 +1,7 @@
+datavolley 1.18.0
+================
+- minor improvements and bugfixes
+
 datavolley 1.17.0
 ================
 - fixed the reading of vsm files of incomplete matches. Previously an end-of-set marker was added to all sets, even if the set had not been completed
