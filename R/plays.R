@@ -529,13 +529,14 @@ parse_code <- function(code, meta, evaluation_decoder, code_line_num, full_lines
 
     ## team handling
     tm <- substr(in_code[!done],1,1)
-    oktm <- tm=="a" | tm=="*"
+    oktm <- tm %in% c("a", "*")
     if (!all(oktm)) {
         myidx <- which(!done)[!oktm]
         msgs <- collect_messages(msgs,"Team entries not starting with * or a",code_line_num[myidx],full_lines[myidx],severity=2)
         tm[!oktm] <- "unknown"
     }
     out_team[!done] <- tm
+    done[is.na(in_code) | !nzchar(in_code)] <- TRUE ## any NA or empty-string codes should be ignored
     ## handle "automatic" codes
     thisidx <- grepl("^.p",in_code)
     ## point for the associated team
