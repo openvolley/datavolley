@@ -254,13 +254,13 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
             mutate(code = case_when(!is.na(.data$team) ~ paste0(.data$team, "p", lead0(.data$home_team_score, na = "99"), ":", lead0(.data$visiting_team_score, na = "99"))),
                    point = !is.na(.data$team))
         ## columns to preserve when adding new rows to the dataframe
-        keepcols <- c("point_id", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number",
+        keepcols <- c("point_id", "original_time", "time", "home_team_score", "visiting_team_score", "point_won_by", "set_number",
                       "home_setter_position", "visiting_setter_position", paste0("home_p", pseq), paste0("visiting_p", pseq))
         ## row-bind the plays, timeouts, subs, and points, with care to ensure row ordering is correct
         thisex <- bind_rows(lapply(seq_along(thisex$plays), function(j) {
             if (!is.null(thisex$plays[[j]]) && !(is.list(thisex$plays[[j]]) && length(thisex$plays[[j]]) < 1)) {
                 temp <- thisex$plays[[j]] %>% mutate(point_id = this_point_ids[j], point = FALSE)
-                if ("originalTime" %in% names(temp)) temp <- dplyr::select(temp, -"originalTime")
+                temp <- if ("originalTime" %in% names(temp)) dplyr::rename(temp, original_time = "originalTime") else mutate(temp, original_time = NA_real_)
                 if ("invalid" %in% names(temp)) {
                     ## anything with an "invalid" entry is a generic fault indicator (wrong score, rotation error, etc) - with free text entry from the scout (e.g. ">FORM", ">>>REP", ">>WRONG_SCORE_ref<<")
                     temp$invalid <- str_trim(temp$invalid)
@@ -307,17 +307,28 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
         ## fill in missing times
         tms <- thisex %>% dplyr::group_by(.data$point_id) %>%
             dplyr::summarize(this_start_time = if (!all(is.na(.data$time))) min(.data$time, na.rm = TRUE) else NA_integer_,
-                             this_end_time = if (!all(is.na(.data$time))) max(.data$time, na.rm = TRUE) else NA_integer_) %>%
-            mutate(prev_time = lag(.data$this_end_time), next_time = lead(.data$this_start_time),
+                             this_end_time = if (!all(is.na(.data$time))) max(.data$time, na.rm = TRUE) else NA_integer_,
+                             this_start_otime = if (!all(is.na(.data$original_time))) min(.data$original_time, na.rm = TRUE) else NA_integer_,
+                             this_end_otime = if (!all(is.na(.data$original_time))) max(.data$original_time, na.rm = TRUE) else NA_integer_) %>%
+            mutate( ## time (video_time)
+                   prev_time = lag(.data$this_end_time), next_time = lead(.data$this_start_time),
                    this_start_time = case_when(!is.na(.data$this_start_time) ~ .data$this_start_time, TRUE ~ pmin(.data$prev_time, .data$this_end_time, .data$next_time, na.rm = TRUE)),
                    this_end_time = case_when(!is.na(.data$this_end_time) ~ .data$this_end_time, TRUE ~ pmax(.data$prev_time, .data$this_end_time, .data$next_time, na.rm = TRUE)),
-                   prev_time = case_when(!is.na(.data$prev_time) ~ .data$prev_time, TRUE ~ .data$this_start_time))
+                   prev_time = case_when(!is.na(.data$prev_time) ~ .data$prev_time, TRUE ~ .data$this_start_time),
+                   ## original_time (clock time)
+                   prev_otime = lag(.data$this_end_otime), next_otime = lead(.data$this_start_otime),
+                   this_start_otime = case_when(!is.na(.data$this_start_otime) ~ .data$this_start_otime, TRUE ~ pmin(.data$prev_otime, .data$this_end_otime, .data$next_otime, na.rm = TRUE)),
+                   this_end_otime = case_when(!is.na(.data$this_end_otime) ~ .data$this_end_otime, TRUE ~ pmax(.data$prev_otime, .data$this_end_otime, .data$next_otime, na.rm = TRUE)),
+                   prev_otime = case_when(!is.na(.data$prev_otime) ~ .data$prev_otime, TRUE ~ .data$this_start_otime))
         thisex <- left_join(thisex, tms, by = "point_id") %>% mutate(time = case_when(!is.na(.data$time) ~ .data$time,
                                                                                       .data$substitution ~ .data$this_start_time,
                                                                                       .data$point ~ .data$this_end_time,
-                                                                                      .data$timeout ~ .data$prev_time)) %>%
-            dplyr::select(-"this_start_time", -"this_end_time", -"prev_time", -"next_time")
-
+                                                                                      .data$timeout ~ .data$prev_time),
+                                                                     original_time = case_when(!is.na(.data$original_time) ~ .data$original_time,
+                                                                                               .data$substitution ~ .data$this_start_otime,
+                                                                                               .data$point ~ .data$this_end_otime,
+                                                                                               .data$timeout ~ .data$prev_otime)) %>%
+            dplyr::select(-"this_start_time", -"this_end_time", -"prev_time", -"next_time", -"this_start_otime", -"this_end_otime", -"prev_otime", -"next_otime")
         names(thisex) <- camel_to_underscore(names(thisex))
         ## point won by
         thisex <- left_join(thisex, pwb, by = "point_id") %>% mutate(set_number = si)
@@ -670,7 +681,8 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     ## these interpolated file line numbers won't be exact, but close enough to be (hopefully) useful
 
     x$plays <- px %>% mutate(video_time = round(round(.data$time / 10)), ## must be integer
-                             time = as.POSIXct(NA), video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
+                             time = x$file_meta$generator_day + .data$original_time / 10,
+                             video_file_number = if (nrow(mx$video) > 0) 1L else NA_integer_,
                              end_cone = NA_integer_,
                              custom = if_else(is.na(.data$custom), "", as.character(.data$custom))) %>%
         dplyr::select("match_id", ##"_id",
