@@ -138,7 +138,6 @@ read_match <- function(txt, date_format = NULL) {
     if (is.na(p2$date) || !nzchar(p2$date)) {
         if (!is.na(od)) {
             ## Use the official date. Note that we only use this if the scout-entered date is missing, because it's possible that the template being used (which has the official date in it) was not actually for this match, or the match was delayed, etc
-            ## But also be aware that if a dvw with mm-dd-yyyy format is imported to a different copy of DV that has its date preference set to dd-mm-yyyy, and the date string is invalid in dd-mm-yyyy format, the date in the dvw might be silently thrown away during the import. If we have an official date we use it here as fallback
             p2$date <- od
             msgs <- collect_messages(msgs, "Match information is missing the date, using the official/federation-issued match date as a fallback", idx + 1, txt[idx + 1], severity = 2)
         } else {
