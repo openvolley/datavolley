@@ -118,7 +118,7 @@ read_match <- function(txt, date_format = NULL) {
     od <- NA
     if (!grepl("^\\[", txt[idx + 2])) {
         temp <- read_semi_text2(txt[idx + 2], types = c(date = "n"), nms = c("fed_match_id", "competition_id", "date", "fed_code", "fed_id"))
-        if (!is.na(temp$date) && temp$date != 12345) { ## 12345 is used as a placeholder in some files, it isn't a valid date
+        if (!is.na(temp$date) && isTRUE(temp$date >= 29221)) { ## take 1-Jan-1980 as the earliest allowable date. 0 and 12345 in particular are used as placeholder values here, and are not valid dates
             od <- as.Date("1900-01-01") + temp$date - 2L ## or days since 1899-12-30
         }
     }
