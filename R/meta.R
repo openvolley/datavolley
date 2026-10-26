@@ -119,7 +119,7 @@ read_match <- function(txt, date_format = NULL) {
     if (!grepl("^\\[", txt[idx + 2])) {
         temp <- read_semi_text2(txt[idx + 2], types = c(date = "n"), nms = c("fed_match_id", "competition_id", "date", "fed_code", "fed_id"))
         if (!is.na(temp$date) && temp$date != 12345) { ## 12345 is used as a placeholder in some files, it isn't a valid date
-            od <- as.Date("1900-01-01") + temp$date - 1L
+            od <- as.Date("1900-01-01") + temp$date - 2L ## or days since 1899-12-30
         }
     }
     tryCatch(p2 <- read_semi_text2(txt[idx + 1], types = c(match_number = "Cn", day_number = "Cn", regulation = "n"), nms = c("date", "time", "season", "league", "phase", "home_away", "day_number", "match_number", "text_encoding", "regulation", "zones_or_cones")), error = function(e) stop("could not read the [3MATCH] section of the input file: either the file is missing this section or perhaps the encoding argument supplied to dv_read is incorrect?"))
@@ -135,9 +135,15 @@ read_match <- function(txt, date_format = NULL) {
     temp <- suppressWarnings(as.numeric(p2$text_encoding))
     if (nzchar(p2$text_encoding) && tryCatch(isTRUE(temp == p2$text_encoding), error = function(e) FALSE)) p2$text_encoding <- temp
     c2n <- function(z) if (is.character(z) && !is.na(z) && !is.na(suppressWarnings(as.numeric(z)))) as.numeric(z) else z
-    if (is.na(p2$date)) {
-        msgs <- collect_messages(msgs, "Match information is missing the date", idx + 1, txt[idx + 1], severity = 2)
-        date_was_missing <- TRUE
+    if (is.na(p2$date) || !nzchar(p2$date)) {
+        if (!is.na(od)) {
+            ## Use the official date. Note that we only use this if the scout-entered date is missing, because it's possible that the template being used (which has the official date in it) was not actually for this match, or the match was delayed, etc
+            ## But also be aware that if a dvw with mm-dd-yyyy format is imported to a different copy of DV that has its date preference set to dd-mm-yyyy, and the date string is invalid in dd-mm-yyyy format, the date in the dvw might be silently thrown away during the import. If we have an official date we use it here as fallback
+            p2$date <- od
+            msgs <- collect_messages(msgs, "Match information is missing the date, using the official/federation-issued match date as a fallback", idx + 1, txt[idx + 1], severity = 2)
+        } else {
+            msgs <- collect_messages(msgs, "Match information is missing the date", idx + 1, txt[idx + 1], severity = 2)
+        }
     } else {
         ## date can be in various formats
         temp <- manydates(p2$date, preferred = date_format, official_date = od)

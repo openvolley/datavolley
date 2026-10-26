@@ -254,16 +254,23 @@ parse_d <- function(dstr, pfun, allow_future_dates = FALSE) {
 
 manydates <- function(z, preferred = NULL, official_date = NA) {
     z <- z[!is.na(z) & nzchar(z)]
-    if (length(z) < 1) return(as.Date(integer(), origin = "1970-01-01"))
+    if (length(z) < 1) {
+        if (!is.na(official_date)) {
+            return(official_date) ## date field is empty/missing but official date is populated: use that (for metadata parsing this should never be executed: this substitution should have already have happened in the parent and this function not be called, but leave it here anyway)
+        } else {
+            return(as.Date(integer(), origin = "1970-01-01"))
+        }
+    }
     suppressWarnings(
         tries <- list(ymd = unique(as.Date(na.omit(c(parse_d(z, lubridate::ymd), parse_dt(z, "Ymd HMS"))))),
                       dmy = unique(as.Date(na.omit(c(parse_d(z, lubridate::dmy), parse_dt(z, "dmY HMS"))))),
                       mdy = unique(as.Date(na.omit(c(parse_d(z, lubridate::mdy), parse_dt(z, "mdY HMS"))))))
     )
     if (!is.na(official_date)) {
+        ## we can potentially use the official date to resolve an ambiguous date string from the metadata date field
         check <- sapply(tries, function(z) isTRUE(abs(as.numeric(z - official_date)) <= 1))
         if (sum(check, na.rm = TRUE) == 1) {
-            ## we have one date within 1 day of the federation date, use that
+            ## we have one date within 1 day of the federation-supplied date, use that
             return(tries[[which(check)]])
         }
     }
@@ -705,9 +712,9 @@ show_timing <- function(label) {
 
 empty_plays_df <- function(vs = TRUE) {
     ## vs = TRUE for the volleystation reader, which starts with slightly different columns and adds others in its own code. If vs = FALSE, just populate all the final columns
-    out <- tibble(point_id = integer(), time = integer(), home_team_score = integer(), visiting_team_score = integer(), point_won_by = character(), set_number = integer(), home_setter_position = integer(), visiting_setter_position = integer(), home_p1 = integer(), home_p2 = integer(), home_p3 = integer(), home_p4 = integer(), home_p5 = integer(), home_p6 = integer(), visiting_p1 = integer(), visiting_p2 = integer(), visiting_p3 = integer(), visiting_p4 = integer(), visiting_p5 = integer(), visiting_p6 = integer(), code = character(), team = character(), skill = character(), timeout = logical(), substitution = logical(), `_id` = character(), player = character(), hit_type = character(), effect = character(), end_sub_zone = character(), end_zone = integer(), start_zone = integer(), point = logical(), start_coordinate_x = numeric(), start_coordinate_y = numeric(), end_coordinate_x = numeric(), end_coordinate_y = numeric(), combination = character(), start_sub_zone = character(), target_attacker = character(), skill_type = character(), players = integer(), end_of_set = logical())
+    out <- tibble(point_id = integer(), original_time = numeric(), time = integer(), home_team_score = integer(), visiting_team_score = integer(), point_won_by = character(), set_number = integer(), home_setter_position = integer(), visiting_setter_position = integer(), home_p1 = integer(), home_p2 = integer(), home_p3 = integer(), home_p4 = integer(), home_p5 = integer(), home_p6 = integer(), visiting_p1 = integer(), visiting_p2 = integer(), visiting_p3 = integer(), visiting_p4 = integer(), visiting_p5 = integer(), visiting_p6 = integer(), code = character(), team = character(), skill = character(), timeout = logical(), substitution = logical(), `_id` = character(), player = character(), hit_type = character(), effect = character(), end_sub_zone = character(), end_zone = integer(), start_zone = integer(), point = logical(), start_coordinate_x = numeric(), start_coordinate_y = numeric(), end_coordinate_x = numeric(), end_coordinate_y = numeric(), combination = character(), start_sub_zone = character(), target_attacker = character(), skill_type = character(), players = integer(), end_of_set = logical())
     if (!vs) {
-        out <- bind_cols(out[, setdiff(names(out), c("_id", "player", "hit_type", "effect", "end_sub_zone", "combination", "start_sub_zone", "target_attacker", "players"))],
+        out <- bind_cols(out[, setdiff(names(out), c("_id", "original_time", "player", "hit_type", "effect", "end_sub_zone", "combination", "start_sub_zone", "target_attacker", "players"))],
             tibble(match_id = character(), video_file_number = logical(), video_time = logical(), player_number = integer(), player_name = character(), player_id = character(), evaluation_code = character(), evaluation = character(), attack_code = character(), attack_description = character(), set_code = character(), set_description = character(), set_type = character(), end_subzone = character(), end_cone = integer(), skill_subtype = character(), num_players = character(), num_players_numeric = numeric(), special_code = character(), custom_code = character(), file_line_number = integer(), start_coordinate = numeric(), mid_coordinate = numeric(), end_coordinate = numeric(), point_phase = character(), attack_phase = character(), mid_coordinate_x = numeric(), mid_coordinate_y = numeric(), home_player_id1 = character(), home_player_id2 = character(), home_player_id3 = character(), home_player_id4 = character(), home_player_id5 = character(), home_player_id6 = character(), visiting_player_id1 = character(), visiting_player_id2 = character(), visiting_player_id3 = character(), visiting_player_id4 = character(), visiting_player_id5 = character(), visiting_player_id6 = character(), team_touch_id = numeric(), home_team = character(), visiting_team = character(), home_team_id = character(), visiting_team_id = character(), team_id = character(), winning_attack = logical(), serving_team = character())
         )
     }
