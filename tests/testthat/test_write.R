@@ -71,7 +71,7 @@ test_that("utf8 encoding and decoding behaves", {
     expect_true(is.na(decode_dv_utf8(as_dv_utf8(""))))
     expect_true(is.na(decode_dv_utf8(as_dv_utf8(NA))))
     expect_equal(as_dv_utf8(c("foo bar ", "WWK Volleys München")), c("\0172666f6f2062617220", "\017257574b20566f6c6c657973204dfc6e6368656e"))
-    expect_equal(decode_dv_utf8(as_dv_utf8(c("foo bar ", "WWK Volleys München"))), c("foo bar ", "WWK Volleys München"))
+    expect_equal(decode_dv_utf8(as_dv_utf8(c("foo bar ", "WWK Volleys München"))), c("foo bar", "WWK Volleys München")) ## trailing spaces stripped on decode
     expect_equal(decode_dv_utf8("notautf8string"), "notautf8string")
     expect_equal(decode_dv_utf8(123), 123)
 })

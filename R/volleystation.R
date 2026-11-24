@@ -473,15 +473,22 @@ dv_read_vsm <- function(filename, skill_evaluation_decode, insert_technical_time
     mxa <- mx$attacks %>% dplyr::select(attack_code = "code", attack_description = "description", target_attacker = "set_type")
     ## target_attacker might or might not already be in the px data frame, depending on the vsm file
     if ("target_attacker" %in% names(px)) mxa <- dplyr::select(mxa, -"target_attacker")
+    idx <- which(!is.na(px$attack_code) & nzchar(px$attack_code) & !px$attack_code %in% mxa$attack_code)
+    if (length(idx) > 0) {
+        msgs <- collect_messages(msgs, paste("Unmatched attack code:", px$attack_code[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
+    }
     px <- left_join(px, mxa, by = "attack_code")
+    idx <- which(!is.na(px$set_code) & nzchar(px$set_code) & !px$set_code %in% mx$sets$code)
+    if (length(idx) > 0) {
+        msgs <- collect_messages(msgs, paste("Unmatched set code:", px$set_code[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
+    }
     px <- left_join(px, mx$sets %>% dplyr::select(set_code = "code", set_description = "description"), by = "set_code")
-
     ## re-create the proper scout code for skill rows, otherwise if we dv_write this and dv_read it, it will not work
     px$code <- vsm_row2code(px, data_type = file_type, style = skill_evaluation_decode)
 
     idx <- which(!px$skill %in% c("S", "R", "E", "A", "B", "D", "F", "Timeout", "Technical timeout", NA_character_))
     if (length(idx) > 0) {
-        msgs <- collect_messages(msgs, paste0("Unexpected skill: ", px$skill[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
+        msgs <- collect_messages(msgs, paste("Unexpected skill:", px$skill[idx]), line_nums = px_lnum(idx), xraw = x$raw, severity = 2)
     }
     temp_skill <- px$skill
     px$skill <- case_when(temp_skill == "S" ~ "Serve",
