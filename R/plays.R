@@ -446,7 +446,6 @@ read_main <- function(filename, file_text) {
         }
     }
     x$code <- as.character(x$code)
-#trace_ma("main99")
     x
 }
 

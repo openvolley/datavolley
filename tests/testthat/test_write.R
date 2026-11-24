@@ -38,7 +38,7 @@ test_that("dv_write behaves", {
         print(all.equal(dvw1, dvw2))
         expect_equal(dvw1, dvw2)
     }
-    test_read_write_dvw <- function(filename) {
+    test_read_write_dvw <- function(filename, encoding = "UTF-8") {
         ## read a file
         x0 <- dv_read(filename)
         ## inject some extra bits for the purposes of testing
@@ -49,7 +49,7 @@ test_that("dv_write behaves", {
         x0$meta$match$match_number <- 22L
         ## write it
         outfile <- tempfile(fileext = ".dvw")
-        dv_write(x0, file = outfile)
+        dv_write(x0, file = outfile, text_encoding = encoding)
         ## read the one we just wrote
         x1 <- dv_read(outfile)
         ## modify the match_id, they will be different because we changed bits that are used in the hash calculation
@@ -60,4 +60,18 @@ test_that("dv_write behaves", {
     test_read_write_dvw(dv_example_file(1))
     expect_warning(test_read_write_dvw(dv_example_file(2)))
     ## not testing specific contents of warnings here (but expect "missing the meta\\$(attacks|sets) component")
+    test_read_write_dvw(dv_example_file(1), encoding = "windows-1250")
+})
+
+test_that("utf8 encoding and decoding behaves", {
+    expect_equal(as_dv_utf8("WWK Volleys München"), "\017257574b20566f6c6c657973204dfc6e6368656e")
+    expect_equal(decode_dv_utf8(as_dv_utf8("WWK Volleys München")), "WWK Volleys München")
+    expect_equal(as_dv_utf8(""), "\0172")
+    expect_equal(as_dv_utf8(NA), "\0172")
+    expect_true(is.na(decode_dv_utf8(as_dv_utf8(""))))
+    expect_true(is.na(decode_dv_utf8(as_dv_utf8(NA))))
+    expect_equal(as_dv_utf8(c("foo bar ", "WWK Volleys München")), c("\0172666f6f2062617220", "\017257574b20566f6c6c657973204dfc6e6368656e"))
+    expect_equal(decode_dv_utf8(as_dv_utf8(c("foo bar ", "WWK Volleys München"))), c("foo bar ", "WWK Volleys München"))
+    expect_equal(decode_dv_utf8("notautf8string"), "notautf8string")
+    expect_equal(decode_dv_utf8(123), 123)
 })

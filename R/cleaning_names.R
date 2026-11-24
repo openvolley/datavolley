@@ -350,7 +350,7 @@ find_player_name_remapping <- function(x, distance_threshold = 3, verbose = TRUE
         this_names_count <- as.data.frame(table(all_names$player_name[all_names$team == t])) ##subset(all_names,team==t)$player_name))
         names(this_names_count) <- c("name", "count")
         ## check for suspect names by transliteration (removing diacriticals) and by text distance
-        names_translit <- iconv(this_names, from = "utf-8", to = "ascii//TRANSLIT")
+        names_translit <- stri_trans_general(this_names, "latin-ascii")
         names_map <- rep(0, length(this_names))
         for (n in seq_along(this_names)) {
             p <- this_names[n]

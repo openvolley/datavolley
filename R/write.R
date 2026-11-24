@@ -20,6 +20,9 @@
 #' @export
 dv_write <- function(x, file, text_encoding = "UTF-8") {
     if (!inherits(x, "datavolley")) stop("x must be a datavolley object")
+    if (!tolower(text_encoding) %in% tolower(iconvlist())) warning("text_encoding '", text_encoding, "' is not recognized")
+    if (isTRUE(tolower(text_encoding %in% c("utf8", "utf-8")))) text_encoding <- NULL ## text is already utf-8, no need to re-encode
+    options(datavolley.warn_text_encoding = FALSE)
     dateformat <- if (length(x$file_meta$preferred_date_format) > 0) {
                       if (tolower(x$file_meta$preferred_date_format[1]) %eq% "mdy") {
                           "%m/%d/%Y"
@@ -47,6 +50,10 @@ dv_write <- function(x, file, text_encoding = "UTF-8") {
              "[3RESERVE]",
              dvw_video(x, text_encoding = text_encoding),
              dvw_scout(x, text_encoding = text_encoding))
+    if (isTRUE(getOption("datavolley.warn_text_encoding"))) {
+        warning("some text in this file cannot be represented in the requested encoding (", text_encoding, ") and has been replaced by plain ASCII. Check the results")
+    }
+    options(datavolley.warn_text_encoding = NULL)
     if (!missing(file)) {
         outf <- file(file, "wb") ## encoding??
         writeLines(out, outf, sep = "\n")
@@ -61,7 +68,23 @@ write_dv <- dv_write
 
 not_null_or <- function(z, or) if (is.null(z)) or else z
 
-df2txt <- function(z) {
+df2txt <- function(z, text_encoding = NULL) {
+    ## convert text encoding if needed
+    if (!is.null(text_encoding)) {
+        for (i in seq_len(ncol(z))) {
+            if (is.character(z[[i]])) {
+                this <- z[[i]]
+                try(this <- iconv(z[[i]], to = text_encoding), silent = TRUE)
+                ## if a string cannot be represented in the target encoding, it will be NA
+                nidx <- is.na(this) & !is.na(z[[i]])
+                if (any(nidx)) {
+                    options(datavolley.warn_text_encoding = TRUE)
+                    this[nidx] <- stri_trans_general(z[[i]][nidx], "latin-ascii") ## transliterate those entries, but noting that we will still have the utf8-encoded version saved in this section with the proper characters
+                }
+                z[[i]] <- this
+            }
+        }
+    }
     ## change any logical cols to char "True" "False"
     logical2char <- function(w) {
         out <- as.character(w)
@@ -86,13 +109,13 @@ df2txt <- function(z) {
 }
 
 ## helper for simple sections that just require a dump of the existing section
-sect2txt <- function(sect, component, outhdr, trailing_col = FALSE) {
+sect2txt <- function(sect, component, outhdr, trailing_col = FALSE, text_encoding = NULL) {
     if (is.null(sect)) {
         warning("missing the ", component, " component of the input object")
         outhdr
     } else {
         if (trailing_col) sect[, ncol(sect)+1] <- NA_character_
-        c(outhdr, df2txt(sect))
+        c(outhdr, df2txt(sect, text_encoding = text_encoding))
     }
 }
 
@@ -131,7 +154,7 @@ dvw_setter_calls <- function(x, text_encoding) {
         tmp$end_coordinate[!is.na(tmp$end_coordinate)] <- formatC(tmp$end_coordinate[!is.na(tmp$end_coordinate)], width = 4, flag = "0")
         if (is.character(tmp$colour)) tmp$colour <- dv_rgb2int(tmp$colour)
         if ("path_colour" %in% names(tmp) && is.character(tmp$path_colour)) tmp$path_colour <- dv_rgb2int(tmp$path_colour)
-        sect2txt(tmp, "meta$sets", "[3SETTERCALL]")
+        sect2txt(tmp, component = "meta$sets", outhdr = "[3SETTERCALL]", text_encoding = text_encoding)
     }
 }
 
@@ -141,39 +164,44 @@ dvw_attack_combos <- function(x, text_encoding) {
         tmp$set_type[tmp$set_type %in% c(NA_character_, "")] <- "-"
     }
     if (is.character(tmp$colour)) tmp$colour <- dv_rgb2int(tmp$colour)
-    sect2txt(tmp, "meta$attacks", "[3ATTACKCOMBINATION]")
+    sect2txt(tmp, component = "meta$attacks", outhdr = "[3ATTACKCOMBINATION]", text_encoding = text_encoding)
+}
+
+dvw_players <- function(z) {
+    tmp <- z[, setdiff(names(z), "name")]
+    tmp$role <- as.character(roles_str2int(tmp$role))
+    tmp$role[tmp$role == "0"] <- ""
+    add_dv_utf8(tmp, from = c("lastname", "firstname", "nickname"), to = 18:20)
 }
 
 dvw_players_v <- function(x, text_encoding) {
-    tmp <- x$meta$players_v[, setdiff(names(x$meta$players_v), "name")]
-    tmp$role <- as.character(roles_str2int(tmp$role))
-    tmp$role[tmp$role == "0"] <- ""
-    sect2txt(tmp, "meta$players_v", "[3PLAYERS-V]")
+    sect2txt(dvw_players(x$meta$players_v), component = "meta$players_v", outhdr = "[3PLAYERS-V]", text_encoding = text_encoding)
 }
 
 dvw_players_h <- function(x, text_encoding) {
-    tmp <- x$meta$players_h[, setdiff(names(x$meta$players_h), "name")]
-    tmp$role <- as.character(roles_str2int(tmp$role))
-    tmp$role[tmp$role == "0"] <- ""
-    sect2txt(tmp, "meta$players_h", "[3PLAYERS-H]")
+    sect2txt(dvw_players(x$meta$players_h), component = "meta$players_h", outhdr = "[3PLAYERS-H]", text_encoding = text_encoding)
 }
 
 dvw_set <- function(x, text_encoding) {
-    tmp <- sect2txt(x$meta$result[, setdiff(names(x$meta$result), c("score_home_team", "score_visiting_team"))], "meta$result", "[3SET]")
+    tmp <- sect2txt(x$meta$result[, setdiff(names(x$meta$result), c("score_home_team", "score_visiting_team"))], component = "meta$result", outhdr = "[3SET]", text_encoding = text_encoding)
     ## note that input might have unplayed sets, e.g.
     ## True;;;;;;
     ## as extra lines, but these have been stripped during dv_read
     c(tmp, if (length(tmp) < 6) rep("True;;;;;;", 6 - length(tmp)))
 }
 
-dvw_comments <- function(x, text_encoding) sect2txt(x$meta$comments, "meta$comments", "[3COMMENTS]")
+dvw_comments <- function(x, text_encoding) sect2txt(x$meta$comments, component = "meta$comments", outhdr = "[3COMMENTS]", text_encoding = text_encoding)
 
-dvw_more <- function(x, text_encoding) c(sect2txt(x$meta$more, "meta$more ", "[3MORE]"), ";0;0;")
+dvw_more <- function(x, text_encoding) {
+    tmp <- add_dv_utf8(x$meta$more, from = c("referees", "city", "arena", "scout"), to = 7:10)
+    c(sect2txt(tmp, component = "meta$more ", outhdr = "[3MORE]", text_encoding = text_encoding), ";0;0;")
+}
 
 dvw_teams <- function(x, text_encoding) {
     tmp <- x$meta$teams[, setdiff(names(x$meta$teams), c("home_away_team", "won_match"))]
     if (is.character(tmp$shirt_colour)) tmp$shirt_colour <- dv_rgb2int(tmp$shirt_colour)
-    sect2txt(tmp, "meta$teams", "[3TEAMS]")
+    tmp <- add_dv_utf8(tmp, from = c("team", "coach", "assistant"), to = 7:9)
+    sect2txt(tmp, component = "meta$teams", outhdr = "[3TEAMS]", text_encoding = text_encoding)
 }
 
 dvw_match <- function(x, text_encoding, date_format) {
@@ -183,7 +211,10 @@ dvw_match <- function(x, text_encoding, date_format) {
     ## not sure what the final line is. The 12345 is a dummy value, obviously
     mm <- x$meta$match
     if (is.null(mm)) stop("missing the meta$match component of the input object")
-    if (!missing(text_encoding)) mm$text_encoding <- text_encoding
+    if (!missing(text_encoding)) {
+        ## discard the leading "windows-" or "CP" part of the encoding string, dvw is typically only the numeric codepage part. Not clear what to do if the user has asked for a text encoding with a different string component (e.g. iso-xxx, utf-8, latin1, etc) - put these in verbatim
+        mm$text_encoding <- sub("^(win|windows|cp)\\-?", "", text_encoding, ignore.case = TRUE)
+    }
     if (!is.na(mm$date)) {
         if (!is.character(mm$date)) try(mm$date <- format(mm$date, date_format), silent = TRUE)
     }
@@ -195,7 +226,8 @@ dvw_match <- function(x, text_encoding, date_format) {
         ## if "indoor rally point", but also treat as the default
         mm$regulation <- 1L
     }
-    c("[3MATCH]", df2txt(mm), ";;12345;;;;;;")
+    mm <- add_dv_utf8(mm, from = c("league", "phase", "home_away"), to = 13:15)
+    c("[3MATCH]", df2txt(mm, text_encoding = text_encoding), ";;12345;;;;;;")
 }
 
 dvw_header <- function(x, text_encoding, date_format) {
@@ -284,7 +316,7 @@ dvw_scout <- function(x, text_encoding = text_encoding) {
     ## if beach, xp won't have home_p3 etc
     to_add <- setdiff(nms, names(xp))
     if (length(to_add) > 0) xp[, to_add] <- NA
-    c("[3SCOUT]", df2txt(xp[, nms]))
+    c("[3SCOUT]", df2txt(xp[, nms])) ## don't pass text_encoding, there should be nothing in this section that needs it
 }
 
 ## rebuild the scouted code from the plays dataframe row

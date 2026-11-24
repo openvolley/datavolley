@@ -646,6 +646,15 @@ qmin <- function(...) suppressWarnings(min(..., na.rm = TRUE))
 ## their encoded text starts with \u000f
 is_dv_utf8 <- function(z) grepl("^\u000f", z, useBytes = TRUE) ## one element per element of z
 any_dv_utf8 <- function(z) any(grepl("\u000f", z, useBytes = TRUE), na.rm = TRUE) ## TRUE if anything in z is encoded
+as_dv_utf8 <- function(z) {
+    if (length(z) > 1) return(unname(sapply(z, as_dv_utf8)))
+    if (is.na(z)) z <- ""
+    zi <- utf8ToInt(z)
+    this <- sprintf("%02x", zi)
+    bb <- if (any(nchar(this) > 2)) 4L else 2L
+    if (bb == 4) this <- sprintf("%04x", zi)
+    paste(c("\u000f", bb, this), collapse = "")
+}
 
 ## decode a vector of text
 decode_dv_utf8 <- function(z, na_is = NA, warn = FALSE) {
@@ -683,7 +692,6 @@ process_dv_utf8 <- function(p, from, to, na_is = NA) {
         ## convert to column numbers
         from <- vapply(from, function(nm) if (nm %in% names(p)) which(names(p) == nm)[1] else NA_integer_, FUN.VALUE = 1L, USE.NAMES = FALSE)
     }
-    todrop <- rep(FALSE, length(from))
     for (i in seq_along(from)) {
         if (!is.na(from[i]) && ncol(p) >= from[i] && any_dv_utf8(p[[from[i]]])) {
             try({
@@ -692,11 +700,17 @@ process_dv_utf8 <- function(p, from, to, na_is = NA) {
                 idx <- which((is.na(temp) | !nzchar(temp)) & (!is.na(p[[to[i]]]) & nzchar(p[[to[i]]])))
                 temp[idx] <- p[[to[i]]][idx]
                 p[[to[i]]] <- temp
-                todrop[i] <- TRUE
             })
         }
     }
-    if (any(todrop)) p[, setdiff(seq_len(ncol(p)), from[todrop])] else p
+    p[, setdiff(seq_len(ncol(p)), from)] ## always drop the `from` columns
+}
+
+## do the reverse: add utf8-encoded versions of chosen `from` columns (names), putting them in `to` (integer indices)
+add_dv_utf8 <- function(p, from, to) {
+    for (ii in setdiff(seq_len(max(to)), c(seq_len(ncol(p)), to))) p[[ii]] <- rep(NA, nrow(p))
+    for (ii in seq_along(from)) p[[to[ii]]] <- as_dv_utf8(p[[from[ii]]])
+    p
 }
 
 ## for debugging timings
